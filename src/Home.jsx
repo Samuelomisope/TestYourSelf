@@ -276,7 +276,7 @@ function Home() {
     
     const formData = new FormData();
     formData.append("file", file);
-    const uploadRes = await fetch("http://localhost:3000/upload/single?folder=profile", {
+const uploadRes = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/upload/single?folder=profile`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body: formData,
@@ -293,7 +293,7 @@ try {
 }
 console.log("Uploaded URL:", uploadData.url);
 console.log("About to PATCH...");
-    const patchRes = await fetch("http://localhost:3000/users/me", {
+    const patchRes = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/users/me`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",

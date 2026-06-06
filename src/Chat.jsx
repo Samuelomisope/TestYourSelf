@@ -14,7 +14,7 @@ import {
 import { encryptMessage, decryptMessage } from "./crypto";
 import { uploadSingle } from "./useUpload";
 
-const API = "http://localhost:3000";
+import { API } from "./config";
 
 async function apiFetch(path, options = {}) {
   const token = await getIdToken(auth.currentUser, true);

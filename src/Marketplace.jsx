@@ -8,7 +8,7 @@ import {
   faFilter, faTag, faBoxOpen, faTimes, faStar
 } from "@fortawesome/free-solid-svg-icons";
 
-const API = "http://localhost:3000";
+import { API } from "./config";
 
 async function apiFetch(path, options = {}) {
   const token = await getIdToken(auth.currentUser, true);

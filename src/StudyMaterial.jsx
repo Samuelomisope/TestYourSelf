@@ -196,7 +196,7 @@ function UploadModal({ onClose, user, userProfile, universitiesList = [] }) {
       if (uploadUniversity) formData.append("university", uploadUniversity);
 
       const xhr = new XMLHttpRequest();
-      xhr.open("POST", "http://localhost:3000/study-material/upload");
+      xhr.open("POST", `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material/upload`);
       xhr.setRequestHeader("Authorization", `Bearer ${token}`);
       xhr.timeout = 300000;
 
@@ -454,7 +454,7 @@ function FileCard({ file, user, onSelect, onDelete }) {
               const { auth } = await import("./firebase");
               const { getIdToken } = await import("firebase/auth");
               const token = await getIdToken(auth.currentUser, true);
-              await fetch(`http://localhost:3000/study-material/${file.id}`, {
+             await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material/${file.id}`, {
                 method: "DELETE",
                 headers: { Authorization: `Bearer ${token}` },
               });
@@ -518,7 +518,7 @@ function StudyMaterial() {
     const { auth } = await import("./firebase");
     const { getIdToken } = await import("firebase/auth");
     const token = await getIdToken(auth.currentUser, true);
-    const res = await fetch(`http://localhost:3000/study-material?search=${debouncedSearch}`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material?search=${debouncedSearch}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json();
@@ -535,7 +535,7 @@ function StudyMaterial() {
   }, [user, debouncedSearch, refreshKey]);
 
   useEffect(() => {
-    fetch("http://localhost:3000/universities")
+    fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/universities`)
       .then(r => r.json())
       .then(data => setUniversitiesList(data))
       .catch(console.error);

@@ -1,7 +1,8 @@
 import { auth } from "./firebase";
 import { getIdToken } from "firebase/auth";
 
-const BASE_URL = "http://localhost:3000";
+import { API } from "./config";
+const BASE_URL = API;
 
 async function getAuthHeaders() {
   const user = auth.currentUser;
@@ -58,7 +59,7 @@ export async function apiDelete(path) {
 
 // Get all universities
 export async function getUniversities() {
-  const res = await fetch("http://localhost:3000/universities");
+  const res = await fetch(`${BASE_URL}/universities`);
   if (!res.ok) throw new Error("Failed to fetch universities");
   return res.json();
 }

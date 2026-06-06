@@ -9,7 +9,7 @@ import {
   faChevronLeft, faStar
 } from "@fortawesome/free-solid-svg-icons";
 
-const API = "http://localhost:3000";
+import { API } from "./config";
 
 async function searchApi(q, type = "all") {
   const token = await getIdToken(auth.currentUser, true);
