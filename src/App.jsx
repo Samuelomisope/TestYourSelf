@@ -4,7 +4,7 @@ import Login from "./Login";
 import Home from "./Home";
 import StudyMaterial from "./StudyMaterial";
 import AI from "./AI";
-import Chat from "./chat";
+import Chat from "./Chat";
 import Marketplace from "./Marketplace";
 import MarketplaceDetail from "./MarketplaceDetail";
 import CreateListing from "./CreateListing";
