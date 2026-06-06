@@ -535,11 +535,22 @@ function StudyMaterial() {
   }, [user, debouncedSearch, refreshKey]);
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/universities`)
-      .then(r => r.json())
-      .then(data => setUniversitiesList(data))
-      .catch(console.error);
-  }, []);
+  const load = async () => {
+    try {
+      const { auth } = await import("./firebase");
+      const { getIdToken } = await import("firebase/auth");
+      const token = await getIdToken(auth.currentUser, true);
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/universities`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setUniversitiesList(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  load();
+}, []);
 
   const filtered = files.filter(f => {
     if (universityFilter === "All") return true;
