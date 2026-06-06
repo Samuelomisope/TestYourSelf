@@ -15,6 +15,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import Search from "./Search";
 import VerifyEmail from "./VerifyEmail";
 import Admin from "./Admin";
+import Profile from "./Profile";
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
         <Route path="/marketplace/:id" element={<ProtectedRoute><MarketplaceDetail /></ProtectedRoute>} />
         <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

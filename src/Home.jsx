@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "./useAuth";
 import { auth, db } from "./firebase";
 import { apiGet, apiPatch, updateMe, getUniversityByName } from "./api";
@@ -170,8 +170,8 @@ function Home() {
   const [quote] = useState({ text: "The secret of getting ahead is getting started.", author: "Mark Twain" });
   const [leaderboardRank, setLeaderboardRank] = useState(null);
   const { unreadCount } = useNotifications();
-  const [lastMarketplace, setLastMarketplace] = useState(null);
-  const [pinnedChat, setPinnedChat] = useState(null);
+  const [ setLastMarketplace] = useState(null);
+  const [ setPinnedChat] = useState(null);
 
   const greeting = () => {
     const h = new Date().getHours();

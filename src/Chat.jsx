@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { auth } from "./firebase";
 import { getIdToken } from "firebase/auth";
@@ -9,12 +9,14 @@ import {
   faChevronLeft, faUsers, faUser, faPaperPlane,
   faSpinner, faStore, faMicrophone, faImage,
   faFile, faSmile, faReply, faCheck, faCheckDouble,
-  faCircle, faPlus, faCamera, faTimes, faStop, faSearch,
+  faPlus, faTimes, faSearch, faStop, faVideo,
+  faPalette, faWallpaper, faXmark, faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
 import { encryptMessage, decryptMessage } from "./crypto";
 import { uploadSingle } from "./useUpload";
-
 import { API } from "./config";
+
+// ── Helpers ────────────────────────────────────────────────────────
 
 async function apiFetch(path, options = {}) {
   const token = await getIdToken(auth.currentUser, true);
@@ -37,11 +39,41 @@ function safeAvatar(url, seed) {
 }
 
 function avatarError(e, seed) {
-  e.target.onerror = null; // prevent infinite loop
+  e.target.onerror = null;
   e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(seed || "?")}`;
 }
 
+// FIX: Frontend 24hr expiry filter — also add a cron/scheduled job on the backend
+// to DELETE FROM statuses WHERE created_at < NOW() - INTERVAL '24 hours'
+function isStatusExpired(status) {
+  return Date.now() - new Date(status.createdAt).getTime() > 24 * 60 * 60 * 1000;
+}
+
 const EMOJIS = ["❤️", "😂", "😮", "😢", "👍", "🙏"];
+
+// Wallpaper presets — users can also pick a custom color or image
+const WALLPAPER_PRESETS = [
+  { id: "default", label: "Default", bg: "#f0f4ff", type: "color" },
+  { id: "midnight", label: "Midnight", bg: "#0f172a", type: "color" },
+  { id: "rose", label: "Rose", bg: "#fff1f2", type: "color" },
+  { id: "forest", label: "Forest", bg: "#f0fdf4", type: "color" },
+  { id: "sand", label: "Sand", bg: "#fefce8", type: "color" },
+  { id: "slate", label: "Slate", bg: "#f8fafc", type: "color" },
+  { id: "lavender", label: "Lavender", bg: "#f5f3ff", type: "color" },
+  { id: "ocean", label: "Ocean", bg: "#ecfeff", type: "color" },
+];
+
+// Status background color options
+const STATUS_BG_COLORS = [
+  { id: "indigo", label: "Indigo", value: "#4f46e5" },
+  { id: "rose", label: "Rose", value: "#e11d48" },
+  { id: "emerald", label: "Emerald", value: "#059669" },
+  { id: "amber", label: "Amber", value: "#d97706" },
+  { id: "sky", label: "Sky", value: "#0284c7" },
+  { id: "purple", label: "Purple", value: "#7c3aed" },
+  { id: "pink", label: "Pink", value: "#db2777" },
+  { id: "dark", label: "Dark", value: "#1e293b" },
+];
 
 // ── Read Receipt ───────────────────────────────────────────────────
 function ReadReceipt({ isRead, isOwn }) {
@@ -54,14 +86,17 @@ function ReadReceipt({ isRead, isOwn }) {
 }
 
 // ── Message Bubble ─────────────────────────────────────────────────
-function MessageBubble({ message, isOwn, onReply, onReact, dbUserId }) {
+function MessageBubble({ message, isOwn, onReply, onReact }) {
   const [showEmoji, setShowEmoji] = useState(false);
   const decryptedText = message.text ? decryptMessage(message.text) : null;
 
-  const groupedReactions = message.reactions?.reduce((acc, r) => {
-    acc[r.emoji] = (acc[r.emoji] || 0) + 1;
-    return acc;
-  }, {});
+  const groupedReactions = useMemo(() =>
+    message.reactions?.reduce((acc, r) => {
+      acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+      return acc;
+    }, {}),
+    [message.reactions]
+  );
 
   return (
     <div className={`flex gap-2 group ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
@@ -88,13 +123,11 @@ function MessageBubble({ message, isOwn, onReply, onReact, dbUserId }) {
         )}
 
         <div className="relative">
-          {/* Bubble */}
           <div className={`px-4 py-2.5 rounded-2xl text-sm ${
             isOwn
               ? "bg-indigo-500 text-white rounded-tr-sm"
               : "bg-white border border-gray-100 text-gray-800 rounded-tl-sm shadow-sm"
           }`}>
-            {/* Image */}
             {message.type === "image" && message.mediaUrl && (
               <img
                 src={message.mediaUrl}
@@ -103,13 +136,16 @@ function MessageBubble({ message, isOwn, onReply, onReact, dbUserId }) {
                 onClick={() => window.open(message.mediaUrl, "_blank")}
               />
             )}
-
-            {/* Audio */}
+            {message.type === "video" && message.mediaUrl && (
+              <video
+                src={message.mediaUrl}
+                controls
+                className="rounded-xl max-w-[200px] mb-1"
+              />
+            )}
             {message.type === "audio" && message.mediaUrl && (
               <audio controls className="max-w-[200px]" src={message.mediaUrl} />
             )}
-
-            {/* File */}
             {message.type === "file" && message.mediaUrl && (
               <a
                 href={message.mediaUrl}
@@ -121,12 +157,10 @@ function MessageBubble({ message, isOwn, onReply, onReact, dbUserId }) {
                 <span className="text-xs underline">View File</span>
               </a>
             )}
-
-            {/* Text */}
             {decryptedText && <p>{decryptedText}</p>}
           </div>
 
-          {/* Action buttons on hover */}
+          {/* Hover actions */}
           <div className={`absolute top-0 ${isOwn ? "left-0 -translate-x-full" : "right-0 translate-x-full"} hidden group-hover:flex items-center gap-1 px-1`}>
             <button
               onClick={() => onReply(message)}
@@ -142,7 +176,6 @@ function MessageBubble({ message, isOwn, onReply, onReact, dbUserId }) {
             </button>
           </div>
 
-          {/* Emoji picker */}
           {showEmoji && (
             <div className={`absolute z-10 bottom-full mb-1 ${isOwn ? "right-0" : "left-0"} bg-white rounded-full shadow-lg border border-gray-100 flex gap-1 px-2 py-1`}>
               {EMOJIS.map(emoji => (
@@ -158,7 +191,6 @@ function MessageBubble({ message, isOwn, onReply, onReact, dbUserId }) {
           )}
         </div>
 
-        {/* Reactions */}
         {groupedReactions && Object.keys(groupedReactions).length > 0 && (
           <div className="flex gap-1 mt-1 flex-wrap">
             {Object.entries(groupedReactions).map(([emoji, count]) => (
@@ -180,6 +212,93 @@ function MessageBubble({ message, isOwn, onReply, onReact, dbUserId }) {
   );
 }
 
+// ── Wallpaper Picker ───────────────────────────────────────────────
+function WallpaperPicker({ current, onSelect, onClose }) {
+  const [customColor, setCustomColor] = useState("#ffffff");
+  const [customImageUrl, setCustomImageUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef();
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadSingle(file, "wallpapers");
+      onSelect({ id: "custom-image", bg: url, type: "image" });
+    } catch (err) {
+      console.error(err);
+    }
+    setUploading(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={onClose}>
+      <div
+        className="bg-white w-full max-w-lg rounded-t-3xl p-6 pb-10"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-base font-bold text-gray-800">
+            <FontAwesomeIcon icon={faPalette} className="mr-2 text-indigo-500" />
+            Chat Wallpaper
+          </h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <FontAwesomeIcon icon={faXmark} />
+          </button>
+        </div>
+
+        {/* Preset colors */}
+        <p className="text-xs text-gray-400 font-medium mb-2">PRESETS</p>
+        <div className="grid grid-cols-4 gap-3 mb-5">
+          {WALLPAPER_PRESETS.map(preset => (
+            <button
+              key={preset.id}
+              onClick={() => onSelect(preset)}
+              className={`h-14 rounded-2xl border-2 transition ${current?.id === preset.id ? "border-indigo-500 scale-105" : "border-transparent"}`}
+              style={{ background: preset.bg }}
+            >
+              <span className="text-xs text-gray-500 font-medium">{preset.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Custom color */}
+        <p className="text-xs text-gray-400 font-medium mb-2">CUSTOM COLOR</p>
+        <div className="flex items-center gap-3 mb-5">
+          <input
+            type="color"
+            value={customColor}
+            onChange={e => setCustomColor(e.target.value)}
+            className="w-10 h-10 rounded-xl border border-gray-200 cursor-pointer"
+          />
+          <button
+            onClick={() => onSelect({ id: "custom-color", bg: customColor, type: "color" })}
+            className="px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm hover:bg-indigo-600 transition"
+          >
+            Apply Color
+          </button>
+        </div>
+
+        {/* Custom image */}
+        <p className="text-xs text-gray-400 font-medium mb-2">CUSTOM IMAGE</p>
+        <button
+          onClick={() => fileRef.current.click()}
+          disabled={uploading}
+          className="w-full py-3 border-2 border-dashed border-gray-200 rounded-2xl text-sm text-gray-400 hover:border-indigo-300 hover:text-indigo-400 transition disabled:opacity-50"
+        >
+          {uploading ? (
+            <><FontAwesomeIcon icon={faSpinner} spin className="mr-2" />Uploading...</>
+          ) : (
+            <><FontAwesomeIcon icon={faImage} className="mr-2" />Upload Image</>
+          )}
+        </button>
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+      </div>
+    </div>
+  );
+}
+
 // ── Status Circle ──────────────────────────────────────────────────
 function StatusCircle({ status, onClick, isOwn }) {
   const viewed = status.views?.length > 0;
@@ -193,7 +312,9 @@ function StatusCircle({ status, onClick, isOwn }) {
           onError={(e) => avatarError(e, status.user?.displayName)}
         />
       </div>
-      <p className="text-xs text-gray-500 truncate w-14 text-center">{isOwn ? "My Status" : status.user?.displayName}</p>
+      <p className="text-xs text-gray-500 truncate w-14 text-center">
+        {isOwn ? "My Status" : status.user?.displayName}
+      </p>
     </button>
   );
 }
@@ -206,8 +327,12 @@ function RoomItem({ room, currentUserId, onClick, active }) {
     ? (room.university?.shortName || room.name || "Group")
     : (otherMember?.user?.displayName || "Unknown");
   const avatar = room.isGroup ? null : otherMember?.user?.photoURL;
-  // FIX #7: Use server-provided unread count if available, fall back to client-side count
-  const unread = room.unreadCount ?? (room.messages?.filter(m => !m.isRead && m.sender?.id !== currentUserId).length || 0);
+
+  // FIX #6: memoised unread count — avoids filtering on every render
+  const unread = useMemo(() =>
+    room.unreadCount ?? (room.messages?.filter(m => !m.isRead && m.sender?.id !== currentUserId).length || 0),
+    [room.unreadCount, room.messages, currentUserId]
+  );
 
   return (
     <button
@@ -253,10 +378,13 @@ function RoomItem({ room, currentUserId, onClick, active }) {
 }
 
 // ── Chat Room ──────────────────────────────────────────────────────
-function ChatRoom({ room, dbUserId, onBack }) {
+function ChatRoom({ room, dbUserId, onBack, wallpaper, onOpenWallpaper }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);           // FIX #3
+  const [sendError, setSendError] = useState(null);   // FIX #4
+  const [uploadError, setUploadError] = useState(null); // FIX #5
   const [typingUser, setTypingUser] = useState(null);
   const [replyTo, setReplyTo] = useState(null);
   const [recording, setRecording] = useState(false);
@@ -266,25 +394,27 @@ function ChatRoom({ room, dbUserId, onBack }) {
   const typingRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
-  // FIX #8: Track mic stream ref for cleanup on unmount
-  const streamRef = useRef(null);
+  const streamRef = useRef(null); // FIX #8: mic stream ref
 
   const otherMember = room.isGroup ? null : room.members?.find(m => m.user?.id !== dbUserId);
   const roomName = room.isGroup
     ? (room.university?.shortName || "Group Chat")
     : (otherMember?.user?.displayName || "Chat");
 
-  // FIX #1: Pass auth token to socket. FIX #2: Use async/await consistently.
-  // FIX #3: Add dbUserId to dependency array to avoid stale closure.
-  useEffect(() => {
-    if (!dbUserId) return; // wait until dbUserId is available
+  // Wallpaper style
+  const wallpaperStyle = useMemo(() => {
+    if (!wallpaper) return { backgroundColor: "#f0f4ff" };
+    if (wallpaper.type === "image") return { backgroundImage: `url(${wallpaper.bg})`, backgroundSize: "cover", backgroundPosition: "center" };
+    return { backgroundColor: wallpaper.bg };
+  }, [wallpaper]);
 
+  useEffect(() => {
+    if (!dbUserId) return;
     let socket;
     let mounted = true;
 
     const connect = async () => {
       try {
-        // Fetch messages and mark as read concurrently
         const [data] = await Promise.all([
           apiFetch(`/chat/rooms/${room.id}/messages`),
           apiFetch(`/chat/rooms/${room.id}/read`, { method: "POST" }).catch(console.error),
@@ -295,18 +425,19 @@ function ChatRoom({ room, dbUserId, onBack }) {
         }
       } catch (err) {
         console.error(err);
-        if (mounted) setLoading(false);
+        if (mounted) {
+          setError("Failed to load messages. Please try again."); // FIX #3
+          setLoading(false);
+        }
       }
 
-      // FIX #1: Get token and pass it to socket for authentication
-      // Guard after every await — React Strict Mode unmounts before async resolves
       if (!mounted) return;
       try {
         const token = await getIdToken(auth.currentUser, true);
-        if (!mounted) return; // check again after the await
+        if (!mounted) return;
         socket = io(`${API}/chat`, {
           transports: ["websocket"],
-          auth: { token },
+          auth: { token }, // FIX #1
         });
         socketRef.current = socket;
 
@@ -336,8 +467,7 @@ function ChatRoom({ room, dbUserId, onBack }) {
 
     return () => {
       mounted = false;
-      // FIX #8: Stop mic stream if still active when component unmounts
-      streamRef.current?.getTracks().forEach(t => t.stop());
+      streamRef.current?.getTracks().forEach(t => t.stop()); // FIX #8
       streamRef.current = null;
       if (socket) {
         socket.emit("leaveRoom", { roomId: room.id });
@@ -345,14 +475,19 @@ function ChatRoom({ room, dbUserId, onBack }) {
       }
       socketRef.current = null;
     };
-  }, [room.id, dbUserId]); // FIX #3: added dbUserId
+  }, [room.id, dbUserId]); // FIX #3: dbUserId in deps
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const sendMessage = (overrides = {}) => {
-    if ((!text.trim() && !overrides.mediaUrl) || !socketRef.current) return;
+    if ((!text.trim() && !overrides.mediaUrl) || !socketRef.current) {
+      // FIX #4: Notify user if socket is gone
+      if (!socketRef.current) setSendError("Connection lost. Please refresh.");
+      return;
+    }
+    setSendError(null);
     socketRef.current.emit("sendMessage", {
       roomId: room.id,
       senderId: dbUserId,
@@ -374,33 +509,43 @@ function ChatRoom({ room, dbUserId, onBack }) {
     }, 1500);
   };
 
+  // FIX #5: Errors shown to user, uploading reset in finally
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
+    setUploadError(null);
     try {
       const url = await uploadSingle(file, "chat");
       sendMessage({ mediaUrl: url, mediaType: file.type, type: "image", text: "" });
-    } catch (err) { console.error(err); }
-    setUploading(false);
+    } catch (err) {
+      console.error(err);
+      setUploadError("Image upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
+    setUploadError(null);
     try {
       const url = await uploadSingle(file, "chat");
       sendMessage({ mediaUrl: url, mediaType: file.type, type: "file", text: "" });
-    } catch (err) { console.error(err); }
-    setUploading(false);
+    } catch (err) {
+      console.error(err);
+      setUploadError("File upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // FIX #8: Store stream in ref so we can stop it on unmount
-      streamRef.current = stream;
+      streamRef.current = stream; // FIX #8
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
@@ -409,13 +554,18 @@ function ChatRoom({ room, dbUserId, onBack }) {
         const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         const file = new File([blob], "voice-note.webm", { type: "audio/webm" });
         setUploading(true);
+        setUploadError(null);
         try {
           const url = await uploadSingle(file, "chat/audio");
           sendMessage({ mediaUrl: url, mediaType: "audio/webm", type: "audio", text: "" });
-        } catch (err) { console.error(err); }
-        setUploading(false);
-        stream.getTracks().forEach(t => t.stop());
-        streamRef.current = null;
+        } catch (err) {
+          console.error(err);
+          setUploadError("Voice upload failed. Please try again.");
+        } finally {
+          setUploading(false);
+          stream.getTracks().forEach(t => t.stop());
+          streamRef.current = null;
+        }
       };
       mediaRecorder.start();
       setRecording(true);
@@ -459,14 +609,28 @@ function ChatRoom({ room, dbUserId, onBack }) {
             : <p className="text-xs text-gray-400">{room.isGroup ? `${room.members?.length || 0} members` : "tap for info"}</p>
           }
         </div>
+        {/* Wallpaper button */}
+        <button
+          onClick={onOpenWallpaper}
+          className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 transition"
+          title="Change wallpaper"
+        >
+          <FontAwesomeIcon icon={faPalette} className="text-sm" />
+        </button>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" style={{ background: "url('https://i.pinimg.com/originals/97/c0/07/97c00759032b89f29aadf12a6e52c98b.jpg') center/cover" }}>
-        <div className="backdrop-blur-[1px] min-h-full space-y-3">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" style={wallpaperStyle}>
+        <div className="min-h-full space-y-3">
           {loading ? (
             <div className="text-center py-10 text-indigo-400">
               <FontAwesomeIcon icon={faSpinner} spin />
+            </div>
+          ) : error ? ( // FIX #3: Show error state
+            <div className="text-center py-10">
+              <div className="bg-white/80 rounded-2xl px-6 py-4 inline-block shadow-sm">
+                <p className="text-red-500 text-sm">{error}</p>
+              </div>
             </div>
           ) : messages.length === 0 ? (
             <div className="text-center py-16">
@@ -482,13 +646,22 @@ function ChatRoom({ room, dbUserId, onBack }) {
                 isOwn={msg.sender?.id === dbUserId}
                 onReply={setReplyTo}
                 onReact={handleReact}
-                dbUserId={dbUserId}
               />
             ))
           )}
           <div ref={bottomRef} />
         </div>
       </div>
+
+      {/* Upload/Send error banner */}
+      {(uploadError || sendError) && (
+        <div className="bg-red-50 border-t border-red-100 px-4 py-2 flex items-center justify-between shrink-0">
+          <p className="text-xs text-red-500">{uploadError || sendError}</p>
+          <button onClick={() => { setUploadError(null); setSendError(null); }} className="text-red-400 hover:text-red-600">
+            <FontAwesomeIcon icon={faXmark} className="text-xs" />
+          </button>
+        </div>
+      )}
 
       {/* Reply Preview */}
       {replyTo && (
@@ -510,7 +683,6 @@ function ChatRoom({ room, dbUserId, onBack }) {
 
       {/* Input */}
       <div className="bg-white border-t border-gray-200 px-3 py-3 flex items-end gap-2 shrink-0">
-        {/* Attachment buttons */}
         <div className="flex gap-1">
           <label className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 transition cursor-pointer">
             <FontAwesomeIcon icon={faImage} />
@@ -559,13 +731,177 @@ function ChatRoom({ room, dbUserId, onBack }) {
   );
 }
 
-// ── Status Viewer ──────────────────────────────────────────────────
-function StatusViewer({ status, onClose, onView }) {
-  // FIX #5: Add status.id to dependency array
-  useEffect(() => { onView(status.id); }, [status.id]);
+// ── Status Creator ─────────────────────────────────────────────────
+// NEW: supports text with bg color, image, and video uploads
+function StatusCreator({ onClose, onPosted, dbUser }) {
+  const [mode, setMode] = useState("text"); // "text" | "image" | "video"
+  const [text, setText] = useState("");
+  const [bgColor, setBgColor] = useState(STATUS_BG_COLORS[0].value);
+  const [mediaFile, setMediaFile] = useState(null);
+  const [mediaPreview, setMediaPreview] = useState(null);
+  const [posting, setPosting] = useState(false);
+  const [error, setError] = useState(null);
+  const imageRef = useRef();
+  const videoRef = useRef();
+
+  const handleMediaChange = (e, type) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (mediaPreview) URL.revokeObjectURL(mediaPreview);
+    setMediaFile(file);
+    setMediaPreview(URL.createObjectURL(file));
+    setMode(type);
+  };
+
+  useEffect(() => {
+    return () => { if (mediaPreview) URL.revokeObjectURL(mediaPreview); };
+  }, [mediaPreview]);
+
+  const handlePost = async () => {
+    if (mode === "text" && !text.trim()) return;
+    if ((mode === "image" || mode === "video") && !mediaFile) return;
+    setPosting(true);
+    setError(null);
+    try {
+      let body = { type: mode };
+      if (mode === "text") {
+        body.text = text;
+        body.bgColor = bgColor;
+      } else {
+        const folder = mode === "video" ? "chat/status/video" : "chat/status/image";
+        const url = await uploadSingle(mediaFile, folder);
+        body.mediaUrl = url;
+        body.mediaType = mediaFile.type;
+        if (text.trim()) body.text = text; // optional caption
+      }
+      const status = await apiFetch("/chat/status", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      onPosted(status);
+      onClose();
+    } catch (err) {
+      console.error(err);
+      setError("Failed to post status. Please try again.");
+    } finally {
+      setPosting(false);
+    }
+  };
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-end justify-center" onClick={onClose}>
+      <div
+        className="bg-white w-full max-w-lg rounded-t-3xl overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Preview area */}
+        <div
+          className="relative w-full h-56 flex items-center justify-center"
+          style={{ backgroundColor: mode === "text" ? bgColor : "#1e293b" }}
+        >
+          {mode === "text" && (
+            <textarea
+              value={text}
+              onChange={e => setText(e.target.value)}
+              placeholder="What's on your mind?"
+              className="bg-transparent text-white text-center text-xl font-semibold placeholder-white/60 outline-none resize-none w-full px-6 text-center"
+              rows={3}
+              style={{ caretColor: "white" }}
+            />
+          )}
+          {mode === "image" && mediaPreview && (
+            <img src={mediaPreview} className="h-full w-full object-cover" alt="preview" />
+          )}
+          {mode === "video" && mediaPreview && (
+            <video src={mediaPreview} className="h-full w-full object-cover" autoPlay muted loop />
+          )}
+          <button onClick={onClose} className="absolute top-3 right-3 text-white/70 hover:text-white">
+            <FontAwesomeIcon icon={faXmark} />
+          </button>
+        </div>
+
+        <div className="p-4">
+          {/* Mode switcher */}
+          <div className="flex gap-2 mb-4">
+            {[
+              { id: "text", icon: faSmile, label: "Text" },
+              { id: "image", icon: faImage, label: "Image" },
+              { id: "video", icon: faVideo, label: "Video" },
+            ].map(m => (
+              <button
+                key={m.id}
+                onClick={() => {
+                  if (m.id === "image") imageRef.current.click();
+                  else if (m.id === "video") videoRef.current.click();
+                  else setMode("text");
+                }}
+                className={`flex-1 py-2 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition ${
+                  mode === m.id ? "bg-indigo-500 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                }`}
+              >
+                <FontAwesomeIcon icon={m.icon} /> {m.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Background color picker (text mode only) */}
+          {mode === "text" && (
+            <div className="mb-4">
+              <p className="text-xs text-gray-400 font-medium mb-2">BACKGROUND COLOR</p>
+              <div className="flex gap-2 flex-wrap">
+                {STATUS_BG_COLORS.map(color => (
+                  <button
+                    key={color.id}
+                    onClick={() => setBgColor(color.value)}
+                    className={`w-8 h-8 rounded-full border-2 transition ${bgColor === color.value ? "border-gray-800 scale-110" : "border-transparent"}`}
+                    style={{ backgroundColor: color.value }}
+                    title={color.label}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Caption for image/video */}
+          {(mode === "image" || mode === "video") && (
+            <input
+              value={text}
+              onChange={e => setText(e.target.value)}
+              placeholder="Add a caption (optional)..."
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400 mb-4"
+            />
+          )}
+
+          {error && <p className="text-red-500 text-xs text-center mb-3">{error}</p>}
+
+          <button
+            onClick={handlePost}
+            disabled={posting || (mode === "text" && !text.trim()) || ((mode === "image" || mode === "video") && !mediaFile)}
+            className="w-full py-3 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 transition disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {posting ? <><FontAwesomeIcon icon={faSpinner} spin /> Posting...</> : "Post Status"}
+          </button>
+        </div>
+
+        {/* Hidden file inputs */}
+        <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={e => handleMediaChange(e, "image")} />
+        <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={e => handleMediaChange(e, "video")} />
+      </div>
+    </div>
+  );
+}
+
+// ── Status Viewer ──────────────────────────────────────────────────
+function StatusViewer({ status, onClose, onView }) {
+  // FIX #1: onView in deps, wrapped in useCallback at call site
+  useEffect(() => { onView(status.id); }, [status.id, onView]);
+
+  const bgStyle = status.bgColor
+    ? { backgroundColor: status.bgColor }
+    : { backgroundColor: "#1e293b" };
+
+  return (
+    <div className="fixed inset-0 bg-black z-50 flex flex-col" style={bgStyle}>
       <div className="flex items-center gap-3 px-4 py-4">
         <button onClick={onClose} className="text-white">
           <FontAwesomeIcon icon={faChevronLeft} />
@@ -576,18 +912,30 @@ function StatusViewer({ status, onClose, onView }) {
           alt=""
           onError={(e) => avatarError(e, status.user?.displayName)}
         />
-        <div>
+        <div className="flex-1">
           <p className="text-white text-sm font-medium">{status.user?.displayName}</p>
           <p className="text-gray-400 text-xs">{new Date(status.createdAt).toLocaleTimeString()}</p>
         </div>
+        {/* 24hr expiry indicator */}
+        <p className="text-xs text-white/50">
+          Expires {new Date(new Date(status.createdAt).getTime() + 24 * 60 * 60 * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+        </p>
       </div>
+
       <div className="flex-1 flex items-center justify-center px-6">
-        {status.type === "image" && status.mediaUrl ? (
+        {status.type === "video" && status.mediaUrl ? (
+          <video src={status.mediaUrl} controls autoPlay className="max-h-full max-w-full rounded-2xl" />
+        ) : status.type === "image" && status.mediaUrl ? (
           <img src={status.mediaUrl} alt="status" className="max-h-full max-w-full rounded-2xl" />
         ) : (
-          <p className="text-white text-2xl font-medium text-center">{status.text}</p>
+          <p className="text-white text-2xl font-semibold text-center">{status.text}</p>
         )}
       </div>
+
+      {status.text && (status.type === "image" || status.type === "video") && (
+        <p className="text-white/80 text-sm text-center px-6 pb-2">{status.text}</p>
+      )}
+
       <p className="text-gray-400 text-xs text-center pb-6">
         {status.views?.length || 0} views
       </p>
@@ -608,14 +956,18 @@ function Chat() {
   const [statuses, setStatuses] = useState([]);
   const [viewingStatus, setViewingStatus] = useState(null);
   const [showStatusCreate, setShowStatusCreate] = useState(false);
-  const [newStatus, setNewStatus] = useState("");
-  const [postingStatus, setPostingStatus] = useState(false);
   const [userSearch, setUserSearch] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
-  // FIX #6: Debounce ref for search
-  const searchDebounceRef = useRef(null);
+  const [showWallpaperPicker, setShowWallpaperPicker] = useState(false);
+  const [wallpaper, setWallpaper] = useState(WALLPAPER_PRESETS[0]);
+  const searchDebounceRef = useRef(null); // FIX #6
 
+  useEffect(() => {
+    return () => clearTimeout(searchDebounceRef.current); // FIX #2: cleanup on unmount
+  }, []);
+
+  // FIX #7: location.search in dependency array
   useEffect(() => {
     const init = async () => {
       try {
@@ -626,7 +978,16 @@ function Chat() {
         ]);
         setRooms(roomsData);
         setDbUser(userData);
-        setStatuses(statusData);
+
+        // Load saved wallpaper preference from user settings
+        if (userData.chatWallpaper) {
+          setWallpaper(userData.chatWallpaper);
+        }
+
+        // FIX: Filter out expired statuses on the frontend.
+        // BACKEND NOTE: Add a scheduled job/cron:
+        //   DELETE FROM statuses WHERE created_at < NOW() - INTERVAL '24 hours';
+        setStatuses(statusData.filter(s => !isStatusExpired(s)));
 
         const params = new URLSearchParams(location.search);
         const targetUserId = params.get("dm");
@@ -645,22 +1006,26 @@ function Chat() {
       setLoading(false);
     };
     init();
-  }, []);
+  }, [location.search]); // FIX #7
 
-  const postStatus = async () => {
-    if (!newStatus.trim()) return;
-    setPostingStatus(true);
+  // Save wallpaper to backend when it changes
+  const handleWallpaperSelect = async (preset) => {
+    setWallpaper(preset);
+    setShowWallpaperPicker(false);
     try {
-      const status = await apiFetch("/chat/status", {
-        method: "POST",
-        body: JSON.stringify({ text: newStatus, type: "text" }),
+      await apiFetch("/users/me", {
+        method: "PATCH",
+        body: JSON.stringify({ chatWallpaper: preset }),
       });
-      setStatuses(prev => [status, ...prev]);
-      setNewStatus("");
-      setShowStatusCreate(false);
-    } catch (err) { console.error(err); }
-    setPostingStatus(false);
+    } catch (err) {
+      console.error("Failed to save wallpaper preference:", err);
+    }
   };
+
+  // FIX #1: wrap onView in useCallback to avoid StatusViewer re-triggering
+  const handleViewStatus = useCallback((id) => {
+    apiFetch(`/chat/status/${id}/view`, { method: "POST" }).catch(console.error);
+  }, []);
 
   const searchUsers = async (q) => {
     if (!q.trim()) { setSearchResults([]); return; }
@@ -672,7 +1037,7 @@ function Chat() {
     setSearching(false);
   };
 
-  // FIX #6: Debounced search handler — prevents API call on every keystroke
+  // FIX #6: Debounced search
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setUserSearch(value);
@@ -680,8 +1045,10 @@ function Chat() {
     searchDebounceRef.current = setTimeout(() => searchUsers(value), 400);
   };
 
-  const myStatuses = statuses.filter(s => s.user?.id === dbUser?.id);
-  const otherStatuses = statuses.filter(s => s.user?.id !== dbUser?.id);
+  // FIX: also filter statuses as time passes in-session
+  const liveStatuses = useMemo(() => statuses.filter(s => !isStatusExpired(s)), [statuses]);
+  const myStatuses = useMemo(() => liveStatuses.filter(s => s.user?.id === dbUser?.id), [liveStatuses, dbUser]);
+  const otherStatuses = useMemo(() => liveStatuses.filter(s => s.user?.id !== dbUser?.id), [liveStatuses, dbUser]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -695,8 +1062,6 @@ function Chat() {
             <h1 className="text-lg font-bold text-indigo-500">ChatSnap</h1>
           </div>
         </div>
-
-        {/* Tabs */}
         <div className="max-w-5xl mx-auto flex gap-6 mt-2">
           {["chats", "status"].map(t => (
             <button
@@ -725,13 +1090,14 @@ function Chat() {
                   <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
                   <input
                     value={userSearch}
-                    onChange={handleSearchChange} // FIX #6: use debounced handler
+                    onChange={handleSearchChange}
                     placeholder="Search by name or @username..."
                     className="w-full pl-8 pr-3 py-2 bg-gray-100 rounded-xl text-sm outline-none focus:bg-white focus:border focus:border-indigo-300 transition"
                   />
+                  {searching && (
+                    <FontAwesomeIcon icon={faSpinner} spin className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+                  )}
                 </div>
-
-                {/* Search Results */}
                 {searchResults.length > 0 && (
                   <div className="mt-2 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                     {searchResults.map(u => (
@@ -773,7 +1139,7 @@ function Chat() {
                 </div>
               ) : rooms.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
-                  <p className="text-4xl text-gray-200 mb-3"><FontAwesomeIcon icon={faUser} /></p>
+                  <FontAwesomeIcon icon={faUser} className="text-5xl text-gray-200 mb-3" />
                   <p className="text-gray-500 font-medium text-sm">No conversations yet</p>
                   <button
                     onClick={() => navigate("/marketplace")}
@@ -801,7 +1167,6 @@ function Chat() {
           {/* Status Tab */}
           {tab === "status" && (
             <div className="flex-1 overflow-y-auto">
-              {/* My status */}
               <div className="px-4 py-3 border-b border-gray-100">
                 <p className="text-xs text-gray-400 font-medium mb-3">MY STATUS</p>
                 <div className="flex items-center gap-3">
@@ -821,36 +1186,15 @@ function Chat() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-800">My Status</p>
-                    <p className="text-xs text-gray-400">{myStatuses.length > 0 ? `${myStatuses.length} update${myStatuses.length > 1 ? "s" : ""}` : "Tap + to add status"}</p>
+                    <p className="text-xs text-gray-400">
+                      {myStatuses.length > 0
+                        ? `${myStatuses.length} update${myStatuses.length > 1 ? "s" : ""} · expires in 24h`
+                        : "Tap + to add status"}
+                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* Status create */}
-              {showStatusCreate && (
-                <div className="px-4 py-3 border-b border-gray-100 bg-indigo-50">
-                  <textarea
-                    value={newStatus}
-                    onChange={e => setNewStatus(e.target.value)}
-                    placeholder="What's on your mind?"
-                    rows={3}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-400 resize-none bg-white"
-                  />
-                  <div className="flex gap-2 mt-2">
-                    <button
-                      onClick={() => setShowStatusCreate(false)}
-                      className="flex-1 py-2 rounded-xl border border-gray-200 text-sm text-gray-500"
-                    >Cancel</button>
-                    <button
-                      onClick={postStatus}
-                      disabled={postingStatus || !newStatus.trim()}
-                      className="flex-1 py-2 rounded-xl bg-indigo-500 text-white text-sm hover:bg-indigo-600 transition disabled:opacity-50"
-                    >Post</button>
-                  </div>
-                </div>
-              )}
-
-              {/* Recent updates */}
               {otherStatuses.length > 0 && (
                 <div className="px-4 py-3">
                   <p className="text-xs text-gray-400 font-medium mb-3">RECENT UPDATES</p>
@@ -867,7 +1211,7 @@ function Chat() {
                 </div>
               )}
 
-              {otherStatuses.length === 0 && !showStatusCreate && (
+              {otherStatuses.length === 0 && (
                 <div className="text-center py-10">
                   <p className="text-gray-400 text-sm">No status updates yet</p>
                 </div>
@@ -883,10 +1227,12 @@ function Chat() {
               room={activeRoom}
               dbUserId={dbUser?.id}
               onBack={() => setActiveRoom(null)}
+              wallpaper={wallpaper}
+              onOpenWallpaper={() => setShowWallpaperPicker(true)}
             />
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
-              <p className="text-5xl text-gray-200 mb-3"><FontAwesomeIcon icon={faUser} /></p>
+              <FontAwesomeIcon icon={faUser} className="text-5xl text-gray-200 mb-3" />
               <p className="text-gray-500 font-medium">Select a conversation</p>
               <p className="text-gray-400 text-sm mt-1">Choose from the list or start a new chat</p>
             </div>
@@ -894,12 +1240,30 @@ function Chat() {
         </div>
       </div>
 
+      {/* Status Creator */}
+      {showStatusCreate && (
+        <StatusCreator
+          onClose={() => setShowStatusCreate(false)}
+          onPosted={(status) => setStatuses(prev => [status, ...prev])}
+          dbUser={dbUser}
+        />
+      )}
+
       {/* Status Viewer */}
       {viewingStatus && (
         <StatusViewer
           status={viewingStatus}
           onClose={() => setViewingStatus(null)}
-          onView={(id) => apiFetch(`/chat/status/${id}/view`, { method: "POST" }).catch(console.error)}
+          onView={handleViewStatus} // FIX #1: stable callback reference
+        />
+      )}
+
+      {/* Wallpaper Picker */}
+      {showWallpaperPicker && (
+        <WallpaperPicker
+          current={wallpaper}
+          onSelect={handleWallpaperSelect}
+          onClose={() => setShowWallpaperPicker(false)}
         />
       )}
     </div>
