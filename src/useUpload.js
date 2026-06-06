@@ -1,7 +1,7 @@
 import { auth } from "./firebase";
 import { getIdToken } from "firebase/auth";
 
-const API = "http://localhost:3000";
+import { API } from "./config";
 
 export async function uploadSingle(file, folder = "general") {
   const token = await getIdToken(auth.currentUser, true);

@@ -11,7 +11,7 @@ import {
 
 const ADMIN_EMAILS = ["omisope34@gmail.com"];
 
-const API = "http://localhost:3000";
+import { API } from "./config";
 
 async function apiFetch(path, options = {}) {
   const token = await getIdToken(auth.currentUser, true);
