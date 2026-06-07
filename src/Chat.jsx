@@ -10,7 +10,7 @@ import {
   faSpinner, faStore, faMicrophone, faImage,
   faFile, faSmile, faReply, faCheck, faCheckDouble,
   faPlus, faTimes, faSearch, faStop, faVideo,
-  faPalette, faWallpaper, faXmark, faChevronRight,
+  faPalette, faXmark, faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
 import { encryptMessage, decryptMessage } from "./crypto";
 import { uploadSingle } from "./useUpload";

@@ -7,9 +7,7 @@ import { apiGet, apiPatch } from "./api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faEdit, faCamera, faBookOpen, faShoppingBag,
-  faFire, faFile, faMessage, faSave, faTimes, faArrowLeft,
-  faUniversity, faFolderOpen, faFilePdf, faFileWord, faVideo,
-  faCartShopping, faDownload, faExclamationCircle
+  faFire, faFile, faMessage, faSave, faTimes, faArrowLeft
 } from "@fortawesome/free-solid-svg-icons";
 
 function Profile() {
@@ -26,7 +24,6 @@ function Profile() {
   const [activeTab, setActiveTab] = useState("materials");
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
-  const [error, setError] = useState(null); // FIX #3: user-facing error state
 
   const [form, setForm] = useState({
     displayName: "",
@@ -55,7 +52,6 @@ function Profile() {
         });
       } catch (err) {
         console.error(err);
-        setError("Failed to load profile. Please refresh."); // FIX #3
       } finally {
         setLoading(false);
       }
@@ -63,44 +59,20 @@ function Profile() {
     fetchData();
   }, [user]);
 
-  // FIX #1: Revoke previous object URL when photoPreview changes to prevent memory leaks
-  useEffect(() => {
-    return () => {
-      if (photoPreview) URL.revokeObjectURL(photoPreview);
-    };
-  }, [photoPreview]);
-
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // FIX #1: Revoke previous preview URL before creating a new one
-      if (photoPreview) URL.revokeObjectURL(photoPreview);
       setPhotoFile(file);
       setPhotoPreview(URL.createObjectURL(file));
     }
   };
 
-  // FIX #4: Reset form to last saved values on cancel
-  const handleCancel = () => {
-    setEditing(false);
-    setPhotoPreview(null);
-    setPhotoFile(null);
-    setError(null);
-    setForm({
-      displayName: pgUser?.displayName || "",
-      bio: pgUser?.bio || "",
-      faculty: pgUser?.faculty || "",
-      department: pgUser?.department || "",
-    });
-  };
-
   const handleSave = async () => {
     setSaving(true);
-    setError(null);
     try {
-      // FIX #2: Be explicit about photoURL — don't silently fall back to stale value
-      let photoURL = pgUser?.photoURL ?? null;
+      let photoURL = pgUser?.photoURL;
 
+      // Upload photo to Cloudinary if changed
       if (photoFile) {
         const formData = new FormData();
         formData.append("file", photoFile);
@@ -111,14 +83,9 @@ function Profile() {
           { method: "POST", body: formData }
         );
         const data = await res.json();
-
-        // FIX #5: Check Cloudinary upload succeeded before using the URL
-        if (!res.ok || !data.secure_url) {
-          throw new Error("Photo upload failed. Please try again.");
-        }
-
         photoURL = data.secure_url;
 
+        // Update Firebase Auth profile
         await updateProfile(auth.currentUser, {
           displayName: form.displayName,
           photoURL,
@@ -142,7 +109,6 @@ function Profile() {
       setPhotoPreview(null);
     } catch (err) {
       console.error(err);
-      setError(err.message || "Failed to save profile. Please try again."); // FIX #3
     } finally {
       setSaving(false);
     }
@@ -153,13 +119,12 @@ function Profile() {
     return new Date(ts).toLocaleDateString("en-US", { month: "long", year: "numeric" });
   };
 
-  // FIX #6: Renamed from getMimeFileType to getFileIcon (more accurate name)
-  const getFileIcon = (mimeType) => {
-    if (!mimeType) return { icon: faFolderOpen, color: "text-gray-400" };
-    if (mimeType.includes("pdf")) return { icon: faFilePdf, color: "text-red-500" };
-    if (mimeType.includes("video")) return { icon: faVideo, color: "text-purple-500" };
-    if (mimeType.includes("word") || mimeType.includes("presentation")) return { icon: faFileWord, color: "text-blue-500" };
-    return { icon: faFolderOpen, color: "text-gray-400" };
+  const getMimeFileType = (mimeType) => {
+    if (!mimeType) return "📁";
+    if (mimeType.includes("pdf")) return "📄";
+    if (mimeType.includes("video")) return "🎬";
+    if (mimeType.includes("word") || mimeType.includes("presentation")) return "📝";
+    return "📁";
   };
 
   if (loading) {
@@ -170,9 +135,7 @@ function Profile() {
     );
   }
 
-  const avatar =
-    photoPreview ||
-    pgUser?.photoURL ||
+  const avatar = photoPreview || pgUser?.photoURL ||
     `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(pgUser?.displayName || user?.email || "?")}`;
 
   return (
@@ -187,18 +150,13 @@ function Profile() {
           Profile
         </h1>
         {!editing ? (
-          <button
-            onClick={() => { setEditing(true); setError(null); }}
-            className="text-indigo-500 hover:text-indigo-700 text-sm font-medium transition"
-          >
+          <button onClick={() => setEditing(true)}
+            className="text-indigo-500 hover:text-indigo-700 text-sm font-medium transition">
             <FontAwesomeIcon icon={faEdit} className="mr-1" /> Edit
           </button>
         ) : (
-          // FIX #4: Cancel now calls handleCancel which resets form
-          <button
-            onClick={handleCancel}
-            className="text-gray-400 hover:text-gray-600 text-sm transition"
-          >
+          <button onClick={() => { setEditing(false); setPhotoPreview(null); setPhotoFile(null); }}
+            className="text-gray-400 hover:text-gray-600 text-sm transition">
             <FontAwesomeIcon icon={faTimes} />
           </button>
         )}
@@ -208,30 +166,18 @@ function Profile() {
 
         {/* Profile Card */}
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 mb-5">
-
           {/* Avatar */}
           <div className="flex flex-col items-center mb-5">
             <div className="relative">
-              <img
-                src={avatar}
-                alt="Profile"
-                className="w-24 h-24 rounded-full object-cover border-4 border-indigo-100 shadow"
-              />
+              <img src={avatar} alt="Profile"
+                className="w-24 h-24 rounded-full object-cover border-4 border-indigo-100 shadow" />
               {editing && (
-                <button
-                  onClick={() => fileRef.current.click()}
-                  className="absolute bottom-0 right-0 w-8 h-8 bg-indigo-500 text-white rounded-full flex items-center justify-center shadow hover:bg-indigo-600 transition"
-                >
+                <button onClick={() => fileRef.current.click()}
+                  className="absolute bottom-0 right-0 w-8 h-8 bg-indigo-500 text-white rounded-full flex items-center justify-center shadow hover:bg-indigo-600 transition">
                   <FontAwesomeIcon icon={faCamera} className="text-xs" />
                 </button>
               )}
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handlePhotoChange}
-              />
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
             </div>
 
             {editing ? (
@@ -249,8 +195,7 @@ function Profile() {
 
             {pgUser?.university && (
               <span className="mt-2 px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs font-medium">
-                <FontAwesomeIcon icon={faUniversity} className="mr-1" />
-                {pgUser.university.shortName || pgUser.university.name}
+                🏫 {pgUser.university.shortName || pgUser.university.name}
               </span>
             )}
 
@@ -273,16 +218,12 @@ function Profile() {
           {/* Faculty & Department */}
           {editing && (
             <div className="grid grid-cols-2 gap-3 mb-4">
-              <input
-                type="text"
-                placeholder="Faculty / Course"
+              <input type="text" placeholder="Faculty / Course"
                 value={form.faculty}
                 onChange={e => setForm(f => ({ ...f, faculty: e.target.value }))}
                 className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400"
               />
-              <input
-                type="text"
-                placeholder="Department"
+              <input type="text" placeholder="Department"
                 value={form.department}
                 onChange={e => setForm(f => ({ ...f, department: e.target.value }))}
                 className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400"
@@ -301,18 +242,10 @@ function Profile() {
             </div>
           )}
 
-          {/* FIX #3: Error message displayed to user */}
-          {error && (
-            <p className="text-red-500 text-sm text-center mb-3">{error}</p>
-          )}
-
           {/* Save Button */}
           {editing && (
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="w-full py-3 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 transition disabled:opacity-50"
-            >
+            <button onClick={handleSave} disabled={saving}
+              className="w-full py-3 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 transition disabled:opacity-50">
               {saving ? "Saving..." : <><FontAwesomeIcon icon={faSave} className="mr-2" />Save Changes</>}
             </button>
           )}
@@ -336,16 +269,12 @@ function Profile() {
 
         {/* Tabs */}
         <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => setActiveTab("materials")}
-            className={`flex-1 py-2 rounded-xl text-sm font-medium transition ${activeTab === "materials" ? "bg-indigo-500 text-white" : "bg-white border border-gray-200 text-gray-600"}`}
-          >
+          <button onClick={() => setActiveTab("materials")}
+            className={`flex-1 py-2 rounded-xl text-sm font-medium transition ${activeTab === "materials" ? "bg-indigo-500 text-white" : "bg-white border border-gray-200 text-gray-600"}`}>
             <FontAwesomeIcon icon={faBookOpen} className="mr-1" /> Study Materials
           </button>
-          <button
-            onClick={() => setActiveTab("listings")}
-            className={`flex-1 py-2 rounded-xl text-sm font-medium transition ${activeTab === "listings" ? "bg-indigo-500 text-white" : "bg-white border border-gray-200 text-gray-600"}`}
-          >
+          <button onClick={() => setActiveTab("listings")}
+            className={`flex-1 py-2 rounded-xl text-sm font-medium transition ${activeTab === "listings" ? "bg-indigo-500 text-white" : "bg-white border border-gray-200 text-gray-600"}`}>
             <FontAwesomeIcon icon={faShoppingBag} className="mr-1" /> Listings
           </button>
         </div>
@@ -355,12 +284,10 @@ function Profile() {
           <div>
             {materials.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
-                <FontAwesomeIcon icon={faFolderOpen} className="text-4xl text-gray-300 mb-3" />
+                <p className="text-3xl mb-2">📂</p>
                 <p className="text-gray-500 font-medium">No materials uploaded yet</p>
-                <Link
-                  to="/study-material"
-                  className="mt-3 inline-block px-5 py-2 bg-indigo-500 text-white rounded-full text-sm hover:bg-indigo-600 transition"
-                >
+                <Link to="/study-material"
+                  className="mt-3 inline-block px-5 py-2 bg-indigo-500 text-white rounded-full text-sm hover:bg-indigo-600 transition">
                   Upload a file
                 </Link>
               </div>
@@ -368,8 +295,8 @@ function Profile() {
               <div className="flex flex-col gap-3">
                 {materials.map(m => (
                   <div key={m.id} className="bg-white rounded-2xl px-4 py-3 border border-gray-100 shadow-sm flex items-center gap-3">
-                    <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center shrink-0">
-                      <FontAwesomeIcon icon={getFileIcon(m.fileType).icon} className={`text-lg ${getFileIcon(m.fileType).color}`} />
+                    <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-xl shrink-0">
+                      {getMimeFileType(m.fileType)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800 truncate">{m.title}</p>
@@ -379,9 +306,7 @@ function Profile() {
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${m.isPublic ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-500"}`}>
                         {m.isPublic ? "Public" : "Private"}
                       </span>
-                      <span className="text-xs text-gray-400">
-                        <FontAwesomeIcon icon={faDownload} className="mr-1" />{m.downloadCount || 0}
-                      </span>
+                      <span className="text-xs text-gray-400">⬇️ {m.downloadCount || 0}</span>
                     </div>
                   </div>
                 ))}
@@ -393,12 +318,10 @@ function Profile() {
         {/* Listings Tab */}
         {activeTab === "listings" && (
           <div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
-            <FontAwesomeIcon icon={faCartShopping} className="text-4xl text-gray-300 mb-3" />
+            <p className="text-3xl mb-2">🛒</p>
             <p className="text-gray-500 font-medium">No listings yet</p>
-            <Link
-              to="/marketplace"
-              className="mt-3 inline-block px-5 py-2 bg-indigo-500 text-white rounded-full text-sm hover:bg-indigo-600 transition"
-            >
+            <Link to="/marketplace"
+              className="mt-3 inline-block px-5 py-2 bg-indigo-500 text-white rounded-full text-sm hover:bg-indigo-600 transition">
               Go to Marketplace
             </Link>
           </div>

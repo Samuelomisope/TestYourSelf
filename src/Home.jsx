@@ -171,7 +171,7 @@ function Home() {
   const [leaderboardRank, setLeaderboardRank] = useState(null);
   const { unreadCount } = useNotifications();
   const [ setLastMarketplace] = useState(null);
-  const [ setPinnedChat] = useState(null);
+  const [pinnedChat, setPinnedChat] = useState(null);
 
   const greeting = () => {
     const h = new Date().getHours();
