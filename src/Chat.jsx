@@ -43,36 +43,50 @@ function avatarError(e, seed) {
   e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(seed || "?")}`;
 }
 
-// FIX: Frontend 24hr expiry filter — also add a cron/scheduled job on the backend
-// to DELETE FROM statuses WHERE created_at < NOW() - INTERVAL '24 hours'
 function isStatusExpired(status) {
   return Date.now() - new Date(status.createdAt).getTime() > 24 * 60 * 60 * 1000;
 }
 
+// FIX: Pick the best supported audio format for the current browser.
+// iOS/Safari only supports audio/mp4; Chrome/Firefox support audio/webm.
+function getSupportedMimeType() {
+  const types = [
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/mp4",
+    "audio/ogg;codecs=opus",
+    "audio/ogg",
+  ];
+  for (const type of types) {
+    if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(type)) {
+      return type;
+    }
+  }
+  return "";
+}
+
 const EMOJIS = ["❤️", "😂", "😮", "😢", "👍", "🙏"];
 
-// Wallpaper presets — users can also pick a custom color or image
 const WALLPAPER_PRESETS = [
-  { id: "default", label: "Default", bg: "#f0f4ff", type: "color" },
+  { id: "default",  label: "Default",  bg: "#f0f4ff", type: "color" },
   { id: "midnight", label: "Midnight", bg: "#0f172a", type: "color" },
-  { id: "rose", label: "Rose", bg: "#fff1f2", type: "color" },
-  { id: "forest", label: "Forest", bg: "#f0fdf4", type: "color" },
-  { id: "sand", label: "Sand", bg: "#fefce8", type: "color" },
-  { id: "slate", label: "Slate", bg: "#f8fafc", type: "color" },
+  { id: "rose",     label: "Rose",     bg: "#fff1f2", type: "color" },
+  { id: "forest",   label: "Forest",   bg: "#f0fdf4", type: "color" },
+  { id: "sand",     label: "Sand",     bg: "#fefce8", type: "color" },
+  { id: "slate",    label: "Slate",    bg: "#f8fafc", type: "color" },
   { id: "lavender", label: "Lavender", bg: "#f5f3ff", type: "color" },
-  { id: "ocean", label: "Ocean", bg: "#ecfeff", type: "color" },
+  { id: "ocean",    label: "Ocean",    bg: "#ecfeff", type: "color" },
 ];
 
-// Status background color options
 const STATUS_BG_COLORS = [
-  { id: "indigo", label: "Indigo", value: "#4f46e5" },
-  { id: "rose", label: "Rose", value: "#e11d48" },
+  { id: "indigo",  label: "Indigo",  value: "#4f46e5" },
+  { id: "rose",    label: "Rose",    value: "#e11d48" },
   { id: "emerald", label: "Emerald", value: "#059669" },
-  { id: "amber", label: "Amber", value: "#d97706" },
-  { id: "sky", label: "Sky", value: "#0284c7" },
-  { id: "purple", label: "Purple", value: "#7c3aed" },
-  { id: "pink", label: "Pink", value: "#db2777" },
-  { id: "dark", label: "Dark", value: "#1e293b" },
+  { id: "amber",   label: "Amber",   value: "#d97706" },
+  { id: "sky",     label: "Sky",     value: "#0284c7" },
+  { id: "purple",  label: "Purple",  value: "#7c3aed" },
+  { id: "pink",    label: "Pink",    value: "#db2777" },
+  { id: "dark",    label: "Dark",    value: "#1e293b" },
 ];
 
 // ── Read Receipt ───────────────────────────────────────────────────
@@ -82,6 +96,34 @@ function ReadReceipt({ isRead, isOwn }) {
     <span className={`text-xs ml-1 ${isRead ? "text-blue-400" : "text-gray-300"}`}>
       <FontAwesomeIcon icon={isRead ? faCheckDouble : faCheck} />
     </span>
+  );
+}
+
+// ── Voice Note Button ──────────────────────────────────────────────
+// FIX: Click-based toggle instead of onMouseDown/onTouchStart which
+// double-fires on mobile and causes instant start+stop.
+function VoiceNoteButton({ onStart, onStop, recording, recordingSeconds }) {
+  return (
+    <button
+      onClick={recording ? onStop : onStart}
+      className={`w-10 h-10 rounded-full flex items-center justify-center transition relative select-none ${
+        recording
+          ? "bg-red-500 text-white"
+          : "bg-gray-100 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50"
+      }`}
+      title={recording ? "Stop recording" : "Record voice note"}
+    >
+      {recording && (
+        <span className="absolute inset-0 rounded-full bg-red-400 animate-ping opacity-40 pointer-events-none" />
+      )}
+      <FontAwesomeIcon icon={recording ? faStop : faMicrophone} className="relative z-10" />
+      {recording && (
+        <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs text-red-500 font-mono whitespace-nowrap bg-white/90 px-1.5 py-0.5 rounded-full shadow-sm">
+          {String(Math.floor(recordingSeconds / 60)).padStart(2, "0")}:
+          {String(recordingSeconds % 60).padStart(2, "0")}
+        </span>
+      )}
+    </button>
   );
 }
 
@@ -114,7 +156,6 @@ function MessageBubble({ message, isOwn, onReply, onReact }) {
           <p className="text-xs text-indigo-400 mb-1 ml-1 font-medium">{message.sender?.displayName}</p>
         )}
 
-        {/* Reply preview */}
         {message.replyTo && (
           <div className="px-3 py-1.5 rounded-xl mb-1 text-xs border-l-2 border-indigo-400 bg-gray-100 text-gray-500 max-w-full truncate">
             <p className="font-medium text-indigo-500">{message.replyTo.sender?.displayName}</p>
@@ -137,15 +178,29 @@ function MessageBubble({ message, isOwn, onReply, onReact }) {
               />
             )}
             {message.type === "video" && message.mediaUrl && (
-              <video
-                src={message.mediaUrl}
-                controls
-                className="rounded-xl max-w-[200px] mb-1"
-              />
+              <video src={message.mediaUrl} controls className="rounded-xl max-w-[200px] mb-1" />
             )}
+
+            {/* FIX: Proper audio player with preload, fallback source, and styling */}
             {message.type === "audio" && message.mediaUrl && (
-              <audio controls className="max-w-[200px]" src={message.mediaUrl} />
+              <div className={`flex items-center py-1 ${isOwn ? "text-white" : "text-gray-700"}`}>
+                <audio
+                  controls
+                  preload="metadata"
+                  controlsList="nodownload"
+                  className="max-w-[220px] h-8"
+                  style={{ accentColor: isOwn ? "#ffffff" : "#6366f1" }}
+                >
+                  <source src={message.mediaUrl} />
+                  {/* Fallback for browsers that need explicit type */}
+                  <source src={message.mediaUrl} type="audio/webm" />
+                  <source src={message.mediaUrl} type="audio/mp4" />
+                  <source src={message.mediaUrl} type="audio/ogg" />
+                  Your browser does not support audio playback.
+                </audio>
+              </div>
             )}
+
             {message.type === "file" && message.mediaUrl && (
               <a
                 href={message.mediaUrl}
@@ -160,7 +215,6 @@ function MessageBubble({ message, isOwn, onReply, onReact }) {
             {decryptedText && <p>{decryptedText}</p>}
           </div>
 
-          {/* Hover actions */}
           <div className={`absolute top-0 ${isOwn ? "left-0 -translate-x-full" : "right-0 translate-x-full"} hidden group-hover:flex items-center gap-1 px-1`}>
             <button
               onClick={() => onReply(message)}
@@ -215,7 +269,6 @@ function MessageBubble({ message, isOwn, onReply, onReact }) {
 // ── Wallpaper Picker ───────────────────────────────────────────────
 function WallpaperPicker({ current, onSelect, onClose }) {
   const [customColor, setCustomColor] = useState("#ffffff");
-  const [customImageUrl, setCustomImageUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef();
 
@@ -248,7 +301,6 @@ function WallpaperPicker({ current, onSelect, onClose }) {
           </button>
         </div>
 
-        {/* Preset colors */}
         <p className="text-xs text-gray-400 font-medium mb-2">PRESETS</p>
         <div className="grid grid-cols-4 gap-3 mb-5">
           {WALLPAPER_PRESETS.map(preset => (
@@ -263,7 +315,6 @@ function WallpaperPicker({ current, onSelect, onClose }) {
           ))}
         </div>
 
-        {/* Custom color */}
         <p className="text-xs text-gray-400 font-medium mb-2">CUSTOM COLOR</p>
         <div className="flex items-center gap-3 mb-5">
           <input
@@ -280,18 +331,16 @@ function WallpaperPicker({ current, onSelect, onClose }) {
           </button>
         </div>
 
-        {/* Custom image */}
         <p className="text-xs text-gray-400 font-medium mb-2">CUSTOM IMAGE</p>
         <button
           onClick={() => fileRef.current.click()}
           disabled={uploading}
           className="w-full py-3 border-2 border-dashed border-gray-200 rounded-2xl text-sm text-gray-400 hover:border-indigo-300 hover:text-indigo-400 transition disabled:opacity-50"
         >
-          {uploading ? (
-            <><FontAwesomeIcon icon={faSpinner} spin className="mr-2" />Uploading...</>
-          ) : (
-            <><FontAwesomeIcon icon={faImage} className="mr-2" />Upload Image</>
-          )}
+          {uploading
+            ? <><FontAwesomeIcon icon={faSpinner} spin className="mr-2" />Uploading...</>
+            : <><FontAwesomeIcon icon={faImage} className="mr-2" />Upload Image</>
+          }
         </button>
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
       </div>
@@ -328,7 +377,6 @@ function RoomItem({ room, currentUserId, onClick, active }) {
     : (otherMember?.user?.displayName || "Unknown");
   const avatar = room.isGroup ? null : otherMember?.user?.photoURL;
 
-  // FIX #6: memoised unread count — avoids filtering on every render
   const unread = useMemo(() =>
     room.unreadCount ?? (room.messages?.filter(m => !m.isRead && m.sender?.id !== currentUserId).length || 0),
     [room.unreadCount, room.messages, currentUserId]
@@ -382,26 +430,27 @@ function ChatRoom({ room, dbUserId, onBack, wallpaper, onOpenWallpaper }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);           // FIX #3
-  const [sendError, setSendError] = useState(null);   // FIX #4
-  const [uploadError, setUploadError] = useState(null); // FIX #5
+  const [error, setError] = useState(null);
+  const [sendError, setSendError] = useState(null);
+  const [uploadError, setUploadError] = useState(null);
   const [typingUser, setTypingUser] = useState(null);
   const [replyTo, setReplyTo] = useState(null);
   const [recording, setRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0); // FIX: live timer
   const [uploading, setUploading] = useState(false);
   const socketRef = useRef(null);
   const bottomRef = useRef(null);
   const typingRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
-  const streamRef = useRef(null); // FIX #8: mic stream ref
+  const streamRef = useRef(null);
+  const recordingTimerRef = useRef(null); // FIX: timer ref
 
   const otherMember = room.isGroup ? null : room.members?.find(m => m.user?.id !== dbUserId);
   const roomName = room.isGroup
     ? (room.university?.shortName || "Group Chat")
     : (otherMember?.user?.displayName || "Chat");
 
-  // Wallpaper style
   const wallpaperStyle = useMemo(() => {
     if (!wallpaper) return { backgroundColor: "#f0f4ff" };
     if (wallpaper.type === "image") return { backgroundImage: `url(${wallpaper.bg})`, backgroundSize: "cover", backgroundPosition: "center" };
@@ -426,7 +475,7 @@ function ChatRoom({ room, dbUserId, onBack, wallpaper, onOpenWallpaper }) {
       } catch (err) {
         console.error(err);
         if (mounted) {
-          setError("Failed to load messages. Please try again."); // FIX #3
+          setError("Failed to load messages. Please try again.");
           setLoading(false);
         }
       }
@@ -437,7 +486,7 @@ function ChatRoom({ room, dbUserId, onBack, wallpaper, onOpenWallpaper }) {
         if (!mounted) return;
         socket = io(`${API}/chat`, {
           transports: ["websocket"],
-          auth: { token }, // FIX #1
+          auth: { token },
         });
         socketRef.current = socket;
 
@@ -467,7 +516,8 @@ function ChatRoom({ room, dbUserId, onBack, wallpaper, onOpenWallpaper }) {
 
     return () => {
       mounted = false;
-      streamRef.current?.getTracks().forEach(t => t.stop()); // FIX #8
+      clearInterval(recordingTimerRef.current); // FIX: cleanup timer
+      streamRef.current?.getTracks().forEach(t => t.stop());
       streamRef.current = null;
       if (socket) {
         socket.emit("leaveRoom", { roomId: room.id });
@@ -475,7 +525,7 @@ function ChatRoom({ room, dbUserId, onBack, wallpaper, onOpenWallpaper }) {
       }
       socketRef.current = null;
     };
-  }, [room.id, dbUserId]); // FIX #3: dbUserId in deps
+  }, [room.id, dbUserId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -483,7 +533,6 @@ function ChatRoom({ room, dbUserId, onBack, wallpaper, onOpenWallpaper }) {
 
   const sendMessage = (overrides = {}) => {
     if ((!text.trim() && !overrides.mediaUrl) || !socketRef.current) {
-      // FIX #4: Notify user if socket is gone
       if (!socketRef.current) setSendError("Connection lost. Please refresh.");
       return;
     }
@@ -509,7 +558,6 @@ function ChatRoom({ room, dbUserId, onBack, wallpaper, onOpenWallpaper }) {
     }, 1500);
   };
 
-  // FIX #5: Errors shown to user, uploading reset in finally
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -542,38 +590,102 @@ function ChatRoom({ room, dbUserId, onBack, wallpaper, onOpenWallpaper }) {
     }
   };
 
+  // ── FIX: Fully rewritten startRecording ───────────────────────────
+  // Changes:
+  //   1. getSupportedMimeType() for cross-browser/iOS support
+  //   2. start(250) timeslice so ondataavailable fires regularly
+  //   3. requestData() called before stop to flush final chunk
+  //   4. Live timer so user sees recording duration
+  //   5. User-friendly error messages for permission/device issues
+  //   6. Blob size check to catch silent empty recordings
+  //   7. Stream always released in all code paths
   const startRecording = async () => {
+    if (recording) return; // guard against double-tap
+    setUploadError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream; // FIX #8
-      const mediaRecorder = new MediaRecorder(stream);
+      streamRef.current = stream;
+
+      const mimeType = getSupportedMimeType();
+      const options = mimeType ? { mimeType } : {};
+      const mediaRecorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
-      mediaRecorder.ondataavailable = e => audioChunksRef.current.push(e.data);
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
       mediaRecorder.onstop = async () => {
-        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        const file = new File([blob], "voice-note.webm", { type: "audio/webm" });
+        clearInterval(recordingTimerRef.current);
+        setRecordingSeconds(0);
+
+        // Release mic immediately
+        stream.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+
+        if (audioChunksRef.current.length === 0) {
+          setUploadError("No audio captured. Please try again.");
+          return;
+        }
+
+        const actualMime = mimeType || "audio/webm";
+        const ext = actualMime.includes("mp4") ? "m4a"
+          : actualMime.includes("ogg") ? "ogg"
+          : "webm";
+
+        const blob = new Blob(audioChunksRef.current, { type: actualMime });
+
+        if (blob.size < 500) {
+          setUploadError("Recording was too short. Please try again.");
+          return;
+        }
+
+        const file = new File([blob], `voice-note-${Date.now()}.${ext}`, { type: actualMime });
         setUploading(true);
         setUploadError(null);
         try {
           const url = await uploadSingle(file, "chat/audio");
-          sendMessage({ mediaUrl: url, mediaType: "audio/webm", type: "audio", text: "" });
+          sendMessage({ mediaUrl: url, mediaType: actualMime, type: "audio", text: "" });
         } catch (err) {
-          console.error(err);
+          console.error("Voice upload error:", err);
           setUploadError("Voice upload failed. Please try again.");
         } finally {
           setUploading(false);
-          stream.getTracks().forEach(t => t.stop());
-          streamRef.current = null;
         }
       };
-      mediaRecorder.start();
+
+      // timeslice=250ms: ondataavailable fires every 250ms, not just on stop
+      mediaRecorder.start(250);
       setRecording(true);
-    } catch (err) { console.error(err); }
+
+      // Start visible timer
+      setRecordingSeconds(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((s) => s + 1);
+      }, 1000);
+
+    } catch (err) {
+      console.error("Mic error:", err);
+      streamRef.current?.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+        setUploadError("Microphone permission denied. Please allow mic access and try again.");
+      } else if (err.name === "NotFoundError") {
+        setUploadError("No microphone found on this device.");
+      } else {
+        setUploadError("Could not start recording. Please try again.");
+      }
+    }
   };
 
+  // FIX: requestData() flushes buffered audio before onstop fires
   const stopRecording = () => {
-    mediaRecorderRef.current?.stop();
+    if (!mediaRecorderRef.current || mediaRecorderRef.current.state === "inactive") return;
+    mediaRecorderRef.current.requestData(); // flush final chunk
+    mediaRecorderRef.current.stop();
     setRecording(false);
   };
 
@@ -609,7 +721,6 @@ function ChatRoom({ room, dbUserId, onBack, wallpaper, onOpenWallpaper }) {
             : <p className="text-xs text-gray-400">{room.isGroup ? `${room.members?.length || 0} members` : "tap for info"}</p>
           }
         </div>
-        {/* Wallpaper button */}
         <button
           onClick={onOpenWallpaper}
           className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 transition"
@@ -626,7 +737,7 @@ function ChatRoom({ room, dbUserId, onBack, wallpaper, onOpenWallpaper }) {
             <div className="text-center py-10 text-indigo-400">
               <FontAwesomeIcon icon={faSpinner} spin />
             </div>
-          ) : error ? ( // FIX #3: Show error state
+          ) : error ? (
             <div className="text-center py-10">
               <div className="bg-white/80 rounded-2xl px-6 py-4 inline-block shadow-sm">
                 <p className="text-red-500 text-sm">{error}</p>
@@ -653,7 +764,7 @@ function ChatRoom({ room, dbUserId, onBack, wallpaper, onOpenWallpaper }) {
         </div>
       </div>
 
-      {/* Upload/Send error banner */}
+      {/* Error banner */}
       {(uploadError || sendError) && (
         <div className="bg-red-50 border-t border-red-100 px-4 py-2 flex items-center justify-between shrink-0">
           <p className="text-xs text-red-500">{uploadError || sendError}</p>
@@ -714,17 +825,13 @@ function ChatRoom({ room, dbUserId, onBack, wallpaper, onOpenWallpaper }) {
             <FontAwesomeIcon icon={faPaperPlane} />
           </button>
         ) : (
-          <button
-            onMouseDown={startRecording}
-            onMouseUp={stopRecording}
-            onTouchStart={startRecording}
-            onTouchEnd={stopRecording}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition ${
-              recording ? "bg-red-500 text-white animate-pulse" : "bg-gray-100 text-gray-400 hover:text-indigo-500"
-            }`}
-          >
-            <FontAwesomeIcon icon={recording ? faStop : faMicrophone} />
-          </button>
+          // FIX: VoiceNoteButton replaces onMouseDown/onTouchStart which double-fired on mobile
+          <VoiceNoteButton
+            onStart={startRecording}
+            onStop={stopRecording}
+            recording={recording}
+            recordingSeconds={recordingSeconds}
+          />
         )}
       </div>
     </div>
@@ -732,9 +839,8 @@ function ChatRoom({ room, dbUserId, onBack, wallpaper, onOpenWallpaper }) {
 }
 
 // ── Status Creator ─────────────────────────────────────────────────
-// NEW: supports text with bg color, image, and video uploads
 function StatusCreator({ onClose, onPosted, dbUser }) {
-  const [mode, setMode] = useState("text"); // "text" | "image" | "video"
+  const [mode, setMode] = useState("text");
   const [text, setText] = useState("");
   const [bgColor, setBgColor] = useState(STATUS_BG_COLORS[0].value);
   const [mediaFile, setMediaFile] = useState(null);
@@ -772,7 +878,7 @@ function StatusCreator({ onClose, onPosted, dbUser }) {
         const url = await uploadSingle(mediaFile, folder);
         body.mediaUrl = url;
         body.mediaType = mediaFile.type;
-        if (text.trim()) body.text = text; // optional caption
+        if (text.trim()) body.text = text;
       }
       const status = await apiFetch("/chat/status", {
         method: "POST",
@@ -821,10 +927,9 @@ function StatusCreator({ onClose, onPosted, dbUser }) {
         </div>
 
         <div className="p-4">
-          {/* Mode switcher */}
           <div className="flex gap-2 mb-4">
             {[
-              { id: "text", icon: faSmile, label: "Text" },
+              { id: "text",  icon: faSmile, label: "Text" },
               { id: "image", icon: faImage, label: "Image" },
               { id: "video", icon: faVideo, label: "Video" },
             ].map(m => (
@@ -844,7 +949,6 @@ function StatusCreator({ onClose, onPosted, dbUser }) {
             ))}
           </div>
 
-          {/* Background color picker (text mode only) */}
           {mode === "text" && (
             <div className="mb-4">
               <p className="text-xs text-gray-400 font-medium mb-2">BACKGROUND COLOR</p>
@@ -862,7 +966,6 @@ function StatusCreator({ onClose, onPosted, dbUser }) {
             </div>
           )}
 
-          {/* Caption for image/video */}
           {(mode === "image" || mode === "video") && (
             <input
               value={text}
@@ -883,7 +986,6 @@ function StatusCreator({ onClose, onPosted, dbUser }) {
           </button>
         </div>
 
-        {/* Hidden file inputs */}
         <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={e => handleMediaChange(e, "image")} />
         <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={e => handleMediaChange(e, "video")} />
       </div>
@@ -893,7 +995,6 @@ function StatusCreator({ onClose, onPosted, dbUser }) {
 
 // ── Status Viewer ──────────────────────────────────────────────────
 function StatusViewer({ status, onClose, onView }) {
-  // FIX #1: onView in deps, wrapped in useCallback at call site
   useEffect(() => { onView(status.id); }, [status.id, onView]);
 
   const bgStyle = status.bgColor
@@ -916,7 +1017,6 @@ function StatusViewer({ status, onClose, onView }) {
           <p className="text-white text-sm font-medium">{status.user?.displayName}</p>
           <p className="text-gray-400 text-xs">{new Date(status.createdAt).toLocaleTimeString()}</p>
         </div>
-        {/* 24hr expiry indicator */}
         <p className="text-xs text-white/50">
           Expires {new Date(new Date(status.createdAt).getTime() + 24 * 60 * 60 * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </p>
@@ -961,13 +1061,12 @@ function Chat() {
   const [searching, setSearching] = useState(false);
   const [showWallpaperPicker, setShowWallpaperPicker] = useState(false);
   const [wallpaper, setWallpaper] = useState(WALLPAPER_PRESETS[0]);
-  const searchDebounceRef = useRef(null); // FIX #6
+  const searchDebounceRef = useRef(null);
 
   useEffect(() => {
-    return () => clearTimeout(searchDebounceRef.current); // FIX #2: cleanup on unmount
+    return () => clearTimeout(searchDebounceRef.current);
   }, []);
 
-  // FIX #7: location.search in dependency array
   useEffect(() => {
     const init = async () => {
       try {
@@ -979,14 +1078,10 @@ function Chat() {
         setRooms(roomsData);
         setDbUser(userData);
 
-        // Load saved wallpaper preference from user settings
         if (userData.chatWallpaper) {
           setWallpaper(userData.chatWallpaper);
         }
 
-        // FIX: Filter out expired statuses on the frontend.
-        // BACKEND NOTE: Add a scheduled job/cron:
-        //   DELETE FROM statuses WHERE created_at < NOW() - INTERVAL '24 hours';
         setStatuses(statusData.filter(s => !isStatusExpired(s)));
 
         const params = new URLSearchParams(location.search);
@@ -1006,9 +1101,8 @@ function Chat() {
       setLoading(false);
     };
     init();
-  }, [location.search]); // FIX #7
+  }, [location.search]);
 
-  // Save wallpaper to backend when it changes
   const handleWallpaperSelect = async (preset) => {
     setWallpaper(preset);
     setShowWallpaperPicker(false);
@@ -1022,7 +1116,6 @@ function Chat() {
     }
   };
 
-  // FIX #1: wrap onView in useCallback to avoid StatusViewer re-triggering
   const handleViewStatus = useCallback((id) => {
     apiFetch(`/chat/status/${id}/view`, { method: "POST" }).catch(console.error);
   }, []);
@@ -1037,7 +1130,6 @@ function Chat() {
     setSearching(false);
   };
 
-  // FIX #6: Debounced search
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setUserSearch(value);
@@ -1045,7 +1137,6 @@ function Chat() {
     searchDebounceRef.current = setTimeout(() => searchUsers(value), 400);
   };
 
-  // FIX: also filter statuses as time passes in-session
   const liveStatuses = useMemo(() => statuses.filter(s => !isStatusExpired(s)), [statuses]);
   const myStatuses = useMemo(() => liveStatuses.filter(s => s.user?.id === dbUser?.id), [liveStatuses, dbUser]);
   const otherStatuses = useMemo(() => liveStatuses.filter(s => s.user?.id !== dbUser?.id), [liveStatuses, dbUser]);
@@ -1082,7 +1173,6 @@ function Chat() {
         {/* Sidebar */}
         <div className={`w-full md:w-80 border-r border-gray-200 bg-white flex flex-col shrink-0 ${activeRoom ? "hidden md:flex" : "flex"}`}>
 
-          {/* Chats Tab */}
           {tab === "chats" && (
             <>
               <div className="px-3 py-2 border-b border-gray-100">
@@ -1164,7 +1254,6 @@ function Chat() {
             </>
           )}
 
-          {/* Status Tab */}
           {tab === "status" && (
             <div className="flex-1 overflow-y-auto">
               <div className="px-4 py-3 border-b border-gray-100">
@@ -1240,7 +1329,6 @@ function Chat() {
         </div>
       </div>
 
-      {/* Status Creator */}
       {showStatusCreate && (
         <StatusCreator
           onClose={() => setShowStatusCreate(false)}
@@ -1249,16 +1337,14 @@ function Chat() {
         />
       )}
 
-      {/* Status Viewer */}
       {viewingStatus && (
         <StatusViewer
           status={viewingStatus}
           onClose={() => setViewingStatus(null)}
-          onView={handleViewStatus} // FIX #1: stable callback reference
+          onView={handleViewStatus}
         />
       )}
 
-      {/* Wallpaper Picker */}
       {showWallpaperPicker && (
         <WallpaperPicker
           current={wallpaper}
