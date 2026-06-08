@@ -164,35 +164,46 @@ function Calculator({ onClose }) {
 // ─── Upload Modal ─────────────────────────────────────────────────────────────
 function UploadModal({ onClose, user, userProfile, universitiesList = [] }) {
   const [files, setFiles] = useState([]);
-  const [sharedTitle, setSharedTitle] = useState("");
-  const [courseInput, setCourseInput] = useState("");
-  const [uploadUniversity, setUploadUniversity] = useState("");
-  const [description, setDescription] = useState("");
-  const [isPublic, setIsPublic] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [progresses, setProgresses] = useState({});
+  const [expandedIndex, setExpandedIndex] = useState(null);
+  const [isPublic, setIsPublic] = useState(false);
   const fileRef = useRef();
 
   const handleFiles = (selected) => {
-    const valid = Array.from(selected).filter(f => f.size <= 100 * 1024 * 1024);
-    if (valid.length < selected.length) setError("Some files exceed 100MB and were skipped.");
-    setFiles(prev => [...prev, ...valid]);
+    const incoming = Array.from(selected);
+    const valid = incoming.filter(f => f.size <= 100 * 1024 * 1024);
+    if (valid.length < incoming.length) setError("Some files exceed 100MB and were skipped.");
+    const withMeta = valid.map(f => ({
+      file: f,
+      title: f.name.replace(/\.[^/.]+$/, ""), // strip extension as default title
+      course: "",
+      description: "",
+      university: "",
+    }));
+    setFiles(prev => [...prev, ...withMeta]);
+    setExpandedIndex(prev => prev === null ? 0 : prev); // auto-expand first
+  };
+
+  const updateMeta = (index, field, value) => {
+    setFiles(prev => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
   };
 
   const removeFile = (index) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
+    setExpandedIndex(null);
   };
 
-  const uploadSingle = (file, token) => {
+  const uploadSingle = (item, token) => {
     return new Promise((resolve, reject) => {
       const formData = new FormData();
-      formData.append("file", file);
-      formData.append("title", sharedTitle || file.name);
-      formData.append("description", description);
-      formData.append("faculty", courseInput);
+      formData.append("file", item.file);
+      formData.append("title", item.title || item.file.name);
+      formData.append("description", item.description);
+      formData.append("faculty", item.course);
       formData.append("isPublic", String(isPublic));
-      if (uploadUniversity) formData.append("university", uploadUniversity);
+      if (item.university) formData.append("university", item.university);
 
       const xhr = new XMLHttpRequest();
       xhr.open("POST", `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material/upload`);
@@ -202,16 +213,16 @@ function UploadModal({ onClose, user, userProfile, universitiesList = [] }) {
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
           const percent = Math.round((e.loaded / e.total) * 100);
-          setProgresses(prev => ({ ...prev, [file.name]: percent }));
+          setProgresses(prev => ({ ...prev, [item.file.name]: percent }));
         }
       };
 
       xhr.onload = () => {
         if (xhr.status === 200 || xhr.status === 201) resolve();
-        else reject(new Error(`Failed: ${file.name}`));
+        else reject(new Error(`Failed: ${item.file.name}`));
       };
-      xhr.onerror = () => reject(new Error(`Error uploading ${file.name}`));
-      xhr.ontimeout = () => reject(new Error(`Timeout: ${file.name}`));
+      xhr.onerror = () => reject(new Error(`Error uploading ${item.file.name}`));
+      xhr.ontimeout = () => reject(new Error(`Timeout: ${item.file.name}`));
       xhr.send(formData);
     });
   };
@@ -226,14 +237,13 @@ function UploadModal({ onClose, user, userProfile, universitiesList = [] }) {
       const { getIdToken } = await import("firebase/auth");
       const token = await getIdToken(auth.currentUser, true);
 
-      // Upload all files, collect results
       const results = await Promise.allSettled(files.map(f => uploadSingle(f, token)));
       const failed = results.filter(r => r.status === "rejected");
 
       if (failed.length === 0) {
         onClose(true);
       } else if (failed.length < files.length) {
-        setError(`${failed.length} file(s) failed to upload. Others succeeded.`);
+        setError(`${failed.length} file(s) failed. Others uploaded successfully.`);
         setUploading(false);
       } else {
         setError("All uploads failed. Please try again.");
@@ -249,6 +259,8 @@ function UploadModal({ onClose, user, userProfile, universitiesList = [] }) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
       <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+
+        {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <h2 className="font-bold text-gray-800 text-lg">Upload Files</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
@@ -265,9 +277,9 @@ function UploadModal({ onClose, user, userProfile, universitiesList = [] }) {
           onClick={() => fileRef.current.click()}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}
-          className="border-2 border-dashed border-indigo-300 rounded-2xl p-6 text-center cursor-pointer hover:bg-indigo-50 transition mb-4"
+          className="border-2 border-dashed border-indigo-300 rounded-2xl p-5 text-center cursor-pointer hover:bg-indigo-50 transition mb-4"
         >
-          <p className="text-3xl mb-2">☁️</p>
+          <p className="text-3xl mb-1">☁️</p>
           <p className="text-sm text-gray-500">Tap or drag files here</p>
           <p className="text-xs text-gray-400 mt-1">PDF, Video, Word, PowerPoint — max 100MB each</p>
           <input
@@ -280,67 +292,96 @@ function UploadModal({ onClose, user, userProfile, universitiesList = [] }) {
           />
         </div>
 
-        {/* File List */}
+        {/* Per-file accordion */}
         {files.length > 0 && (
           <div className="mb-4 space-y-2">
-            {files.map((f, i) => (
-              <div key={i} className="flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2">
-                <span className="text-lg">{FILE_ICONS[getFileType(f.name)]}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-gray-700 truncate">{f.name}</p>
-                  <p className="text-xs text-gray-400">{(f.size / 1024 / 1024).toFixed(2)} MB</p>
-                  {progresses[f.name] !== undefined && (
-                    <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
-                      <div className="bg-indigo-500 h-1 rounded-full transition-all" style={{ width: `${progresses[f.name]}%` }} />
-                    </div>
-                  )}
-                </div>
-                {!uploading && (
-                  <button onClick={() => removeFile(i)} className="text-red-400 hover:text-red-600">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" />
+            {files.map((item, i) => (
+              <div key={i} className="border border-gray-200 rounded-2xl overflow-hidden">
+                {/* File row header */}
+                <div
+                  className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50"
+                  onClick={() => setExpandedIndex(expandedIndex === i ? null : i)}
+                >
+                  <span className="text-xl">{FILE_ICONS[getFileType(item.file.name)]}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-gray-700 truncate">
+                      {item.title || item.file.name}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {(item.file.size / 1024 / 1024).toFixed(2)} MB
+                      {item.course && ` · ${item.course}`}
+                    </p>
+                    {progresses[item.file.name] !== undefined && (
+                      <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
+                        <div
+                          className="bg-indigo-500 h-1 rounded-full transition-all"
+                          style={{ width: `${progresses[item.file.name]}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {!uploading && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeFile(i); }}
+                        className="w-6 h-6 text-red-400 hover:text-red-600 flex items-center justify-center"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" />
+                        </svg>
+                      </button>
+                    )}
+                    <svg
+                      className={`w-4 h-4 text-gray-400 transition-transform ${expandedIndex === i ? "rotate-180" : ""}`}
+                      fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
+                    >
+                      <path d="M19 9l-7 7-7-7" strokeLinecap="round" />
                     </svg>
-                  </button>
+                  </div>
+                </div>
+
+                {/* Expandable metadata form */}
+                {expandedIndex === i && (
+                  <div className="px-3 pb-3 pt-1 border-t border-gray-100 bg-gray-50 space-y-2">
+                    <input
+                      type="text"
+                      placeholder="Title *"
+                      value={item.title}
+                      onChange={(e) => updateMeta(i, "title", e.target.value)}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-400 bg-white"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Course name e.g. CHM 101"
+                      value={item.course}
+                      onChange={(e) => updateMeta(i, "course", e.target.value)}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-400 bg-white"
+                    />
+                    <select
+                      value={item.university}
+                      onChange={(e) => updateMeta(i, "university", e.target.value)}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-400 bg-white"
+                    >
+                      <option value="">Select University</option>
+                      {universitiesList.map(u => (
+                        <option key={u.id} value={u.shortName || u.name}>{u.name}</option>
+                      ))}
+                    </select>
+                    <textarea
+                      placeholder="Description (optional)"
+                      value={item.description}
+                      onChange={(e) => updateMeta(i, "description", e.target.value)}
+                      rows={2}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-400 bg-white resize-none"
+                    />
+                  </div>
                 )}
               </div>
             ))}
           </div>
         )}
 
-        {/* Shared metadata */}
-        <input
-          type="text"
-          placeholder="Title (optional — defaults to file name)"
-          value={sharedTitle}
-          onChange={(e) => setSharedTitle(e.target.value)}
-          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-3 outline-none focus:border-indigo-400"
-        />
-        <input
-          type="text"
-          placeholder="Course name e.g. CHM 101"
-          value={courseInput}
-          onChange={(e) => setCourseInput(e.target.value)}
-          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-3 outline-none focus:border-indigo-400"
-        />
-        <select
-          value={uploadUniversity}
-          onChange={(e) => setUploadUniversity(e.target.value)}
-          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-3 outline-none focus:border-indigo-400"
-        >
-          <option value="">Select University</option>
-          {universitiesList.map(u => (
-            <option key={u.id} value={u.shortName || u.name}>{u.name}</option>
-          ))}
-        </select>
-        <textarea
-          placeholder="Description (optional)"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={2}
-          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-3 outline-none focus:border-indigo-400 resize-none"
-        />
-
-        {/* Visibility */}
+        {/* Global visibility toggle */}
         <div className="flex items-center gap-3 mb-5">
           <button
             type="button"
@@ -363,7 +404,7 @@ function UploadModal({ onClose, user, userProfile, universitiesList = [] }) {
           disabled={uploading || files.length === 0}
           className="w-full py-3 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 transition disabled:opacity-50"
         >
-          {uploading ? `Uploading ${files.length} file(s)...` : `Upload ${files.length > 0 ? `(${files.length})` : ""}`}
+          {uploading ? `Uploading ${files.length} file(s)...` : `Upload${files.length > 0 ? ` (${files.length})` : ""}`}
         </button>
       </div>
     </div>
