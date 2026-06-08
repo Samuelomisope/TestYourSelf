@@ -163,33 +163,32 @@ function Calculator({ onClose }) {
 
 // ─── Upload Modal ─────────────────────────────────────────────────────────────
 function UploadModal({ onClose, user, userProfile, universitiesList = [] }) {
-  const [file, setFile] = useState(null);
-  const [title, setTitle] = useState("");
+  const [files, setFiles] = useState([]);
+  const [sharedTitle, setSharedTitle] = useState("");
   const [courseInput, setCourseInput] = useState("");
   const [uploadUniversity, setUploadUniversity] = useState("");
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
-  const [uploadStatus, setUploadStatus] = useState("");
+  const [progresses, setProgresses] = useState({});
   const fileRef = useRef();
 
-  const handleUpload = async () => {
-    if (!file || !title.trim()) { setError("Please select a file and add a title."); return; }
-    if (file.size > 100 * 1024 * 1024) { setError("File too large. Maximum size is 100MB."); return; }
+  const handleFiles = (selected) => {
+    const valid = Array.from(selected).filter(f => f.size <= 100 * 1024 * 1024);
+    if (valid.length < selected.length) setError("Some files exceed 100MB and were skipped.");
+    setFiles(prev => [...prev, ...valid]);
+  };
 
-    setUploading(true);
-    setError("");
+  const removeFile = (index) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
 
-    try {
-      const { auth } = await import("./firebase");
-      const { getIdToken } = await import("firebase/auth");
-      const token = await getIdToken(auth.currentUser, true);
-
+  const uploadSingle = (file, token) => {
+    return new Promise((resolve, reject) => {
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("title", title);
+      formData.append("title", sharedTitle || file.name);
       formData.append("description", description);
       formData.append("faculty", courseInput);
       formData.append("isPublic", String(isPublic));
@@ -200,31 +199,46 @@ function UploadModal({ onClose, user, userProfile, universitiesList = [] }) {
       xhr.setRequestHeader("Authorization", `Bearer ${token}`);
       xhr.timeout = 300000;
 
-      xhr.ontimeout = () => {
-        setError("Upload is taking too long. Please try again.");
-        setUploading(false);
-      };
-
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
           const percent = Math.round((e.loaded / e.total) * 100);
-          setProgress(percent);
-          if (percent === 100) setUploadStatus("Finalizing upload... please wait.");
+          setProgresses(prev => ({ ...prev, [file.name]: percent }));
         }
       };
 
       xhr.onload = () => {
-        if (xhr.status === 201 || xhr.status === 200) {
-          onClose(true);
-        } else {
-          setError("Upload failed. Try again.");
-          setUploading(false);
-        }
+        if (xhr.status === 200 || xhr.status === 201) resolve();
+        else reject(new Error(`Failed: ${file.name}`));
       };
-
-      xhr.onerror = () => { setError("Upload failed. Try again."); setUploading(false); };
+      xhr.onerror = () => reject(new Error(`Error uploading ${file.name}`));
+      xhr.ontimeout = () => reject(new Error(`Timeout: ${file.name}`));
       xhr.send(formData);
+    });
+  };
 
+  const handleUpload = async () => {
+    if (files.length === 0) { setError("Please select at least one file."); return; }
+    setUploading(true);
+    setError("");
+
+    try {
+      const { auth } = await import("./firebase");
+      const { getIdToken } = await import("firebase/auth");
+      const token = await getIdToken(auth.currentUser, true);
+
+      // Upload all files, collect results
+      const results = await Promise.allSettled(files.map(f => uploadSingle(f, token)));
+      const failed = results.filter(r => r.status === "rejected");
+
+      if (failed.length === 0) {
+        onClose(true);
+      } else if (failed.length < files.length) {
+        setError(`${failed.length} file(s) failed to upload. Others succeeded.`);
+        setUploading(false);
+      } else {
+        setError("All uploads failed. Please try again.");
+        setUploading(false);
+      }
     } catch (err) {
       console.error(err);
       setError("Upload failed. Try again.");
@@ -234,9 +248,9 @@ function UploadModal({ onClose, user, userProfile, universitiesList = [] }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl p-6">
+      <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="font-bold text-gray-800 text-lg">Upload File</h2>
+          <h2 className="font-bold text-gray-800 text-lg">Upload Files</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" />
@@ -246,52 +260,68 @@ function UploadModal({ onClose, user, userProfile, universitiesList = [] }) {
 
         {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
 
-        {/* File Picker */}
+        {/* Drop Zone */}
         <div
           onClick={() => fileRef.current.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}
           className="border-2 border-dashed border-indigo-300 rounded-2xl p-6 text-center cursor-pointer hover:bg-indigo-50 transition mb-4"
         >
-          {file ? (
-            <div>
-              <p className="text-2xl mb-1">{FILE_ICONS[getFileType(file.name)]}</p>
-              <p className="text-sm font-medium text-gray-700">{file.name}</p>
-              <p className="text-xs text-gray-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-            </div>
-          ) : (
-            <div>
-              <p className="text-3xl mb-2">☁️</p>
-              <p className="text-sm text-gray-500">Tap to select a file</p>
-              <p className="text-xs text-gray-400 mt-1">PDF, Video, Word, PowerPoint</p>
-            </div>
-          )}
+          <p className="text-3xl mb-2">☁️</p>
+          <p className="text-sm text-gray-500">Tap or drag files here</p>
+          <p className="text-xs text-gray-400 mt-1">PDF, Video, Word, PowerPoint — max 100MB each</p>
           <input
             ref={fileRef}
             type="file"
             className="hidden"
+            multiple
             accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.mp4,.mov,.avi,.mkv,.webm"
-            onChange={(e) => setFile(e.target.files[0])}
+            onChange={(e) => handleFiles(e.target.files)}
           />
         </div>
 
-        {/* Title */}
+        {/* File List */}
+        {files.length > 0 && (
+          <div className="mb-4 space-y-2">
+            {files.map((f, i) => (
+              <div key={i} className="flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2">
+                <span className="text-lg">{FILE_ICONS[getFileType(f.name)]}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-gray-700 truncate">{f.name}</p>
+                  <p className="text-xs text-gray-400">{(f.size / 1024 / 1024).toFixed(2)} MB</p>
+                  {progresses[f.name] !== undefined && (
+                    <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
+                      <div className="bg-indigo-500 h-1 rounded-full transition-all" style={{ width: `${progresses[f.name]}%` }} />
+                    </div>
+                  )}
+                </div>
+                {!uploading && (
+                  <button onClick={() => removeFile(i)} className="text-red-400 hover:text-red-600">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Shared metadata */}
         <input
           type="text"
-          placeholder="File title *"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Title (optional — defaults to file name)"
+          value={sharedTitle}
+          onChange={(e) => setSharedTitle(e.target.value)}
           className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-3 outline-none focus:border-indigo-400"
         />
-
-        {/* Course */}
         <input
           type="text"
-          placeholder="Course name e.g. CHM 101, Calculus I"
+          placeholder="Course name e.g. CHM 101"
           value={courseInput}
           onChange={(e) => setCourseInput(e.target.value)}
           className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-3 outline-none focus:border-indigo-400"
         />
-
-        {/* University */}
         <select
           value={uploadUniversity}
           onChange={(e) => setUploadUniversity(e.target.value)}
@@ -299,13 +329,9 @@ function UploadModal({ onClose, user, userProfile, universitiesList = [] }) {
         >
           <option value="">Select University</option>
           {universitiesList.map(u => (
-            <option key={u.id} value={u.shortName || u.name}>
-              {u.name}
-            </option>
+            <option key={u.id} value={u.shortName || u.name}>{u.name}</option>
           ))}
         </select>
-
-        {/* Description */}
         <textarea
           placeholder="Description (optional)"
           value={description}
@@ -332,26 +358,12 @@ function UploadModal({ onClose, user, userProfile, universitiesList = [] }) {
           </button>
         </div>
 
-        {/* Progress bar */}
-        {uploading && (
-          <div className="mb-2">
-            <div className="w-full bg-gray-100 rounded-full h-2">
-              <div className="bg-indigo-500 h-2 rounded-full transition-all" style={{ width: `${progress}%` }} />
-            </div>
-            <p className="text-xs text-gray-400 mt-1 text-right">{progress}%</p>
-          </div>
-        )}
-
-        {uploading && uploadStatus && (
-          <p className="text-xs text-indigo-500 text-center mb-2">{uploadStatus}</p>
-        )}
-
         <button
           onClick={handleUpload}
-          disabled={uploading}
+          disabled={uploading || files.length === 0}
           className="w-full py-3 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 transition disabled:opacity-50"
         >
-          {uploading ? "Uploading..." : "Upload"}
+          {uploading ? `Uploading ${files.length} file(s)...` : `Upload ${files.length > 0 ? `(${files.length})` : ""}`}
         </button>
       </div>
     </div>
@@ -404,20 +416,20 @@ function FileDetailModal({ file, onClose }) {
           {/* PDF Viewer */}
           {getMimeFileType(file.fileType) === "pdf" && (
             <div className="mb-4 rounded-xl overflow-hidden border border-gray-200" style={{ height: 300 }}>
-              <iframe src={file.fileUrl} className="w-full h-full" title={file.title} />
+             <iframe src={file.signedUrl} className="w-full h-full" title={file.title} />
             </div>
           )}
 
           {/* Video Player */}
           {getMimeFileType(file.fileType) === "video" && (
             <div className="mb-4 rounded-xl overflow-hidden bg-black">
-              <video controls className="w-full max-h-64" src={file.fileUrl} />
+             <video controls className="w-full max-h-64" src={file.signedUrl} />
             </div>
           )}
 
           <div className="flex gap-3">
             <a
-              href={file.fileUrl}
+              href={file.signedUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 py-2.5 bg-indigo-500 text-white rounded-xl text-sm font-medium text-center hover:bg-indigo-600 transition"
@@ -425,7 +437,7 @@ function FileDetailModal({ file, onClose }) {
               Open
             </a>
             <a
-              href={file.fileUrl}
+              href={file.signedUrl}
               download
               className="flex-1 py-2.5 border border-indigo-300 text-indigo-600 rounded-xl text-sm font-medium text-center hover:bg-indigo-50 transition"
             >
@@ -563,7 +575,7 @@ function StudyMaterial() {
       {/* Success Toast */}
       {successMessage && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-green-500 text-white px-6 py-3 rounded-full text-sm shadow-lg">
-          ✅ {successMessage}
+           {successMessage}
         </div>
       )}
 
