@@ -1,19 +1,24 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth, db } from "./firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { auth } from "./firebase";
 import {
-  GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword,
-  updateProfile, sendEmailVerification,
+  GoogleAuthProvider,
+  signInWithRedirect,
+  signInWithPopup,
+  createUserWithEmailAndPassword,
+  updateProfile,
+  sendEmailVerification,
 } from "firebase/auth";
+import { db } from "./firebase";
+import { doc, setDoc } from "firebase/firestore";
 import { getFaculties, getDepartments } from "./universities";
 import { getUniversities } from "./api";
 import { getEmailDomainWarning } from "./domainCheck";
+import { handleGoogleRedirectResult } from "./auth-redirect";
 import login1 from "./assets/login1.webp";
 import login2 from "./assets/login2.avif";
 import login3 from "./assets/login3.webp";
 
-// FIX #1: Move images outside component — not recreated on every render
 const images = [login1, login2, login3];
 
 function Signup() {
@@ -50,10 +55,14 @@ function Signup() {
   const departments = getDepartments(university, faculty);
 
   useEffect(() => {
-    getUniversities().then(data => setUniversitiesList(data));
+    getUniversities().then((data) => setUniversitiesList(data));
   }, []);
 
-  // FIX #4: Revoke old blob URL before creating a new one — prevents memory leak
+  // Pick up the Google redirect result when the user lands back on this page
+  useEffect(() => {
+    handleGoogleRedirectResult(navigate, setError);
+  }, []);
+
   const handleProfilePicture = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -67,23 +76,25 @@ function Signup() {
     try {
       setLoading(true);
       setError("");
-      const result = await signInWithPopup(auth, provider);
 
-      // FIX #3: Add { merge: true } to avoid overwriting existing user data
-      await setDoc(doc(db, "users", result.user.uid), {
-        uid: result.user.uid,
-        displayName: result.user.displayName,
-        email: result.user.email,
-        photoURL: result.user.photoURL || null,
-        createdAt: new Date(),
-      }, { merge: true });
-
-      // FIX #6: Pass fromLogin state so Home.jsx shows the welcome toast
-      navigate("/home", { state: { fromLogin: true } });
+      if (import.meta.env.DEV) {
+        // Localhost: use popup (redirect loses credential on local dev)
+        const result = await signInWithPopup(auth, provider);
+        await setDoc(doc(db, "users", result.user.uid), {
+          uid: result.user.uid,
+          displayName: result.user.displayName,
+          email: result.user.email,
+          photoURL: result.user.photoURL || null,
+          createdAt: new Date(),
+        }, { merge: true });
+        navigate("/home", { state: { fromLogin: true } });
+      } else {
+        // Production: use redirect (avoids COOP issues on Vercel)
+        await signInWithRedirect(auth, provider);
+      }
     } catch (err) {
       console.error(err);
       setError("Failed to sign up with Google. Please try again.");
-    } finally {
       setLoading(false);
     }
   };
@@ -106,7 +117,6 @@ function Signup() {
       setLoading(true);
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
-      // FIX #2: Upload photo to real storage — never store blob URLs in Firebase
       let uploadedPhotoURL = null;
       if (profilePicture) {
         try {
@@ -122,18 +132,21 @@ function Signup() {
         photoURL: uploadedPhotoURL || null,
       });
 
-      // FIX #3: Add { merge: true } to avoid overwriting existing user data
-      await setDoc(doc(db, "users", userCredential.user.uid), {
-        uid: userCredential.user.uid,
-        displayName: fullName,
-        email: email,
-        photoURL: uploadedPhotoURL || null,
-        university: selectedUni,
-        faculty: faculty,
-        department: department === "custom" ? customDepartment : department,
-        emailVerified: false,
-        createdAt: new Date(),
-      }, { merge: true });
+      await setDoc(
+        doc(db, "users", userCredential.user.uid),
+        {
+          uid: userCredential.user.uid,
+          displayName: fullName,
+          email: email,
+          photoURL: uploadedPhotoURL || null,
+          university: selectedUni,
+          faculty: faculty,
+          department: department === "custom" ? customDepartment : department,
+          emailVerified: false,
+          createdAt: new Date(),
+        },
+        { merge: true }
+      );
 
       await sendEmailVerification(userCredential.user);
       navigate("/verify-email");
@@ -155,13 +168,16 @@ function Signup() {
     } finally {
       setLoading(false);
     }
-    
   };
 
   return (
     <div className="flex w-full bg-gray-100 min-h-screen">
       <div className="w-full md:inline-block hidden h-full relative">
-        <img className="h-full w-full object-cover" src={images[currentImage]} alt="leftSideImage" />
+        <img
+          className="h-full w-full object-cover"
+          src={images[currentImage]}
+          alt="leftSideImage"
+        />
         <div className="absolute inset-0 bg-gradient-to-r from-gray-100 via-transparent to-gray-100" />
       </div>
       <div className="h-screen border-l-2 border-gray-300" />
@@ -171,18 +187,27 @@ function Signup() {
           onSubmit={handleSignup}
           className="md:w-96 w-80 flex flex-col items-center justify-center space-y-4"
         >
-          <h2 style={{ fontFamily: "'Nunito', sans-serif" }} className="text-4xl text-indigo-500 font-bold">
+          <h2
+            style={{ fontFamily: "'Nunito', sans-serif" }}
+            className="text-4xl text-indigo-500 font-bold"
+          >
             TestYourSelf
           </h2>
           <p className="text-sm text-gray-500/90">Create your account to get started.</p>
 
-          {error && <p className="text-red-500 text-sm w-full text-center">{error}</p>}
+          {error && (
+            <p className="text-red-500 text-sm w-full text-center">{error}</p>
+          )}
 
           {/* Profile Picture */}
           <div className="flex flex-col items-center gap-2">
             <div className="w-20 h-20 rounded-full bg-gray-200 overflow-hidden border border-gray-300">
               {profilePreview ? (
-                <img src={profilePreview} alt="Profile" className="w-full h-full object-cover" />
+                <img
+                  src={profilePreview}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
                   Photo
@@ -191,7 +216,12 @@ function Signup() {
             </div>
             <label className="text-sm text-indigo-500 cursor-pointer hover:underline">
               Upload Photo
-              <input type="file" accept="image/*" onChange={handleProfilePicture} className="hidden" />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleProfilePicture}
+                className="hidden"
+              />
             </label>
           </div>
 
@@ -202,7 +232,9 @@ function Signup() {
             disabled={loading}
             className="w-full bg-white border border-gray-300 flex items-center justify-center h-12 rounded-full hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? "Please wait..." : (
+            {loading ? (
+              "Redirecting..."
+            ) : (
               <img
                 src="https://raw.githubusercontent.com/prebuiltui/prebuiltui/main/assets/login/googleLogo.svg"
                 alt="Sign up with Google"
@@ -219,13 +251,19 @@ function Signup() {
           {/* Full Name */}
           <div className="flex items-center w-full border border-gray-300/60 h-12 rounded-full pl-6 gap-2 bg-white">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" fill="#6B7280" />
+              <path
+                d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"
+                fill="#6B7280"
+              />
             </svg>
             <input
               type="text"
               placeholder="Full Name"
               value={fullName}
-              onChange={(e) => { setFullName(e.target.value); setError(""); }}
+              onChange={(e) => {
+                setFullName(e.target.value);
+                setError("");
+              }}
               className="w-full bg-transparent text-black placeholder-gray-500 outline-none text-sm"
               required
             />
@@ -239,7 +277,6 @@ function Signup() {
                 if (e.target.value === "custom") {
                   setIsCustomUni(true);
                   setUniversity("");
-                  // FIX #5: Reset faculty/department when switching to custom to avoid stale dropdowns
                   setFaculty("");
                   setDepartment("");
                 } else {
@@ -252,7 +289,7 @@ function Signup() {
               className="w-full bg-transparent text-gray-500 outline-none text-sm py-3 pr-4"
             >
               <option value="">Select University</option>
-              {universitiesList.map(u => (
+              {universitiesList.map((u) => (
                 <option key={u.id} value={u.shortName || u.name}>
                   {u.name}
                 </option>
@@ -276,12 +313,17 @@ function Signup() {
             <div className="flex items-center w-full border border-gray-300/60 rounded-full pl-6 gap-2 bg-white">
               <select
                 value={faculty}
-                onChange={(e) => { setFaculty(e.target.value); setDepartment(""); }}
+                onChange={(e) => {
+                  setFaculty(e.target.value);
+                  setDepartment("");
+                }}
                 className="w-full bg-transparent text-gray-500 outline-none text-sm py-3 pr-4"
               >
                 <option value="">Select Faculty / School</option>
-                {faculties.map(f => (
-                  <option key={f.name} value={f.name}>{f.name} — {f.fullName}</option>
+                {faculties.map((f) => (
+                  <option key={f.name} value={f.name}>
+                    {f.name} — {f.fullName}
+                  </option>
                 ))}
               </select>
             </div>
@@ -296,7 +338,11 @@ function Signup() {
                 className="w-full bg-transparent text-gray-500 outline-none text-sm py-3 pr-4"
               >
                 <option value="">Select Department</option>
-                {departments.map(d => <option key={d} value={d}>{d}</option>)}
+                {departments.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
                 <option value="custom">Other (type your own)</option>
               </select>
             </div>
@@ -315,7 +361,12 @@ function Signup() {
           {/* Email */}
           <div className="flex items-center w-full border border-gray-300/60 h-12 rounded-full pl-6 gap-2 bg-white">
             <svg width="19" height="11" viewBox="0 0 16 11" fill="none">
-              <path fillRule="evenodd" clipRule="evenodd" d="M0 .55.571 0H15.43l.57.55v9.9l-.571.55H.57L0 10.45zm1.143 1.138V9.9h13.714V1.69l-6.503 4.8h-.697zM13.749 1.1H2.25L8 5.356z" fill="#6B7280" />
+              <path
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M0 .55.571 0H15.43l.57.55v9.9l-.571.55H.57L0 10.45zm1.143 1.138V9.9h13.714V1.69l-6.503 4.8h-.697zM13.749 1.1H2.25L8 5.356z"
+                fill="#6B7280"
+              />
             </svg>
             <input
               type="email"
@@ -337,13 +388,19 @@ function Signup() {
           {/* Password */}
           <div className="flex items-center w-full border border-gray-300/60 h-12 rounded-full pl-6 gap-2 bg-white">
             <svg width="13" height="19" viewBox="0 0 13 17" fill="none">
-              <path d="M13 8.5c0-.938-.729-1.7-1.625-1.7h-.812V4.25C10.563 1.907 8.74 0 6.5 0S2.438 1.907 2.438 4.25V6.8h-.813C.729 6.8 0 7.562 0 8.5v6.8c0 .938.729 1.7 1.625 1.7h9.75c.896 0 1.625-.762 1.625-1.7zM4.063 4.25c0-1.406 1.093-2.55 2.437-2.55s2.438 1.144 2.438 2.55V6.8H4.061z" fill="#6B7280" />
+              <path
+                d="M13 8.5c0-.938-.729-1.7-1.625-1.7h-.812V4.25C10.563 1.907 8.74 0 6.5 0S2.438 1.907 2.438 4.25V6.8h-.813C.729 6.8 0 7.562 0 8.5v6.8c0 .938.729 1.7 1.625 1.7h9.75c.896 0 1.625-.762 1.625-1.7zM4.063 4.25c0-1.406 1.093-2.55 2.437-2.55s2.438 1.144 2.438 2.55V6.8H4.061z"
+                fill="#6B7280"
+              />
             </svg>
             <input
               type="password"
               placeholder="Password"
               value={password}
-              onChange={(e) => { setPassword(e.target.value); setError(""); }}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError("");
+              }}
               className="w-full bg-transparent text-gray-500/80 placeholder-gray-500/80 outline-none text-sm"
               required
             />
@@ -352,13 +409,19 @@ function Signup() {
           {/* Confirm Password */}
           <div className="flex items-center w-full border border-gray-300/60 h-12 rounded-full pl-6 gap-2 bg-white">
             <svg width="13" height="19" viewBox="0 0 13 17" fill="none">
-              <path d="M13 8.5c0-.938-.729-1.7-1.625-1.7h-.812V4.25C10.563 1.907 8.74 0 6.5 0S2.438 1.907 2.438 4.25V6.8h-.813C.729 6.8 0 7.562 0 8.5v6.8c0 .938.729 1.7 1.625 1.7h9.75c.896 0 1.625-.762 1.625-1.7zM4.063 4.25c0-1.406 1.093-2.55 2.437-2.55s2.438 1.144 2.438 2.55V6.8H4.061z" fill="#6B7280" />
+              <path
+                d="M13 8.5c0-.938-.729-1.7-1.625-1.7h-.812V4.25C10.563 1.907 8.74 0 6.5 0S2.438 1.907 2.438 4.25V6.8h-.813C.729 6.8 0 7.562 0 8.5v6.8c0 .938.729 1.7 1.625 1.7h9.75c.896 0 1.625-.762 1.625-1.7zM4.063 4.25c0-1.406 1.093-2.55 2.437-2.55s2.438 1.144 2.438 2.55V6.8H4.061z"
+                fill="#6B7280"
+              />
             </svg>
             <input
               type="password"
               placeholder="Confirm Password"
               value={confirmPassword}
-              onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                setError("");
+              }}
               className="w-full bg-transparent text-gray-500/80 placeholder-gray-500/80 outline-none text-sm"
               required
             />
@@ -375,7 +438,9 @@ function Signup() {
 
           <p className="text-gray-500/90 text-sm">
             Already have an account?{" "}
-            <a className="text-indigo-400 hover:underline" href="/">Login</a>
+            <a className="text-indigo-400 hover:underline" href="/">
+              Login
+            </a>
           </p>
           <p className="text-gray-400 text-sm">
             By signing up, you agree to our Terms of Service and Privacy Policy.
