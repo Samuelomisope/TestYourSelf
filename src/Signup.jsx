@@ -111,6 +111,7 @@ function Signup() {
       setLoading(true);
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
+      await userCredential.user.getIdToken(true);
       let uploadedPhotoURL = null;
       if (profilePicture) {
         try {

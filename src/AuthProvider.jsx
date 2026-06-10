@@ -7,8 +7,13 @@ import { API } from "./config";
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(undefined); // undefined = still loading
   const [emailVerified, setEmailVerified] = useState(false);
+  const refreshUser = async () => {
+  if (auth.currentUser) {
+    await reload(auth.currentUser);
+    setEmailVerified(auth.currentUser.emailVerified);
+  }
+};
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
@@ -19,7 +24,7 @@ export function AuthProvider({ children }) {
         setEmailVerified(currentUser.emailVerified);
 
         try {
-          const token = await currentUser.getIdToken();
+          const token = await currentUser.getIdToken(true);
           const res = await fetch(`${API}/users/me`, {
             headers: { Authorization: `Bearer ${token}` },
           });
@@ -38,7 +43,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, emailVerified }}>
+   <AuthContext.Provider value={{ user, loading, refreshUser, emailVerified }}>
       {!loading && children}
     </AuthContext.Provider>
   );

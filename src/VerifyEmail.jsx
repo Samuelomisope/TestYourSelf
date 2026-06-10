@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { auth } from "./firebase";
 import { sendEmailVerification, signOut, reload } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "./useAuth";
 
 function VerifyEmail() {
   const [sent, setSent] = useState(false);
@@ -10,6 +11,7 @@ function VerifyEmail() {
   const [cooldown, setCooldown] = useState(0);
   const navigate = useNavigate();
   const user = auth.currentUser;
+  const { refreshUser } = useAuth();
 
   // Countdown timer for resend cooldown
   useEffect(() => {
@@ -56,17 +58,8 @@ function VerifyEmail() {
   setChecking(true);
   setError("");
   try {
-    const user = auth.currentUser;
-
-    if (!user) {
-      setError("Session expired. Please sign in again.");
-      navigate("/");
-      return;
-    }
-
-    await reload(user);
-
-    if (user.emailVerified) {
+    await refreshUser();
+    if (auth.currentUser?.emailVerified) {
       navigate("/home");
     } else {
       setError("Email not verified yet. Please check your inbox and click the link.");
@@ -77,7 +70,6 @@ function VerifyEmail() {
     setChecking(false);
   }
 };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-white to-purple-100 flex items-center justify-center px-4">
       <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full flex flex-col items-center gap-5 text-center">
