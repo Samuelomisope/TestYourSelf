@@ -3,59 +3,77 @@ import { useNavigate } from "react-router-dom";
 import { auth } from "./firebase";
 import { getIdToken } from "firebase/auth";
 import { useAuth } from "./useAuth";
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faRobot, faBook, faUsers, faShoppingBag, faGraduationCap,
-  faFlag, faBan, faCheckCircle, faChartBar, faStore, faStar
-} from '@fortawesome/free-solid-svg-icons'
+  faFlag, faBan, faCheckCircle, faChartBar, faStore, faStar,
+  faChevronLeft, faXmark,
+} from "@fortawesome/free-solid-svg-icons";
+import { API } from "./config";
 
 const ADMIN_EMAILS = ["omisope34@gmail.com"];
-
-import { API } from "./config";
 
 async function apiFetch(path, options = {}) {
   const token = await getIdToken(auth.currentUser, true);
   const res = await fetch(`${API}${path}`, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...(options.headers || {}),
-    },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(options.headers || {}) },
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
-// ── Stat Card ──────────────────────────────────────────────────────────────
-function StatCard({ label, value, icon, color }) {
+// ── Shared styles ──────────────────────────────────────────────────
+const inputCls = "w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/40 transition";
+const thCls = "px-4 py-3 text-left text-xs font-semibold text-white/30 uppercase tracking-wider";
+const tdCls = "px-4 py-3 text-sm text-white/60";
+
+function StatCard({ label, value, icon, accent = "violet" }) {
+  const colors = {
+    violet: "border-violet-500/40 bg-violet-500/5",
+    purple: "border-purple-500/40 bg-purple-500/5",
+    pink:   "border-pink-500/40 bg-pink-500/5",
+    green:  "border-emerald-500/40 bg-emerald-500/5",
+    red:    "border-pink-500/40 bg-pink-500/5",
+  };
+  const iconColors = { violet:"text-violet-400", purple:"text-purple-400", pink:"text-pink-400", green:"text-emerald-400", red:"text-pink-400" };
   return (
-    <div className={`bg-white rounded-2xl p-5 border-l-4 shadow-sm flex items-center gap-4 ${color}`}>
-      <div className="text-3xl">{icon}</div>
+    <div className={`rounded-2xl p-5 border-l-4 ${colors[accent]} border border-white/10 flex items-center gap-4`}>
+      <div className={`text-2xl ${iconColors[accent]}`}>{icon}</div>
       <div>
-        <p className="text-2xl font-bold text-gray-800">{value ?? "—"}</p>
-        <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+        <p className="text-2xl font-bold text-white">{value ?? "—"}</p>
+        <p className="text-xs text-white/30 mt-0.5">{label}</p>
       </div>
     </div>
   );
 }
 
-// ── Confirm Modal ──────────────────────────────────────────────────────────
 function ConfirmModal({ message, onConfirm, onCancel }) {
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
-        <p className="text-gray-700 text-sm mb-5">{message}</p>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#0d0d14] border border-white/10 rounded-2xl p-6 max-w-sm w-full shadow-xl">
+        <p className="text-white/60 text-sm mb-5">{message}</p>
         <div className="flex gap-3">
-          <button onClick={onCancel} className="flex-1 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition">Cancel</button>
-          <button onClick={onConfirm} className="flex-1 py-2 rounded-xl bg-red-500 text-white text-sm hover:bg-red-600 transition">Delete</button>
+          <button onClick={onCancel} className="flex-1 py-2 rounded-xl border border-white/10 text-sm text-white/40 hover:border-white/20 transition">Cancel</button>
+          <button onClick={onConfirm} className="flex-1 py-2 rounded-xl bg-pink-500/80 hover:bg-pink-500 text-white text-sm transition">Delete</button>
         </div>
       </div>
     </div>
   );
 }
 
-// ── Users Tab ──────────────────────────────────────────────────────────────
+function Pagination({ page, totalPages, setPage }) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex items-center justify-center gap-2 mt-4">
+      <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-3 py-1.5 rounded-lg border border-white/10 text-sm text-white/40 hover:border-violet-500/30 disabled:opacity-30 transition">Previous</button>
+      <span className="text-sm text-white/30">Page {page} of {totalPages}</span>
+      <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-3 py-1.5 rounded-lg border border-white/10 text-sm text-white/40 hover:border-violet-500/30 disabled:opacity-30 transition">Next</button>
+    </div>
+  );
+}
+
+// ── Users Tab ──────────────────────────────────────────────────────
 function UsersTab() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,122 +82,62 @@ function UsersTab() {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
 
-  useEffect(() => {
-    apiFetch("/admin/users").then(setUsers).catch(console.error).finally(() => setLoading(false));
-  }, []);
+  useEffect(() => { apiFetch("/admin/users").then(setUsers).catch(console.error).finally(() => setLoading(false)); }, []);
 
   const deleteUser = async (id) => {
-    try {
-      await apiFetch(`/admin/users/${id}`, { method: "DELETE" });
-      setUsers(u => u.filter(x => x.id !== id));
-    } catch (err) { console.error(err); }
+    try { await apiFetch(`/admin/users/${id}`, { method: "DELETE" }); setUsers(u => u.filter(x => x.id !== id)); }
+    catch (err) { console.error(err); }
   };
 
-  const filtered = users.filter(u =>
-    u.displayName?.toLowerCase().includes(search.toLowerCase()) ||
-    u.email?.toLowerCase().includes(search.toLowerCase())
-  );
-
+  const filtered = users.filter(u => u.displayName?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase()));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
 
   return (
     <div>
-      <input
-        type="text" placeholder="Search users..." value={search}
-        onChange={e => { setSearch(e.target.value); setPage(1); }}
-        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-4 outline-none focus:border-indigo-400"
-      />
-      {loading ? <p className="text-gray-400 text-sm text-center py-10">Loading...</p> : (
+      <input type="text" placeholder="Search users..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className={`${inputCls} mb-4`} />
+      {loading ? <p className="text-white/20 text-sm text-center py-10">Loading...</p> : (
         <>
-          <div className="overflow-x-auto rounded-2xl border border-gray-100">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
-                <tr>
-                  <th className="px-4 py-3 text-left">User</th>
-                  <th className="px-4 py-3 text-left">Email</th>
-                  <th className="px-4 py-3 text-left">University</th>
-                  <th className="px-4 py-3 text-left">Joined</th>
-                  <th className="px-4 py-3 text-left">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+          <div className="overflow-x-auto rounded-2xl border border-white/10">
+            <table className="w-full">
+              <thead className="bg-white/[0.03]"><tr><th className={thCls}>User</th><th className={thCls}>Email</th><th className={thCls}>University</th><th className={thCls}>Joined</th><th className={thCls}>Action</th></tr></thead>
+              <tbody className="divide-y divide-white/5">
                 {paginated.map(u => (
-                  <tr key={u.id} className="hover:bg-gray-50 transition">
-                    {/* User cell with banned badge */}
+                  <tr key={u.id} className="hover:bg-white/[0.02] transition">
                     <td className="px-4 py-3 flex items-center gap-2">
-                      <img
-                        src={u.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${u.displayName}`}
-                        className="w-7 h-7 rounded-full object-cover"
-                        alt=""
-                      />
-                      <span className="font-medium text-gray-800">{u.displayName || "—"}</span>
-                      {u.isBanned && (
-                        <span className="px-1.5 py-0.5 bg-red-100 text-red-500 rounded text-xs">Banned</span>
-                      )}
+                      <img src={u.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${u.displayName}`} className="w-7 h-7 rounded-full object-cover border border-white/10" alt="" />
+                      <span className="font-medium text-white text-sm">{u.displayName || "—"}</span>
+                      {u.isBanned && <span className="px-1.5 py-0.5 bg-pink-500/15 text-pink-400 rounded text-xs">Banned</span>}
                     </td>
-                    <td className="px-4 py-3 text-gray-500">{u.email}</td>
-                    <td className="px-4 py-3 text-gray-500">{u.university?.shortName || "—"}</td>
-                    <td className="px-4 py-3 text-gray-400">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}</td>
-                    {/* Action cell with Ban + Delete */}
-                    <td className="px-4 py-3 flex items-center gap-2">
-                      <button
-                        onClick={async () => {
-                          try {
-                            const token = await getIdToken(auth.currentUser, true);
-                            await fetch(`${API}/admin/users/${u.id}/ban`, {
-                              method: "PATCH",
-                              headers: { Authorization: `Bearer ${token}` },
-                            });
-                            setUsers(prev => prev.map(x => x.id === u.id ? { ...x, isBanned: !x.isBanned } : x));
-                          } catch (err) { console.error(err); }
-                        }}
-                        className={`text-xs font-medium transition ${u.isBanned ? "text-green-500 hover:text-green-700" : "text-orange-400 hover:text-orange-600"}`}
-                      >
+                    <td className={tdCls}>{u.email}</td>
+                    <td className={tdCls}>{u.university?.shortName || "—"}</td>
+                    <td className="px-4 py-3 text-xs text-white/30">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}</td>
+                    <td className="px-4 py-3 flex items-center gap-3">
+                      <button onClick={async () => {
+                        try {
+                          const token = await getIdToken(auth.currentUser, true);
+                          await fetch(`${API}/admin/users/${u.id}/ban`, { method: "PATCH", headers: { Authorization: `Bearer ${token}` } });
+                          setUsers(prev => prev.map(x => x.id === u.id ? { ...x, isBanned: !x.isBanned } : x));
+                        } catch (err) { console.error(err); }
+                      }} className={`text-xs font-medium transition ${u.isBanned ? "text-emerald-400 hover:text-emerald-300" : "text-yellow-400 hover:text-yellow-300"}`}>
                         {u.isBanned ? "Unban" : "Ban"}
                       </button>
-                      <button
-                        onClick={() => setConfirm({ id: u.id, name: u.displayName })}
-                        className="text-red-400 hover:text-red-600 text-xs font-medium transition"
-                      >Delete</button>
+                      <button onClick={() => setConfirm({ id: u.id, name: u.displayName })} className="text-pink-400 hover:text-pink-300 text-xs font-medium transition">Delete</button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {filtered.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">No users found.</p>}
+            {filtered.length === 0 && <p className="text-center text-white/20 py-8 text-sm">No users found.</p>}
           </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-4">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40"
-              >Previous</button>
-              <span className="text-sm text-gray-500">Page {page} of {totalPages}</span>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40"
-              >Next</button>
-            </div>
-          )}
+          <Pagination page={page} totalPages={Math.ceil(filtered.length / PAGE_SIZE)} setPage={setPage} />
         </>
       )}
-      {confirm && (
-        <ConfirmModal
-          message={`Delete user "${confirm.name}"? This cannot be undone.`}
-          onConfirm={() => { deleteUser(confirm.id); setConfirm(null); }}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
+      {confirm && <ConfirmModal message={`Delete user "${confirm.name}"? This cannot be undone.`} onConfirm={() => { deleteUser(confirm.id); setConfirm(null); }} onCancel={() => setConfirm(null)} />}
     </div>
   );
 }
 
-// ── Study Materials Tab ────────────────────────────────────────────────────
+// ── Materials Tab ──────────────────────────────────────────────────
 function MaterialsTab() {
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -188,100 +146,48 @@ function MaterialsTab() {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
 
-  useEffect(() => {
-    apiFetch("/admin/materials").then(setMaterials).catch(console.error).finally(() => setLoading(false));
-  }, []);
+  useEffect(() => { apiFetch("/admin/materials").then(setMaterials).catch(console.error).finally(() => setLoading(false)); }, []);
 
   const deleteMaterial = async (id) => {
-    try {
-      await apiFetch(`/admin/materials/${id}`, { method: "DELETE" });
-      setMaterials(m => m.filter(x => x.id !== id));
-    } catch (err) { console.error(err); }
+    try { await apiFetch(`/admin/materials/${id}`, { method: "DELETE" }); setMaterials(m => m.filter(x => x.id !== id)); }
+    catch (err) { console.error(err); }
   };
 
-  const filtered = materials.filter(m =>
-    m.title?.toLowerCase().includes(search.toLowerCase()) ||
-    m.faculty?.toLowerCase().includes(search.toLowerCase())
-  );
-
+  const filtered = materials.filter(m => m.title?.toLowerCase().includes(search.toLowerCase()) || m.faculty?.toLowerCase().includes(search.toLowerCase()));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
 
   return (
     <div>
-      <input
-        type="text" placeholder="Search materials..." value={search}
-        onChange={e => { setSearch(e.target.value); setPage(1); }}
-        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-4 outline-none focus:border-indigo-400"
-      />
-      {loading ? <p className="text-gray-400 text-sm text-center py-10">Loading...</p> : (
+      <input type="text" placeholder="Search materials..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className={`${inputCls} mb-4`} />
+      {loading ? <p className="text-white/20 text-sm text-center py-10">Loading...</p> : (
         <>
-          <div className="overflow-x-auto rounded-2xl border border-gray-100">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
-                <tr>
-                  <th className="px-4 py-3 text-left">Title</th>
-                  <th className="px-4 py-3 text-left">Uploaded By</th>
-                  <th className="px-4 py-3 text-left">Faculty</th>
-                  <th className="px-4 py-3 text-left">Visibility</th>
-                  <th className="px-4 py-3 text-left">Date</th>
-                  <th className="px-4 py-3 text-left">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+          <div className="overflow-x-auto rounded-2xl border border-white/10">
+            <table className="w-full">
+              <thead className="bg-white/[0.03]"><tr><th className={thCls}>Title</th><th className={thCls}>Uploaded By</th><th className={thCls}>Faculty</th><th className={thCls}>Visibility</th><th className={thCls}>Date</th><th className={thCls}>Action</th></tr></thead>
+              <tbody className="divide-y divide-white/5">
                 {paginated.map(m => (
-                  <tr key={m.id} className="hover:bg-gray-50 transition">
-                    <td className="px-4 py-3 font-medium text-gray-800 max-w-[180px] truncate">{m.title}</td>
-                    <td className="px-4 py-3 text-gray-500">{m.user?.displayName || "—"}</td>
-                    <td className="px-4 py-3 text-gray-500">{m.faculty || "—"}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${m.isPublic ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-500"}`}>
-                        {m.isPublic ? "Public" : "Private"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-400">{new Date(m.createdAt).toLocaleDateString()}</td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => setConfirm({ id: m.id, name: m.title })}
-                        className="text-red-400 hover:text-red-600 text-xs font-medium transition"
-                      >Delete</button>
-                    </td>
+                  <tr key={m.id} className="hover:bg-white/[0.02] transition">
+                    <td className="px-4 py-3 font-medium text-white text-sm max-w-[180px] truncate">{m.title}</td>
+                    <td className={tdCls}>{m.user?.displayName || "—"}</td>
+                    <td className={tdCls}>{m.faculty || "—"}</td>
+                    <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${m.isPublic ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-white/30"}`}>{m.isPublic ? "Public" : "Private"}</span></td>
+                    <td className="px-4 py-3 text-xs text-white/30">{new Date(m.createdAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-3"><button onClick={() => setConfirm({ id: m.id, name: m.title })} className="text-pink-400 hover:text-pink-300 text-xs font-medium transition">Delete</button></td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {filtered.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">No materials found.</p>}
+            {filtered.length === 0 && <p className="text-center text-white/20 py-8 text-sm">No materials found.</p>}
           </div>
-
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-4">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40"
-              >Previous</button>
-              <span className="text-sm text-gray-500">Page {page} of {totalPages}</span>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40"
-              >Next</button>
-            </div>
-          )}
+          <Pagination page={page} totalPages={Math.ceil(filtered.length / PAGE_SIZE)} setPage={setPage} />
         </>
       )}
-      {confirm && (
-        <ConfirmModal
-          message={`Delete "${confirm.name}"? This cannot be undone.`}
-          onConfirm={() => { deleteMaterial(confirm.id); setConfirm(null); }}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
+      {confirm && <ConfirmModal message={`Delete "${confirm.name}"? This cannot be undone.`} onConfirm={() => { deleteMaterial(confirm.id); setConfirm(null); }} onCancel={() => setConfirm(null)} />}
     </div>
   );
 }
 
-// ── Products Tab ───────────────────────────────────────────────────────────
+// ── Products Tab ───────────────────────────────────────────────────
 function ProductsTab() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -290,104 +196,48 @@ function ProductsTab() {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
 
-  useEffect(() => {
-    apiFetch("/admin/products").then(setProducts).catch(console.error).finally(() => setLoading(false));
-  }, []);
+  useEffect(() => { apiFetch("/admin/products").then(setProducts).catch(console.error).finally(() => setLoading(false)); }, []);
 
   const deleteProduct = async (id) => {
-    try {
-      await apiFetch(`/admin/products/${id}`, { method: "DELETE" });
-      setProducts(p => p.filter(x => x.id !== id));
-    } catch (err) { console.error(err); }
+    try { await apiFetch(`/admin/products/${id}`, { method: "DELETE" }); setProducts(p => p.filter(x => x.id !== id)); }
+    catch (err) { console.error(err); }
   };
 
-  const filtered = products.filter(p =>
-    p.title?.toLowerCase().includes(search.toLowerCase())
-  );
-
+  const filtered = products.filter(p => p.title?.toLowerCase().includes(search.toLowerCase()));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
 
   return (
     <div>
-      <input
-        type="text" placeholder="Search products..." value={search}
-        onChange={e => { setSearch(e.target.value); setPage(1); }}
-        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-4 outline-none focus:border-indigo-400"
-      />
-      {loading ? <p className="text-gray-400 text-sm text-center py-10">Loading...</p> : (
+      <input type="text" placeholder="Search products..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className={`${inputCls} mb-4`} />
+      {loading ? <p className="text-white/20 text-sm text-center py-10">Loading...</p> : (
         <>
-          <div className="overflow-x-auto rounded-2xl border border-gray-100">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
-                <tr>
-                  <th className="px-4 py-3 text-left">Title</th>
-                  <th className="px-4 py-3 text-left">Seller</th>
-                  <th className="px-4 py-3 text-left">Price</th>
-                  <th className="px-4 py-3 text-left">Status</th>
-                  <th className="px-4 py-3 text-left">Date</th>
-                  <th className="px-4 py-3 text-left">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+          <div className="overflow-x-auto rounded-2xl border border-white/10">
+            <table className="w-full">
+              <thead className="bg-white/[0.03]"><tr><th className={thCls}>Title</th><th className={thCls}>Seller</th><th className={thCls}>Price</th><th className={thCls}>Status</th><th className={thCls}>Date</th><th className={thCls}>Action</th></tr></thead>
+              <tbody className="divide-y divide-white/5">
                 {paginated.map(p => (
-                  <tr key={p.id} className="hover:bg-gray-50 transition">
-                    <td className="px-4 py-3 font-medium text-gray-800 max-w-[180px] truncate">{p.title}</td>
-                    <td className="px-4 py-3 text-gray-500">{p.user?.displayName || "—"}</td>
-                    <td className="px-4 py-3 text-gray-700">₦{p.price?.toLocaleString()}</td>
-                    <td className="px-4 py-3">
-                      {/* Updated status badge using p.status */}
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        p.status === "ACTIVE" ? "bg-green-100 text-green-600" :
-                        p.status === "SOLD" ? "bg-red-100 text-red-500" :
-                        "bg-gray-100 text-gray-500"
-                      }`}>
-                        {p.status || "ACTIVE"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-400">{new Date(p.createdAt).toLocaleDateString()}</td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => setConfirm({ id: p.id, name: p.title })}
-                        className="text-red-400 hover:text-red-600 text-xs font-medium transition"
-                      >Delete</button>
-                    </td>
+                  <tr key={p.id} className="hover:bg-white/[0.02] transition">
+                    <td className="px-4 py-3 font-medium text-white text-sm max-w-[180px] truncate">{p.title}</td>
+                    <td className={tdCls}>{p.user?.displayName || "—"}</td>
+                    <td className="px-4 py-3 text-sm text-violet-400 font-semibold">₦{p.price?.toLocaleString()}</td>
+                    <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${p.status === "ACTIVE" ? "bg-emerald-500/15 text-emerald-400" : p.status === "SOLD" ? "bg-pink-500/15 text-pink-400" : "bg-white/5 text-white/30"}`}>{p.status || "ACTIVE"}</span></td>
+                    <td className="px-4 py-3 text-xs text-white/30">{new Date(p.createdAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-3"><button onClick={() => setConfirm({ id: p.id, name: p.title })} className="text-pink-400 hover:text-pink-300 text-xs font-medium transition">Delete</button></td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {filtered.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">No products found.</p>}
+            {filtered.length === 0 && <p className="text-center text-white/20 py-8 text-sm">No products found.</p>}
           </div>
-
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-4">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40"
-              >Previous</button>
-              <span className="text-sm text-gray-500">Page {page} of {totalPages}</span>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40"
-              >Next</button>
-            </div>
-          )}
+          <Pagination page={page} totalPages={Math.ceil(filtered.length / PAGE_SIZE)} setPage={setPage} />
         </>
       )}
-      {confirm && (
-        <ConfirmModal
-          message={`Delete "${confirm.name}"? This cannot be undone.`}
-          onConfirm={() => { deleteProduct(confirm.id); setConfirm(null); }}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
+      {confirm && <ConfirmModal message={`Delete "${confirm.name}"? This cannot be undone.`} onConfirm={() => { deleteProduct(confirm.id); setConfirm(null); }} onCancel={() => setConfirm(null)} />}
     </div>
   );
 }
 
-// ── Universities Tab ───────────────────────────────────────────────────────
+// ── Universities Tab ───────────────────────────────────────────────
 function UniversitiesTab() {
   const [universities, setUniversities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -396,174 +246,105 @@ function UniversitiesTab() {
   const [adding, setAdding] = useState(false);
   const [confirm, setConfirm] = useState(null);
 
-  useEffect(() => {
-    apiFetch("/universities").then(setUniversities).catch(console.error).finally(() => setLoading(false));
-  }, []);
+  useEffect(() => { apiFetch("/universities").then(setUniversities).catch(console.error).finally(() => setLoading(false)); }, []);
 
   const addUniversity = async () => {
     if (!newName.trim()) return;
     setAdding(true);
-    try {
-      const created = await apiFetch("/universities", {
-        method: "POST",
-        body: JSON.stringify({ name: newName, shortName: newShort }),
-      });
-      setUniversities(u => [...u, created]);
-      setNewName(""); setNewShort("");
-    } catch (err) { console.error(err); }
+    try { const created = await apiFetch("/universities", { method: "POST", body: JSON.stringify({ name: newName, shortName: newShort }) }); setUniversities(u => [...u, created]); setNewName(""); setNewShort(""); }
+    catch (err) { console.error(err); }
     setAdding(false);
   };
 
   const deleteUniversity = async (id) => {
-    try {
-      await apiFetch(`/admin/universities/${id}`, { method: "DELETE" });
-      setUniversities(u => u.filter(x => x.id !== id));
-    } catch (err) { console.error(err); }
+    try { await apiFetch(`/admin/universities/${id}`, { method: "DELETE" }); setUniversities(u => u.filter(x => x.id !== id)); }
+    catch (err) { console.error(err); }
   };
 
   return (
     <div>
-      {/* Add University */}
       <div className="flex gap-2 mb-4">
-        <input
-          type="text" placeholder="University full name *" value={newName}
-          onChange={e => setNewName(e.target.value)}
-          className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400"
-        />
-        <input
-          type="text" placeholder="Short name e.g. UNILAG" value={newShort}
-          onChange={e => setNewShort(e.target.value)}
-          className="w-36 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400"
-        />
-        <button
-          onClick={addUniversity} disabled={adding}
-          className="bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-sm hover:bg-indigo-600 transition disabled:opacity-50"
-        >Add</button>
+        <input type="text" placeholder="University full name *" value={newName} onChange={e => setNewName(e.target.value)} className={`flex-1 ${inputCls}`} />
+        <input type="text" placeholder="Short name e.g. UNILAG" value={newShort} onChange={e => setNewShort(e.target.value)} className="w-36 bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/40 transition" />
+        <button onClick={addUniversity} disabled={adding} className="bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white px-4 py-2.5 rounded-xl text-sm transition">Add</button>
       </div>
-
-      {loading ? <p className="text-gray-400 text-sm text-center py-10">Loading...</p> : (
-        <div className="overflow-x-auto rounded-2xl border border-gray-100">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
-              <tr>
-                <th className="px-4 py-3 text-left">Name</th>
-                <th className="px-4 py-3 text-left">Short Name</th>
-                <th className="px-4 py-3 text-left">Country</th>
-                <th className="px-4 py-3 text-left">Verified</th>
-                <th className="px-4 py-3 text-left">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
+      {loading ? <p className="text-white/20 text-sm text-center py-10">Loading...</p> : (
+        <div className="overflow-x-auto rounded-2xl border border-white/10">
+          <table className="w-full">
+            <thead className="bg-white/[0.03]"><tr><th className={thCls}>Name</th><th className={thCls}>Short</th><th className={thCls}>Country</th><th className={thCls}>Verified</th><th className={thCls}>Action</th></tr></thead>
+            <tbody className="divide-y divide-white/5">
               {universities.map(u => (
-                <tr key={u.id} className="hover:bg-gray-50 transition">
-                  <td className="px-4 py-3 font-medium text-gray-800">{u.name}</td>
-                  <td className="px-4 py-3 text-gray-500">{u.shortName || "—"}</td>
-                  <td className="px-4 py-3 text-gray-500">{u.country || "—"}</td>
-                  {/* Verified toggle */}
+                <tr key={u.id} className="hover:bg-white/[0.02] transition">
+                  <td className="px-4 py-3 font-medium text-white text-sm">{u.name}</td>
+                  <td className={tdCls}>{u.shortName || "—"}</td>
+                  <td className={tdCls}>{u.country || "—"}</td>
                   <td className="px-4 py-3">
-                    <button
-                      onClick={async () => {
-                        try {
-                          const token = await getIdToken(auth.currentUser, true);
-                          await fetch(`${API}/universities/${u.id}`, {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                            body: JSON.stringify({ isVerified: !u.isVerified }),
-                          });
-                          setUniversities(prev => prev.map(x => x.id === u.id ? { ...x, isVerified: !x.isVerified } : x));
-                        } catch (err) { console.error(err); }
-                      }}
-                      className={`px-3 py-1 rounded-full text-xs font-medium transition flex items-center gap-1 ${
-                        u.isVerified
-                          ? "bg-green-100 text-green-600 hover:bg-green-200"
-                          : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                      }`}
-                    >
-                      {u.isVerified
-                        ? <><FontAwesomeIcon icon={faCheckCircle} className="text-green-500" /> Verified</>
-                        : "Verify"
-                      }
+                    <button onClick={async () => {
+                      try {
+                        const token = await getIdToken(auth.currentUser, true);
+                        await fetch(`${API}/universities/${u.id}`, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ isVerified: !u.isVerified }) });
+                        setUniversities(prev => prev.map(x => x.id === u.id ? { ...x, isVerified: !x.isVerified } : x));
+                      } catch (err) { console.error(err); }
+                    }} className={`px-3 py-1 rounded-full text-xs font-medium transition flex items-center gap-1 ${u.isVerified ? "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25" : "bg-white/5 text-white/30 hover:bg-white/10"}`}>
+                      {u.isVerified ? <><FontAwesomeIcon icon={faCheckCircle} /> Verified</> : "Verify"}
                     </button>
                   </td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => setConfirm({ id: u.id, name: u.name })}
-                      className="text-red-400 hover:text-red-600 text-xs font-medium transition"
-                    >Delete</button>
-                  </td>
+                  <td className="px-4 py-3"><button onClick={() => setConfirm({ id: u.id, name: u.name })} className="text-pink-400 hover:text-pink-300 text-xs font-medium transition">Delete</button></td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {universities.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">No universities found.</p>}
+          {universities.length === 0 && <p className="text-center text-white/20 py-8 text-sm">No universities found.</p>}
         </div>
       )}
-      {confirm && (
-        <ConfirmModal
-          message={`Delete "${confirm.name}"? This cannot be undone.`}
-          onConfirm={() => { deleteUniversity(confirm.id); setConfirm(null); }}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
+      {confirm && <ConfirmModal message={`Delete "${confirm.name}"? This cannot be undone.`} onConfirm={() => { deleteUniversity(confirm.id); setConfirm(null); }} onCancel={() => setConfirm(null)} />}
     </div>
   );
 }
 
-// ── Reports Tab ────────────────────────────────────────────────────────────
+// ── Reports Tab ────────────────────────────────────────────────────
 function ReportsTab() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    apiFetch("/admin/reports").then(setReports).catch(() => setReports([])).finally(() => setLoading(false));
-  }, []);
+  useEffect(() => { apiFetch("/admin/reports").then(setReports).catch(() => setReports([])).finally(() => setLoading(false)); }, []);
 
   const resolve = async (id) => {
-    try {
-      await apiFetch(`/admin/reports/${id}/resolve`, { method: "PATCH" });
-      setReports(r => r.map(x => x.id === id ? { ...x, resolved: true } : x));
-    } catch (err) { console.error(err); }
+    try { await apiFetch(`/admin/reports/${id}/resolve`, { method: "PATCH" }); setReports(r => r.map(x => x.id === id ? { ...x, resolved: true } : x)); }
+    catch (err) { console.error(err); }
   };
 
   return (
     <div>
-      {loading ? <p className="text-gray-400 text-sm text-center py-10">Loading...</p> : (
-        reports.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-4xl mb-3 text-green-400"><FontAwesomeIcon icon={faCheckCircle} /></p>
-            <p className="text-gray-500 font-medium">No reports yet</p>
-            <p className="text-gray-400 text-sm mt-1">Everything looks clean!</p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {reports.map(r => (
-              <div key={r.id} className={`bg-white rounded-2xl p-4 border shadow-sm ${r.status === "RESOLVED" ? "opacity-50" : ""}`}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">{r.reason}</p>
-                    <p className="text-xs text-gray-400 mt-1">Reported by: {r.reporter?.displayName || "Unknown"}</p>
-                    <p className="text-xs text-gray-400">Target: {r.targetType} — {r.targetId}</p>
-                    <p className="text-xs text-gray-400">{new Date(r.createdAt).toLocaleDateString()}</p>
-                  </div>
-                  {!r.resolved && (
-                    <button
-                      onClick={() => resolve(r.id)}
-                      className="shrink-0 px-3 py-1.5 bg-green-100 text-green-600 rounded-full text-xs font-medium hover:bg-green-200 transition"
-                    >Resolve</button>
-                  )}
-                  {r.status === "RESOLVED" && (
-                    <span className="shrink-0 px-3 py-1.5 bg-gray-100 text-gray-400 rounded-full text-xs font-medium">Resolved</span>
-                  )}
+      {loading ? <p className="text-white/20 text-sm text-center py-10">Loading...</p> : reports.length === 0 ? (
+        <div className="text-center py-16">
+          <p className="text-4xl mb-3 text-emerald-400/50"><FontAwesomeIcon icon={faCheckCircle} /></p>
+          <p className="text-white/40 font-medium">No reports yet</p>
+          <p className="text-white/20 text-sm mt-1">Everything looks clean!</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {reports.map(r => (
+            <div key={r.id} className={`bg-white/[0.03] border border-white/10 rounded-2xl p-4 ${r.status === "RESOLVED" ? "opacity-40" : ""}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-white">{r.reason}</p>
+                  <p className="text-xs text-white/30 mt-1">Reported by: {r.reporter?.displayName || "Unknown"}</p>
+                  <p className="text-xs text-white/30">Target: {r.targetType} — {r.targetId}</p>
+                  <p className="text-xs text-white/20">{new Date(r.createdAt).toLocaleDateString()}</p>
                 </div>
+                {!r.resolved
+                  ? <button onClick={() => resolve(r.id)} className="shrink-0 px-3 py-1.5 bg-emerald-500/15 text-emerald-400 rounded-full text-xs font-medium hover:bg-emerald-500/25 transition">Resolve</button>
+                  : <span className="shrink-0 px-3 py-1.5 bg-white/5 text-white/30 rounded-full text-xs font-medium">Resolved</span>
+                }
               </div>
-            ))}
-          </div>
-        )
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
 }
-
 
 // ── Sellers Tab ────────────────────────────────────────────────────
 function SellersTab() {
@@ -571,72 +352,40 @@ function SellersTab() {
   const [loading, setLoading] = useState(true);
   const [confirm, setConfirm] = useState(null);
 
-  useEffect(() => {
-    apiFetch("/admin/sellers").then(setSellers).catch(console.error).finally(() => setLoading(false));
-  }, []);
+  useEffect(() => { apiFetch("/admin/sellers").then(setSellers).catch(console.error).finally(() => setLoading(false)); }, []);
 
   const deleteSeller = async (id) => {
-    try {
-      await apiFetch(`/admin/sellers/${id}`, { method: "DELETE" });
-      setSellers(s => s.filter(x => x.id !== id));
-    } catch (err) { console.error(err); }
+    try { await apiFetch(`/admin/sellers/${id}`, { method: "DELETE" }); setSellers(s => s.filter(x => x.id !== id)); }
+    catch (err) { console.error(err); }
   };
 
   return (
     <div>
-      {loading ? <p className="text-gray-400 text-sm text-center py-10">Loading...</p> : (
-        <div className="overflow-x-auto rounded-2xl border border-gray-100">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
-              <tr>
-                <th className="px-4 py-3 text-left">Seller</th>
-                <th className="px-4 py-3 text-left">Email</th>
-                <th className="px-4 py-3 text-left">ChatSnap</th>
-                <th className="px-4 py-3 text-left">WhatsApp</th>
-                <th className="px-4 py-3 text-left">Rating</th>
-                <th className="px-4 py-3 text-left">Sales</th>
-                <th className="px-4 py-3 text-left">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
+      {loading ? <p className="text-white/20 text-sm text-center py-10">Loading...</p> : (
+        <div className="overflow-x-auto rounded-2xl border border-white/10">
+          <table className="w-full">
+            <thead className="bg-white/[0.03]"><tr><th className={thCls}>Seller</th><th className={thCls}>Email</th><th className={thCls}>ChatSnap</th><th className={thCls}>WhatsApp</th><th className={thCls}>Rating</th><th className={thCls}>Sales</th><th className={thCls}>Action</th></tr></thead>
+            <tbody className="divide-y divide-white/5">
               {sellers.map(s => (
-                <tr key={s.id} className="hover:bg-gray-50 transition">
+                <tr key={s.id} className="hover:bg-white/[0.02] transition">
                   <td className="px-4 py-3 flex items-center gap-2">
-                    <img
-                      src={s.user?.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${s.user?.displayName}`}
-                      className="w-7 h-7 rounded-full object-cover"
-                      alt=""
-                    />
-                    <span className="font-medium text-gray-800">{s.user?.displayName || "—"}</span>
+                    <img src={s.user?.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${s.user?.displayName}`} className="w-7 h-7 rounded-full object-cover border border-white/10" alt="" />
+                    <span className="font-medium text-white text-sm">{s.user?.displayName || "—"}</span>
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{s.user?.email || "—"}</td>
-                  <td className="px-4 py-3 text-gray-500">{s.chatSnapUsername || "—"}</td>
-                  <td className="px-4 py-3 text-gray-500">{s.whatsapp || "—"}</td>
-                  <td className="px-4 py-3 text-yellow-500 flex items-center gap-1">
-                    <FontAwesomeIcon icon={faStar} />
-                    {s.rating > 0 ? s.rating.toFixed(1) : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">{s.totalSales}</td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => setConfirm({ id: s.id, name: s.user?.displayName })}
-                      className="text-red-400 hover:text-red-600 text-xs font-medium transition"
-                    >Delete</button>
-                  </td>
+                  <td className={tdCls}>{s.user?.email || "—"}</td>
+                  <td className={tdCls}>{s.chatSnapUsername || "—"}</td>
+                  <td className={tdCls}>{s.whatsapp || "—"}</td>
+                  <td className="px-4 py-3 text-yellow-400 flex items-center gap-1 text-sm"><FontAwesomeIcon icon={faStar} />{s.rating > 0 ? s.rating.toFixed(1) : "—"}</td>
+                  <td className={tdCls}>{s.totalSales}</td>
+                  <td className="px-4 py-3"><button onClick={() => setConfirm({ id: s.id, name: s.user?.displayName })} className="text-pink-400 hover:text-pink-300 text-xs font-medium transition">Delete</button></td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {sellers.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">No sellers found.</p>}
+          {sellers.length === 0 && <p className="text-center text-white/20 py-8 text-sm">No sellers found.</p>}
         </div>
       )}
-      {confirm && (
-        <ConfirmModal
-          message={`Remove seller profile for "${confirm.name}"? This cannot be undone.`}
-          onConfirm={() => { deleteSeller(confirm.id); setConfirm(null); }}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
+      {confirm && <ConfirmModal message={`Remove seller "${confirm.name}"? This cannot be undone.`} onConfirm={() => { deleteSeller(confirm.id); setConfirm(null); }} onCancel={() => setConfirm(null)} />}
     </div>
   );
 }
@@ -647,144 +396,105 @@ function ReviewsTab() {
   const [loading, setLoading] = useState(true);
   const [confirm, setConfirm] = useState(null);
 
-  useEffect(() => {
-    apiFetch("/admin/reviews").then(setReviews).catch(console.error).finally(() => setLoading(false));
-  }, []);
+  useEffect(() => { apiFetch("/admin/reviews").then(setReviews).catch(console.error).finally(() => setLoading(false)); }, []);
 
   const deleteReview = async (id) => {
-    try {
-      await apiFetch(`/admin/reviews/${id}`, { method: "DELETE" });
-      setReviews(r => r.filter(x => x.id !== id));
-    } catch (err) { console.error(err); }
+    try { await apiFetch(`/admin/reviews/${id}`, { method: "DELETE" }); setReviews(r => r.filter(x => x.id !== id)); }
+    catch (err) { console.error(err); }
   };
 
   return (
     <div>
-      {loading ? <p className="text-gray-400 text-sm text-center py-10">Loading...</p> : (
-        <div className="overflow-x-auto rounded-2xl border border-gray-100">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
-              <tr>
-                <th className="px-4 py-3 text-left">Reviewer</th>
-                <th className="px-4 py-3 text-left">Item</th>
-                <th className="px-4 py-3 text-left">Rating</th>
-                <th className="px-4 py-3 text-left">Comment</th>
-                <th className="px-4 py-3 text-left">Date</th>
-                <th className="px-4 py-3 text-left">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
+      {loading ? <p className="text-white/20 text-sm text-center py-10">Loading...</p> : (
+        <div className="overflow-x-auto rounded-2xl border border-white/10">
+          <table className="w-full">
+            <thead className="bg-white/[0.03]"><tr><th className={thCls}>Reviewer</th><th className={thCls}>Item</th><th className={thCls}>Rating</th><th className={thCls}>Comment</th><th className={thCls}>Date</th><th className={thCls}>Action</th></tr></thead>
+            <tbody className="divide-y divide-white/5">
               {reviews.map(r => (
-                <tr key={r.id} className="hover:bg-gray-50 transition">
-                  <td className="px-4 py-3 font-medium text-gray-800">{r.user?.displayName || "—"}</td>
-                  <td className="px-4 py-3 text-gray-500 max-w-[150px] truncate">{r.item?.title || "—"}</td>
-                  <td className="px-4 py-3 text-yellow-500 flex items-center gap-1">
-                    <FontAwesomeIcon icon={faStar} /> {r.rating}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 max-w-[200px] truncate">{r.comment || "—"}</td>
-                  <td className="px-4 py-3 text-gray-400">{new Date(r.createdAt).toLocaleDateString()}</td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => setConfirm({ id: r.id })}
-                      className="text-red-400 hover:text-red-600 text-xs font-medium transition"
-                    >Delete</button>
-                  </td>
+                <tr key={r.id} className="hover:bg-white/[0.02] transition">
+                  <td className="px-4 py-3 font-medium text-white text-sm">{r.user?.displayName || "—"}</td>
+                  <td className="px-4 py-3 text-white/50 text-sm max-w-[150px] truncate">{r.item?.title || "—"}</td>
+                  <td className="px-4 py-3 text-yellow-400 flex items-center gap-1 text-sm"><FontAwesomeIcon icon={faStar} /> {r.rating}</td>
+                  <td className="px-4 py-3 text-white/40 text-sm max-w-[200px] truncate">{r.comment || "—"}</td>
+                  <td className="px-4 py-3 text-xs text-white/30">{new Date(r.createdAt).toLocaleDateString()}</td>
+                  <td className="px-4 py-3"><button onClick={() => setConfirm({ id: r.id })} className="text-pink-400 hover:text-pink-300 text-xs font-medium transition">Delete</button></td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {reviews.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">No reviews found.</p>}
+          {reviews.length === 0 && <p className="text-center text-white/20 py-8 text-sm">No reviews found.</p>}
         </div>
       )}
-      {confirm && (
-        <ConfirmModal
-          message="Delete this review? This cannot be undone."
-          onConfirm={() => { deleteReview(confirm.id); setConfirm(null); }}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
+      {confirm && <ConfirmModal message="Delete this review? This cannot be undone." onConfirm={() => { deleteReview(confirm.id); setConfirm(null); }} onCancel={() => setConfirm(null)} />}
     </div>
   );
 }
 
-// ── Main Admin Component ───────────────────────────────────────────────────
+// ── Main Admin ─────────────────────────────────────────────────────
 function Admin() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [stats, setStats] = useState(null);
 
-    useEffect(() => {
-    apiFetch("/admin/stats").then(setStats).catch(console.error);
-  }, []);
+  useEffect(() => { apiFetch("/admin/stats").then(setStats).catch(console.error); }, []);
 
-  // Guard — only admin email allowed
   if (user && !ADMIN_EMAILS.includes(user.email)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
         <div className="text-center">
-          <p className="text-5xl mb-4"><FontAwesomeIcon icon={faBan} /></p>
-          <p className="text-gray-700 font-semibold">Access Denied</p>
-          <p className="text-gray-400 text-sm mt-1">You don't have permission to view this page.</p>
-          <button onClick={() => navigate("/home")} className="mt-4 px-5 py-2 bg-indigo-500 text-white rounded-full text-sm hover:bg-indigo-600 transition">
-            Go Home
-          </button>
+          <p className="text-5xl mb-4 text-white/10"><FontAwesomeIcon icon={faBan} /></p>
+          <p className="text-white font-semibold">Access Denied</p>
+          <p className="text-white/30 text-sm mt-1">You don't have permission to view this page.</p>
+          <button onClick={() => navigate("/home")} className="mt-4 px-5 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm transition">Go Home</button>
         </div>
       </div>
     );
   }
 
   const tabs = [
-  { id: "overview", label: "Overview", icon: <FontAwesomeIcon icon={faRobot} /> },
-  { id: "users", label: "Users", icon: <FontAwesomeIcon icon={faUsers} /> },
-  { id: "materials", label: "Materials", icon: <FontAwesomeIcon icon={faBook} /> },
-  { id: "products", label: "Products", icon: <FontAwesomeIcon icon={faShoppingBag} /> },
-  { id: "sellers", label: "Sellers", icon: <FontAwesomeIcon icon={faStore} /> },
-  { id: "reviews", label: "Reviews", icon: <FontAwesomeIcon icon={faStar} /> },
-  { id: "universities", label: "Universities", icon: <FontAwesomeIcon icon={faGraduationCap} /> },
-  { id: "reports", label: "Reports", icon: <FontAwesomeIcon icon={faFlag} /> },
-];
+    { id: "overview", label: "Overview", icon: <FontAwesomeIcon icon={faChartBar} /> },
+    { id: "users", label: "Users", icon: <FontAwesomeIcon icon={faUsers} /> },
+    { id: "materials", label: "Materials", icon: <FontAwesomeIcon icon={faBook} /> },
+    { id: "products", label: "Products", icon: <FontAwesomeIcon icon={faShoppingBag} /> },
+    { id: "sellers", label: "Sellers", icon: <FontAwesomeIcon icon={faStore} /> },
+    { id: "reviews", label: "Reviews", icon: <FontAwesomeIcon icon={faStar} /> },
+    { id: "universities", label: "Universities", icon: <FontAwesomeIcon icon={faGraduationCap} /> },
+    { id: "reports", label: "Reports", icon: <FontAwesomeIcon icon={faFlag} /> },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#0a0a0f] text-white">
+      {/* Ambient */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
+        <div className="absolute bottom-0 right-0 w-72 h-72 bg-pink-500 rounded-full opacity-[0.06] blur-[100px]" />
+      </div>
+
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-40 shadow-sm">
+      <header className="bg-[#0a0a0f]/80 backdrop-blur-md border-b border-white/5 px-6 py-3 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/home")} className="text-gray-400 hover:text-indigo-500 transition">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round">
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
+          <button onClick={() => navigate("/home")} className="text-white/40 hover:text-violet-400 transition">
+            <FontAwesomeIcon icon={faChevronLeft} />
           </button>
-          <div>
-            <h1 style={{ fontFamily: "'Nunito', sans-serif" }} className="text-lg font-bold text-indigo-500">
-              TestYourSelf <span className="text-gray-400 font-normal text-sm">/ Admin</span>
-            </h1>
-          </div>
+          <h1 className="text-lg font-black tracking-tight">
+            TEST<span className="text-violet-400">YOURSELF</span>
+            <span className="ml-2 text-xs font-semibold bg-pink-500/15 text-pink-400 border border-pink-500/20 px-2 py-0.5 rounded-full align-middle">Admin</span>
+          </h1>
         </div>
         <div className="flex items-center gap-2">
-          <img
-            src={user?.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${user?.displayName}`}
-            className="w-8 h-8 rounded-full object-cover border border-gray-200"
-            alt=""
-          />
-          <span className="text-sm text-gray-600 hidden sm:block">{user?.displayName}</span>
-          <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded-full text-xs font-semibold">Admin</span>
+          <img src={user?.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${user?.displayName}`} className="w-8 h-8 rounded-full object-cover border border-white/10" alt="" />
+          <span className="text-sm text-white/50 hidden sm:block">{user?.displayName}</span>
+          <span className="px-2 py-0.5 bg-violet-500/15 text-violet-400 border border-violet-500/20 rounded-full text-xs font-semibold">Admin</span>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="relative z-10 max-w-6xl mx-auto px-4 py-6">
         {/* Tabs */}
         <div className="flex gap-2 overflow-x-auto pb-2 mb-6">
           {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${
-                activeTab === tab.id
-                  ? "bg-indigo-500 text-white shadow-sm"
-                  : "bg-white border border-gray-200 text-gray-600 hover:border-indigo-300"
-              }`}
-            >
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition border ${activeTab === tab.id ? "bg-violet-500 text-white border-violet-500" : "bg-white/[0.03] border-white/10 text-white/50 hover:border-violet-500/30 hover:text-violet-400"}`}>
               <span>{tab.icon}</span> {tab.label}
             </button>
           ))}
@@ -792,52 +502,42 @@ function Admin() {
 
         {/* Overview */}
         {activeTab === "overview" && (
-          <div>
-            <h2 className="text-lg font-bold text-gray-700 mb-4">Platform Overview</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <StatCard label="Total Users" value={stats?.users} icon={<FontAwesomeIcon icon={faUsers} color="indigo" />} color="border-indigo-400" />
-              <StatCard label="Study Materials" value={stats?.materials} icon={<FontAwesomeIcon icon={faBook} color="purple" />} color="border-purple-400" />
-              <StatCard label="Products Listed" value={stats?.products} icon={<FontAwesomeIcon icon={faShoppingBag} color="pink" />} color="border-pink-400" />
-              <StatCard label="Universities" value={stats?.universities} icon={<FontAwesomeIcon icon={faGraduationCap} color="green" />} color="border-green-400" />
-              {/* New: Pending Reports stat */}
-              <StatCard label="Pending Reports" value={stats?.pendingReports} icon={<FontAwesomeIcon icon={faFlag} color="red" />} color="border-red-400" />
+          <div className="space-y-6">
+            <h2 className="text-base font-bold text-white/70">Platform Overview</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard label="Total Users"      value={stats?.users}       icon={<FontAwesomeIcon icon={faUsers} />}        accent="violet" />
+              <StatCard label="Study Materials"  value={stats?.materials}   icon={<FontAwesomeIcon icon={faBook} />}         accent="purple" />
+              <StatCard label="Products Listed"  value={stats?.products}    icon={<FontAwesomeIcon icon={faShoppingBag} />}  accent="pink" />
+              <StatCard label="Universities"     value={stats?.universities} icon={<FontAwesomeIcon icon={faGraduationCap} />} accent="green" />
+              <StatCard label="Pending Reports"  value={stats?.pendingReports} icon={<FontAwesomeIcon icon={faFlag} />}      accent="red" />
             </div>
 
-            {/* Marketplace Stats */}
-        {stats?.marketplace && (
-             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <StatCard label="Total Sellers" value={stats.marketplace.sellers} icon={<FontAwesomeIcon icon={faStore} color="indigo" />} color="border-indigo-400" />
-                 <StatCard label="Total Buyers" value={stats.marketplace.buyers} icon={<FontAwesomeIcon icon={faUsers} color="purple" />} color="border-purple-400" />
-                <StatCard label="Active Listings" value={stats.marketplace.activeListings} icon={<FontAwesomeIcon icon={faShoppingBag} color="green" />} color="border-green-400" />
-                <StatCard label="Sold Items" value={stats.marketplace.soldListings} icon={<FontAwesomeIcon icon={faCheckCircle} color="pink" />} color="border-pink-400" />
-             </div>
+            {stats?.marketplace && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <StatCard label="Total Sellers"   value={stats.marketplace.sellers}        icon={<FontAwesomeIcon icon={faStore} />}        accent="violet" />
+                <StatCard label="Total Buyers"    value={stats.marketplace.buyers}         icon={<FontAwesomeIcon icon={faUsers} />}        accent="purple" />
+                <StatCard label="Active Listings" value={stats.marketplace.activeListings} icon={<FontAwesomeIcon icon={faShoppingBag} />}  accent="green" />
+                <StatCard label="Sold Items"      value={stats.marketplace.soldListings}   icon={<FontAwesomeIcon icon={faCheckCircle} />}  accent="pink" />
+              </div>
             )}
 
-            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-              <p className="text-sm font-semibold text-gray-600 mb-1">Logged in as</p>
-              <p className="text-gray-800">{user?.email}</p>
-              <p className="text-xs text-gray-400 mt-1">You have full admin access to this platform.</p>
+            <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
+              <p className="text-sm font-semibold text-white/50 mb-1">Logged in as</p>
+              <p className="text-white">{user?.email}</p>
+              <p className="text-xs text-white/30 mt-1">You have full admin access to this platform.</p>
             </div>
 
-            {/* Top Universities by Users */}
             {stats?.topUniversities?.length > 0 && (
-              <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm mt-4">
-                <p className="text-sm font-semibold text-gray-600 mb-3 flex items-center gap-2">
-                  <FontAwesomeIcon icon={faChartBar} className="text-indigo-400" />
-                  Top Universities by Users
+              <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
+                <p className="text-sm font-semibold text-white/50 mb-3 flex items-center gap-2">
+                  <FontAwesomeIcon icon={faChartBar} className="text-violet-400" /> Top Universities by Users
                 </p>
                 {stats.topUniversities.map(u => (
-                  <div key={u.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                    <p className="text-sm text-gray-700">{u.shortName || u.name}</p>
-                    <div className="flex gap-4 text-xs text-gray-400">
-                      <span className="flex items-center gap-1">
-                        <FontAwesomeIcon icon={faUsers} className="text-indigo-300" />
-                        {u._count.users}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <FontAwesomeIcon icon={faBook} className="text-purple-300" />
-                        {u._count.studyMaterials}
-                      </span>
+                  <div key={u.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                    <p className="text-sm text-white/70">{u.shortName || u.name}</p>
+                    <div className="flex gap-4 text-xs text-white/30">
+                      <span className="flex items-center gap-1"><FontAwesomeIcon icon={faUsers} className="text-violet-400/60" />{u._count.users}</span>
+                      <span className="flex items-center gap-1"><FontAwesomeIcon icon={faBook} className="text-violet-400/60" />{u._count.studyMaterials}</span>
                     </div>
                   </div>
                 ))}
@@ -846,13 +546,13 @@ function Admin() {
           </div>
         )}
 
-        {activeTab === "users" && <UsersTab />}
-        {activeTab === "materials" && <MaterialsTab />}
-        {activeTab === "products" && <ProductsTab />}
+        {activeTab === "users"        && <UsersTab />}
+        {activeTab === "materials"    && <MaterialsTab />}
+        {activeTab === "products"     && <ProductsTab />}
         {activeTab === "universities" && <UniversitiesTab />}
-        {activeTab === "reports" && <ReportsTab />}
-        {activeTab === "sellers" && <SellersTab />}
-        {activeTab === "reviews" && <ReviewsTab />}
+        {activeTab === "reports"      && <ReportsTab />}
+        {activeTab === "sellers"      && <SellersTab />}
+        {activeTab === "reviews"      && <ReviewsTab />}
       </div>
     </div>
   );
