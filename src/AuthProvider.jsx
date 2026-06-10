@@ -1,16 +1,23 @@
 import { useEffect, useState } from "react";
 import { auth } from "./firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, reload } from "firebase/auth";
 import { AuthContext } from "./AuthContext";
 import { API } from "./config";
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(undefined); // undefined = still loading
+  const [emailVerified, setEmailVerified] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
+        // Reload to get the freshest emailVerified from Firebase
+        await reload(currentUser);
+
+        // Read emailVerified immediately after reload
+        setEmailVerified(currentUser.emailVerified);
+
         try {
           const token = await currentUser.getIdToken();
           const res = await fetch(`${API}/users/me`, {
@@ -23,13 +30,12 @@ export function AuthProvider({ children }) {
         }
       } else {
         setUser(null);
+        setEmailVerified(false);
       }
       setLoading(false);
     });
     return () => unsubscribe();
   }, []);
-
-  const emailVerified = user?.emailVerified ?? false;
 
   return (
     <AuthContext.Provider value={{ user, loading, emailVerified }}>

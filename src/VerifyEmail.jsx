@@ -52,21 +52,31 @@ function VerifyEmail() {
     navigate("/");
   };
 
-  const handleCheckNow = async () => {
-    setChecking(true);
-    try {
-      await reload(auth.currentUser);
-      if (auth.currentUser.emailVerified) {
-        navigate("/home");
-      } else {
-        setError("Email not verified yet. Please check your inbox and click the link.");
-      }
-    } catch {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setChecking(false);
+ const handleCheckNow = async () => {
+  setChecking(true);
+  setError("");
+  try {
+    const user = auth.currentUser;
+
+    if (!user) {
+      setError("Session expired. Please sign in again.");
+      navigate("/");
+      return;
     }
-  };
+
+    await reload(user);
+
+    if (user.emailVerified) {
+      navigate("/home");
+    } else {
+      setError("Email not verified yet. Please check your inbox and click the link.");
+    }
+  } catch {
+    setError("Something went wrong. Please try again.");
+  } finally {
+    setChecking(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-white to-purple-100 flex items-center justify-center px-4">
