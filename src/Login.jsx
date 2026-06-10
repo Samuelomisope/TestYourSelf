@@ -6,7 +6,6 @@ import {
   browserLocalPersistence,
   browserSessionPersistence,
   GoogleAuthProvider,
-  signInWithRedirect,
   signInWithPopup,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
@@ -54,38 +53,26 @@ function Login() {
   })();
 }, []);
 
-  const signInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      setLoading(true);
-      setError("");
-      setSuccessMsg("");
-      await setPersistence(
-        auth,
-        rememberMe ? browserLocalPersistence : browserSessionPersistence
-      );
-
-      if (import.meta.env.DEV) {
-        // Localhost: use popup (redirect loses credential on local dev)
-        const result = await signInWithPopup(auth, provider);
-        await setDoc(doc(db, "users", result.user.uid), {
-          uid: result.user.uid,
-          displayName: result.user.displayName,
-          email: result.user.email,
-          photoURL: result.user.photoURL || null,
-          createdAt: new Date(),
-        }, { merge: true });
-        navigate("/home", { state: { fromLogin: true } });
-      } else {
-        // Production: use redirect (avoids COOP issues on Vercel)
-        await signInWithRedirect(auth, provider);
-      }
-    } catch (err) {
-      console.error(err);
-      setError("Failed to sign in with Google. Please try again.");
-      setLoading(false);
-    }
-  };
+const signInWithGoogle = async () => {
+  const provider = new GoogleAuthProvider();
+  try {
+    setLoading(true);
+    setError("");
+    const result = await signInWithPopup(auth, provider);
+    await setDoc(doc(db, "users", result.user.uid), {
+      uid: result.user.uid,
+      displayName: result.user.displayName,
+      email: result.user.email,
+      photoURL: result.user.photoURL || null,
+      createdAt: new Date(),
+    }, { merge: true });
+    navigate("/home", { state: { fromLogin: true } });
+  } catch (err) {
+    console.error(err);
+    setError("Failed to sign in with Google. Please try again.");
+    setLoading(false);
+  }
+};
 
   const handleEmailLogin = async (e) => {
     e.preventDefault();
