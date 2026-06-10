@@ -16,10 +16,12 @@ import Search from "./Search";
 import VerifyEmail from "./VerifyEmail";
 import Admin from "./Admin";
 import Profile from "./Profile";
+import FeedbackWidget from "./FeedbackWidget";
 
 function App() {
   return (
     <BrowserRouter>
+     <FeedbackWidget />
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
@@ -37,6 +39,7 @@ function App() {
         <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        
       </Routes>
     </BrowserRouter>
   );
