@@ -1,56 +1,54 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 // ─── Tour step definitions ────────────────────────────────────────────────────
-// Each step targets a DOM element by its `data-tour` attribute.
-// tipPos: "right" | "left" | "bottom" | "bottom-left" | "top"
 const TOUR_STEPS = [
   {
     target: "sidebar",
-    title: "Navigation sidebar",
-    desc: "All four modules of TestYourSelf live here — Study Materials, AI Tools, Marketplace, and ChatSnap. Click any to jump right in.",
-    tipPos: "right",
+    title: "Menu",
+    desc: "Tap the menu icon to open the sidebar — access your profile, all modules, and logout from here.",
+    tipPos: "bottom",
   },
   {
     target: "global-search",
     title: "Global search",
-    desc: "Search across study materials, users, and marketplace products all at once from here.",
+    desc: "Search across study materials, users, and marketplace products all at once.",
     tipPos: "bottom",
+  },
+  {
+    target: "user-avatar",
+    title: "Your profile",
+    desc: "View and edit your account details, university, and profile photo.",
+    tipPos: "bottom-left",
   },
   {
     target: "nav-study",
     title: "Study materials",
     desc: "Upload PDFs and documents for your courses. Share them with other students or keep them private.",
-    tipPos: "right",
+    tipPos: "bottom",
   },
   {
     target: "nav-ai",
-    title: "AI tools",
-    desc: "Chat with an AI tutor, summarise your notes, or generate practice questions from your uploaded materials.",
-    tipPos: "right",
-  },
-  {
-    target: "nav-market",
-    title: "Marketplace",
-    desc: "Buy and sell textbooks, past questions, and other academic resources with fellow students.",
-    tipPos: "right",
+    title: "AI assistant",
+    desc: "Chat with an AI tutor, summarise your notes, or generate practice questions from your materials.",
+    tipPos: "bottom",
   },
   {
     target: "nav-chat",
     title: "ChatSnap",
     desc: "Real-time encrypted messaging with voice notes and media sharing. Study groups made easy.",
-    tipPos: "right",
+    tipPos: "bottom",
   },
   {
-    target: "user-avatar",
-    title: "Your profile",
-    desc: "Manage your account, university details, and notification preferences here.",
-    tipPos: "bottom-left",
+    target: "nav-market",
+    title: "Marketplace",
+    desc: "Buy and sell textbooks, past questions, and other academic resources with fellow students.",
+    tipPos: "bottom",
   },
 ];
 
 const STORAGE_KEY = "testyourself_tour_seen";
 const TOOLTIP_WIDTH = 240;
-const TOOLTIP_HEIGHT = 170;
+const TOOLTIP_HEIGHT = 175;
 const SPOTLIGHT_PAD = 8;
 
 function getSpotlightRect(el) {
@@ -97,7 +95,6 @@ function computeTooltipPos(spotRect, tipPos) {
   return { top, left };
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
 export default function AppTour({ autoStart = true, onComplete }) {
   const [active, setActive] = useState(false);
   const [step, setStep] = useState(0);
@@ -106,7 +103,6 @@ export default function AppTour({ autoStart = true, onComplete }) {
   const [done, setDone] = useState(false);
   const resizeRef = useRef(null);
 
-  // Auto-start for first-time visitors
   useEffect(() => {
     if (!autoStart) return;
     if (!localStorage.getItem(STORAGE_KEY)) setActive(true);
@@ -136,7 +132,6 @@ export default function AppTour({ autoStart = true, onComplete }) {
     return () => window.removeEventListener("resize", handleResize);
   }, [active, step, positionStep]);
 
-  // Lock body scroll while tour is open
   useEffect(() => {
     document.body.style.overflow = active ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -155,7 +150,6 @@ export default function AppTour({ autoStart = true, onComplete }) {
     onComplete?.();
   };
 
-  // Allow manual restart, e.g. from a Help menu button
   useEffect(() => {
     window.__startTour = () => {
       setDone(false);
@@ -175,7 +169,7 @@ export default function AppTour({ autoStart = true, onComplete }) {
       aria-modal="true"
       aria-label="App tour"
     >
-      {/* ── SVG backdrop with spotlight cutout ── */}
+      {/* SVG backdrop with spotlight cutout */}
       {spotRect && (
         <svg
           className="fixed inset-0 w-screen h-screen pointer-events-auto"
@@ -198,10 +192,10 @@ export default function AppTour({ autoStart = true, onComplete }) {
           <rect
             width="100%"
             height="100%"
-            fill="rgba(0,0,0,0.6)"
+            fill="rgba(0,0,0,0.75)"
             mask="url(#spotlight-mask)"
           />
-          {/* Spotlight highlight ring */}
+          {/* Spotlight ring */}
           <rect
             x={spotRect.left}
             y={spotRect.top}
@@ -209,45 +203,39 @@ export default function AppTour({ autoStart = true, onComplete }) {
             height={spotRect.height}
             rx="10"
             fill="none"
-            stroke="#AFA9EC"
+            stroke="#a78bfa"
             strokeWidth="2"
           />
         </svg>
       )}
 
-      {/* ── Skip button ── */}
+      {/* Skip button */}
       {!done && (
         <button
           onClick={() => setDone(true)}
-          className="fixed top-4 right-4 z-[10001] px-3 py-1.5 text-sm text-white/80 border border-white/30 rounded-lg bg-transparent hover:border-white/60 hover:text-white transition-colors cursor-pointer"
+          className="fixed top-4 right-4 z-[10001] px-3 py-1.5 text-sm text-white/60 border border-white/20 rounded-lg bg-transparent hover:border-white/50 hover:text-white transition-colors cursor-pointer"
         >
           Skip tour
         </button>
       )}
 
-      {/* ── Step tooltip ── */}
+      {/* Tooltip */}
       {!done && (
         <div
           role="tooltip"
-          className="fixed z-[10002] w-60 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-lg"
+          className="fixed z-[10002] w-60 bg-[#0d0d14] border border-white/10 rounded-xl p-4"
           style={{ top: tooltipPos.top, left: tooltipPos.left }}
         >
-          {/* Step label */}
-          <p className="text-xs font-semibold text-violet-500 uppercase tracking-wide mb-1">
+          <p className="text-xs font-semibold text-violet-400 uppercase tracking-wide mb-1">
             Step {step + 1} of {TOUR_STEPS.length}
           </p>
-
-          {/* Title */}
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1.5">
+          <h3 className="text-sm font-semibold text-white mb-1.5">
             {currentStep.title}
           </h3>
-
-          {/* Description */}
-          <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-4">
+          <p className="text-xs text-white/40 leading-relaxed mb-4">
             {currentStep.desc}
           </p>
 
-          {/* Footer: dots + nav buttons */}
           <div className="flex items-center justify-between">
             {/* Progress dots */}
             <div className="flex items-center gap-1.5" aria-hidden="true">
@@ -255,7 +243,7 @@ export default function AppTour({ autoStart = true, onComplete }) {
                 <span
                   key={i}
                   className={`block w-1.5 h-1.5 rounded-full transition-colors ${
-                    i === step ? "bg-violet-500" : "bg-gray-300 dark:bg-gray-600"
+                    i === step ? "bg-violet-400" : "bg-white/20"
                   }`}
                 />
               ))}
@@ -266,14 +254,14 @@ export default function AppTour({ autoStart = true, onComplete }) {
               {step > 0 && (
                 <button
                   onClick={handlePrev}
-                  className="px-3 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer active:scale-95"
+                  className="px-3 py-1 text-xs border border-white/10 rounded-lg text-white/50 hover:bg-white/5 hover:text-white transition-colors cursor-pointer active:scale-95"
                 >
                   Back
                 </button>
               )}
               <button
                 onClick={handleNext}
-                className="px-3 py-1 text-xs bg-violet-500 hover:bg-violet-600 text-white rounded-lg transition-colors cursor-pointer active:scale-95"
+                className="px-3 py-1 text-xs bg-violet-500 hover:bg-violet-400 text-white rounded-lg transition-colors cursor-pointer active:scale-95"
               >
                 {step === TOUR_STEPS.length - 1 ? "Finish" : "Next"}
               </button>
@@ -282,18 +270,17 @@ export default function AppTour({ autoStart = true, onComplete }) {
         </div>
       )}
 
-      {/* ── Done / completion card ── */}
+      {/* Done card */}
       {done && (
         <div
           className="fixed inset-0 z-[10003] flex items-center justify-center pointer-events-auto"
           role="alertdialog"
           aria-label="Tour complete"
         >
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl px-8 py-8 text-center w-[280px] shadow-xl">
-            {/* Check icon */}
-            <div className="w-12 h-12 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center mx-auto mb-4">
+          <div className="bg-[#0d0d14] border border-white/10 rounded-2xl px-8 py-8 text-center w-[280px]">
+            <div className="w-12 h-12 rounded-full bg-violet-500/20 flex items-center justify-center mx-auto mb-4">
               <svg
-                className="w-6 h-6 text-violet-500"
+                className="w-6 h-6 text-violet-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -303,17 +290,16 @@ export default function AppTour({ autoStart = true, onComplete }) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-
-            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            <h2 className="text-base font-semibold text-white mb-2">
               You're all set!
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-6">
+            <p className="text-sm text-white/40 leading-relaxed mb-6">
               That's a quick look at TestYourSelf. Start by uploading a study
               material or chatting with the AI tutor.
             </p>
             <button
               onClick={closeTour}
-              className="w-full py-2.5 bg-violet-500 hover:bg-violet-600 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer active:scale-95"
+              className="w-full py-2.5 bg-violet-500 hover:bg-violet-400 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer active:scale-95"
             >
               Get started
             </button>

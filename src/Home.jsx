@@ -13,14 +13,15 @@ import {
   faCamera, faBagShopping, faMessage, faFile,
   faHouse, faBook, faStore, faBell, faSearch, faBars, faXmark,
 } from '@fortawesome/free-solid-svg-icons';
+import AppTour from "./components/AppTour/AppTour";
 
 // ─── Shared Nav Links ──────────────────────────────────────────────
 const TAB_LINKS = [
-  { href: "/home",          label: "Home",   icon: faHouse },
-  { href: "/study-material",label: "Study",  icon: faBook },
-  { href: "/ai",            label: "AI",     icon: faRobot },
-  { href: "/chat",          label: "Chat",   icon: faComments },
-  { href: "/marketplace",   label: "Market", icon: faStore },
+  { href: "/home",           label: "Home",   icon: faHouse },
+  { href: "/study-material", label: "Study",  icon: faBook,     tour: "nav-study" },
+  { href: "/ai",             label: "AI",     icon: faRobot,    tour: "nav-ai" },
+  { href: "/chat",           label: "Chat",   icon: faComments, tour: "nav-chat" },
+  { href: "/marketplace",    label: "Market", icon: faStore,    tour: "nav-market" },
 ];
 
 function Toast({ message, onClose }) {
@@ -246,7 +247,9 @@ function Home() {
       <header className="fixed top-0 left-0 w-full z-40 bg-[#0a0a0f]/80 backdrop-blur-md border-b border-white/5">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between px-4 py-2.5">
-            <div className="flex items-center gap-3">
+
+            {/* Logo + menu — tour target: sidebar */}
+            <div data-tour="sidebar" className="flex items-center gap-3">
               <button onClick={() => setMenuOpen(true)} className="text-white/40 hover:text-violet-400 transition">
                 <FontAwesomeIcon icon={faBars} className="w-5 h-5" />
               </button>
@@ -254,10 +257,18 @@ function Home() {
                 TEST<span className="text-violet-400">YOURSELF</span>
               </h1>
             </div>
+
             <div className="flex items-center gap-3">
-              <Link to="/search" className="w-9 h-9 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-white/40 hover:text-violet-400 hover:border-violet-500/40 transition">
+
+              {/* Search — tour target: global-search */}
+              <Link
+                data-tour="global-search"
+                to="/search"
+                className="w-9 h-9 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-white/40 hover:text-violet-400 hover:border-violet-500/40 transition"
+              >
                 <FontAwesomeIcon icon={faSearch} className="w-4 h-4" />
               </Link>
+
               <div className="relative">
                 <button onClick={() => setShowNotifications(!showNotifications)} className="w-9 h-9 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-white/40 hover:text-violet-400 hover:border-violet-500/40 transition">
                   <FontAwesomeIcon icon={faBell} className="w-4 h-4" />
@@ -267,7 +278,9 @@ function Home() {
                 </button>
                 {showNotifications && <NotificationPanel onClose={() => setShowNotifications(false)} />}
               </div>
-              <Link to="/profile">
+
+              {/* Avatar — tour target: user-avatar */}
+              <Link data-tour="user-avatar" to="/profile">
                 {user?.photoURL
                   ? <img src={user.photoURL} alt="Profile" className="w-9 h-9 rounded-xl object-cover border border-white/10" />
                   : <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.displayName || user?.email || "?")}`} alt="Profile" className="w-9 h-9 rounded-xl border border-white/10" />
@@ -281,8 +294,12 @@ function Home() {
             {TAB_LINKS.map((tab) => {
               const isActive = location.pathname === tab.href;
               return (
-                <Link key={tab.href} to={tab.href}
-                  className={`flex flex-col items-center py-2 px-4 border-b-2 transition text-xs gap-0.5 ${isActive ? "border-violet-500 text-violet-400" : "border-transparent text-white/30 hover:text-white/60"}`}>
+                <Link
+                  key={tab.href}
+                  to={tab.href}
+                  data-tour={tab.tour || undefined}
+                  className={`flex flex-col items-center py-2 px-4 border-b-2 transition text-xs gap-0.5 ${isActive ? "border-violet-500 text-violet-400" : "border-transparent text-white/30 hover:text-white/60"}`}
+                >
                   <FontAwesomeIcon icon={tab.icon} className="w-4 h-4" />
                   <span>{tab.label}</span>
                 </Link>
@@ -297,7 +314,7 @@ function Home() {
       {/* OVERLAY */}
       {menuOpen && <div className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />}
 
-      {/* SIDEBAR */}
+      {/* SIDEBAR DRAWER */}
       <aside className={`fixed top-0 left-0 h-full w-72 z-50 bg-[#0d0d14] border-r border-white/5 shadow-2xl transform transition-transform duration-300 ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
           <div className="flex items-center gap-3">
@@ -494,6 +511,10 @@ function Home() {
           TestYourSelf
         </h1>
       </footer>
+
+      {/* ONBOARDING TOUR — auto-starts once for new users */}
+      <AppTour autoStart={true} />
+
     </div>
   );
 }
