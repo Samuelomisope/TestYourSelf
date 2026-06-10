@@ -48,9 +48,11 @@ function Login() {
   const navigate = useNavigate();
 
   // Pick up the Google redirect result when the user lands back on this page
-  useEffect(() => {
-    handleGoogleRedirectResult(navigate, setError);
-  }, []);
+ useEffect(() => {
+  (async () => {
+    await handleGoogleRedirectResult(navigate, setError);
+  })();
+}, []);
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
