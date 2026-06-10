@@ -5,9 +5,9 @@ import { getIdToken } from "firebase/auth";
 import { useAuth } from "./useAuth";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faRobot, faBook, faUsers, faShoppingBag, faGraduationCap,
+   faBook, faUsers, faShoppingBag, faGraduationCap,
   faFlag, faBan, faCheckCircle, faChartBar, faStore, faStar,
-  faChevronLeft, faXmark,
+  faChevronLeft, faComment,
 } from "@fortawesome/free-solid-svg-icons";
 import { API } from "./config";
 
@@ -430,6 +430,74 @@ function ReviewsTab() {
   );
 }
 
+// ── Feedback Tab ───────────────────────────────────────────────────
+function FeedbackTab() {
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
+
+  useEffect(() => { apiFetch("/feedback").then(setFeedbacks).catch(console.error).finally(() => setLoading(false)); }, []);
+
+  const filtered = feedbacks.filter(f =>
+    f.message?.toLowerCase().includes(search.toLowerCase()) ||
+    f.category?.toLowerCase().includes(search.toLowerCase()) ||
+    f.user?.displayName?.toLowerCase().includes(search.toLowerCase())
+  );
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const categoryColors = {
+    Bug: "bg-pink-500/15 text-pink-400",
+    Suggestion: "bg-violet-500/15 text-violet-400",
+    General: "bg-white/10 text-white/40",
+  };
+
+  return (
+    <div>
+      <input type="text" placeholder="Search feedback..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className={`${inputCls} mb-4`} />
+      {loading ? <p className="text-white/20 text-sm text-center py-10">Loading...</p> : (
+        <>
+          <div className="overflow-x-auto rounded-2xl border border-white/10">
+            <table className="w-full">
+              <thead className="bg-white/[0.03]">
+                <tr>
+                  <th className={thCls}>User</th>
+                  <th className={thCls}>Category</th>
+                  <th className={thCls}>Rating</th>
+                  <th className={thCls}>Message</th>
+                  <th className={thCls}>Page</th>
+                  <th className={thCls}>Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {paginated.map(f => (
+                  <tr key={f.id} className="hover:bg-white/[0.02] transition">
+                    <td className="px-4 py-3 text-sm text-white font-medium">{f.user?.displayName || "Anonymous"}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${categoryColors[f.category] || "bg-white/5 text-white/30"}`}>
+                        {f.category}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-yellow-400 text-sm flex items-center gap-1">
+                      <FontAwesomeIcon icon={faStar} /> {f.rating}
+                    </td>
+                    <td className="px-4 py-3 text-white/50 text-sm max-w-[260px] truncate">{f.message}</td>
+                    <td className={tdCls}>{f.page || "—"}</td>
+                    <td className="px-4 py-3 text-xs text-white/30">{new Date(f.createdAt).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filtered.length === 0 && <p className="text-center text-white/20 py-8 text-sm">No feedback yet.</p>}
+          </div>
+          <Pagination page={page} totalPages={Math.ceil(filtered.length / PAGE_SIZE)} setPage={setPage} />
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── Main Admin ─────────────────────────────────────────────────────
 function Admin() {
   const { user } = useAuth();
@@ -461,6 +529,7 @@ function Admin() {
     { id: "reviews", label: "Reviews", icon: <FontAwesomeIcon icon={faStar} /> },
     { id: "universities", label: "Universities", icon: <FontAwesomeIcon icon={faGraduationCap} /> },
     { id: "reports", label: "Reports", icon: <FontAwesomeIcon icon={faFlag} /> },
+    { id: "feedback", label: "Feedback", icon: <FontAwesomeIcon icon={faComment} /> },
   ];
 
   return (
@@ -553,6 +622,7 @@ function Admin() {
         {activeTab === "reports"      && <ReportsTab />}
         {activeTab === "sellers"      && <SellersTab />}
         {activeTab === "reviews"      && <ReviewsTab />}
+        {activeTab === "feedback" && <FeedbackTab />}
       </div>
     </div>
   );
