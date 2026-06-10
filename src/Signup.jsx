@@ -18,6 +18,7 @@ import { handleGoogleRedirectResult } from "./auth-redirect";
 import login1 from "./assets/login1.webp";
 import login2 from "./assets/login2.avif";
 import login3 from "./assets/login3.webp";
+import { API } from "./config";
 
 const images = [login1, login2, login3];
 
@@ -124,6 +125,22 @@ function Signup() {
         displayName: fullName,
         photoURL: uploadedPhotoURL || null,
       });
+
+      if (uploadedPhotoURL) {
+  try {
+    const token = await userCredential.user.getIdToken();
+    await fetch(`${API}/users/me`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ photoURL: uploadedPhotoURL }),
+    });
+  } catch (err) {
+    console.error('Failed to save photo to backend:', err);
+  }
+}
 
       await setDoc(
         doc(db, "users", userCredential.user.uid),
