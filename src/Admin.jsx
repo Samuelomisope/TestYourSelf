@@ -111,7 +111,7 @@ function UsersTab() {
                     <td className={tdCls}>{u.email}</td>
                     <td className={tdCls}>{u.university?.shortName || "—"}</td>
                     <td className="px-4 py-3 text-xs text-white/30">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}</td>
-                    <td className="px-4 py-3 flex items-center gap-3">
+                    <td className="px-4 py-3 flex items-center gap-3 whitespace-nowrap min-w-[180px]">
                       <button onClick={async () => {
                         try {
                           const token = await getIdToken(auth.currentUser, true);
