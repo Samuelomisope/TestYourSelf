@@ -47,32 +47,41 @@ function Login() {
   const navigate = useNavigate();
 
   // Pick up the Google redirect result when the user lands back on this page
- useEffect(() => {
-  (async () => {
-    await handleGoogleRedirectResult(navigate, setError);
-  })();
-}, []);
+  useEffect(() => {
+    (async () => {
+      await handleGoogleRedirectResult(navigate, setError);
+    })();
+  }, []);
 
-const signInWithGoogle = async () => {
-  const provider = new GoogleAuthProvider();
-  try {
-    setLoading(true);
-    setError("");
-    const result = await signInWithPopup(auth, provider);
-    await setDoc(doc(db, "users", result.user.uid), {
-      uid: result.user.uid,
-      displayName: result.user.displayName,
-      email: result.user.email,
-      photoURL: result.user.photoURL || null,
-      createdAt: new Date(),
-    }, { merge: true });
-    navigate("/home", { state: { fromLogin: true } });
-  } catch (err) {
-    console.error(err);
-    setError("Failed to sign in with Google. Please try again.");
-    setLoading(false);
-  }
-};
+  const signInWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    // Request Drive read access so the Study Material upload can use Google Picker
+    provider.addScope("https://www.googleapis.com/auth/drive.readonly");
+    try {
+      setLoading(true);
+      setError("");
+      const result = await signInWithPopup(auth, provider);
+
+      // Save the Google OAuth access token for the Google Drive Picker
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential?.accessToken) {
+        localStorage.setItem("googleAccessToken", credential.accessToken);
+      }
+
+      await setDoc(doc(db, "users", result.user.uid), {
+        uid: result.user.uid,
+        displayName: result.user.displayName,
+        email: result.user.email,
+        photoURL: result.user.photoURL || null,
+        createdAt: new Date(),
+      }, { merge: true });
+      navigate("/home", { state: { fromLogin: true } });
+    } catch (err) {
+      console.error(err);
+      setError("Failed to sign in with Google. Please try again.");
+      setLoading(false);
+    }
+  };
 
   const handleEmailLogin = async (e) => {
     e.preventDefault();

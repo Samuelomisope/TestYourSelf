@@ -1,13 +1,14 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "./useAuth";
 import { Link, useLocation } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faFileLines, faLock, faVideo, faBox, faFile, faNoteSticky, faUser, faGlobe,
   faHouse, faBook, faRobot, faComments, faStore, faChevronDown, faXmark,
-  faCalculator, faUpload, faPlus, faList, faGrip,
+  faCalculator, faUpload, faList, faGrip,
 } from '@fortawesome/free-solid-svg-icons';
 import { faFile as farFile } from '@fortawesome/free-regular-svg-icons';
+import { UploadModal } from "./UploadModal";
 
 const FILE_ICONS = {
   pdf: <FontAwesomeIcon icon={faFileLines} />,
@@ -21,14 +22,6 @@ const getMimeFileType = (mimeType) => {
   if (mimeType.includes("pdf")) return "pdf";
   if (mimeType.includes("video")) return "video";
   if (mimeType.includes("word") || mimeType.includes("presentation") || mimeType.includes("text")) return "note";
-  return "default";
-};
-
-const getFileType = (name) => {
-  const ext = name?.split(".").pop().toLowerCase();
-  if (["pdf"].includes(ext)) return "pdf";
-  if (["mp4", "mov", "avi", "mkv", "webm"].includes(ext)) return "video";
-  if (["doc", "docx", "txt", "ppt", "pptx"].includes(ext)) return "note";
   return "default";
 };
 
@@ -107,127 +100,6 @@ function Calculator({ onClose }) {
               }`}>{btn}</button>
           ))}
         </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Upload Modal ──────────────────────────────────────────────────
-function UploadModal({ onClose, user, universitiesList = [] }) {
-  const [files, setFiles] = useState([]);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState("");
-  const [progresses, setProgresses] = useState({});
-  const [expandedIndex, setExpandedIndex] = useState(null);
-  const [isPublic, setIsPublic] = useState(false);
-  const fileRef = useRef();
-
-  const handleFiles = (selected) => {
-    const incoming = Array.from(selected);
-    const valid = incoming.filter(f => f.size <= 100 * 1024 * 1024);
-    if (valid.length < incoming.length) setError("Some files exceed 100MB and were skipped.");
-    setFiles(prev => [...prev, ...valid.map(f => ({ file: f, title: f.name.replace(/\.[^/.]+$/, ""), course: "", description: "", university: "" }))]);
-    setExpandedIndex(prev => prev === null ? 0 : prev);
-  };
-
-  const updateMeta = (index, field, value) => setFiles(prev => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
-  const removeFile = (index) => { setFiles(prev => prev.filter((_, i) => i !== index)); setExpandedIndex(null); };
-
-  const uploadSingle = (item, token) => new Promise((resolve, reject) => {
-    const formData = new FormData();
-    formData.append("file", item.file);
-    formData.append("title", item.title || item.file.name);
-    formData.append("description", item.description);
-    formData.append("faculty", item.course);
-    formData.append("isPublic", String(isPublic));
-    if (item.university) formData.append("university", item.university);
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material/upload`);
-    xhr.setRequestHeader("Authorization", `Bearer ${token}`);
-    xhr.timeout = 300000;
-    xhr.upload.onprogress = (e) => { if (e.lengthComputable) setProgresses(prev => ({ ...prev, [item.file.name]: Math.round((e.loaded / e.total) * 100) })); };
-    xhr.onload = () => (xhr.status === 200 || xhr.status === 201) ? resolve() : reject(new Error(`Failed: ${item.file.name}`));
-    xhr.onerror = () => reject(new Error(`Error uploading ${item.file.name}`));
-    xhr.send(formData);
-  });
-
-  const handleUpload = async () => {
-    if (files.length === 0) { setError("Please select at least one file."); return; }
-    setUploading(true); setError("");
-    try {
-      const { auth } = await import("./firebase");
-      const { getIdToken } = await import("firebase/auth");
-      const token = await getIdToken(auth.currentUser, true);
-      const results = await Promise.allSettled(files.map(f => uploadSingle(f, token)));
-      const failed = results.filter(r => r.status === "rejected");
-      if (failed.length === 0) onClose(true);
-      else if (failed.length < files.length) { setError(`${failed.length} file(s) failed. Others uploaded successfully.`); setUploading(false); }
-      else { setError("All uploads failed. Please try again."); setUploading(false); }
-    } catch (err) { console.error(err); setError("Upload failed. Try again."); setUploading(false); }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="bg-[#0d0d14] border border-white/10 rounded-3xl w-full max-w-md shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="font-bold text-white text-lg">Upload Files</h2>
-          <button onClick={onClose} className="text-white/30 hover:text-white transition"><FontAwesomeIcon icon={faXmark} /></button>
-        </div>
-        {error && <p className="text-pink-400 text-sm mb-3">{error}</p>}
-        <div
-          onClick={() => fileRef.current.click()}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}
-          className="border-2 border-dashed border-violet-500/30 rounded-2xl p-5 text-center cursor-pointer hover:border-violet-500/60 hover:bg-violet-500/5 transition mb-4"
-        >
-          <p className="text-3xl mb-1">☁️</p>
-          <p className="text-sm text-white/50">Tap or drag files here</p>
-          <p className="text-xs text-white/30 mt-1">PDF, Video, Word, PowerPoint — max 100MB each</p>
-          <input ref={fileRef} type="file" className="hidden" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.mp4,.mov,.avi,.mkv,.webm" onChange={(e) => handleFiles(e.target.files)} />
-        </div>
-        {files.length > 0 && (
-          <div className="mb-4 space-y-2">
-            {files.map((item, i) => (
-              <div key={i} className="border border-white/10 rounded-2xl overflow-hidden">
-                <div className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-white/5" onClick={() => setExpandedIndex(expandedIndex === i ? null : i)}>
-                  <span className="text-violet-400">{FILE_ICONS[getFileType(item.file.name)]}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-white truncate">{item.title || item.file.name}</p>
-                    <p className="text-xs text-white/30">{(item.file.size / 1024 / 1024).toFixed(2)} MB</p>
-                    {progresses[item.file.name] !== undefined && (
-                      <div className="w-full bg-white/10 rounded-full h-1 mt-1">
-                        <div className="bg-violet-500 h-1 rounded-full transition-all" style={{ width: `${progresses[item.file.name]}%` }} />
-                      </div>
-                    )}
-                  </div>
-                  {!uploading && <button onClick={(e) => { e.stopPropagation(); removeFile(i); }} className="text-pink-400 hover:text-pink-300 transition text-xs"><FontAwesomeIcon icon={faXmark} /></button>}
-                </div>
-                {expandedIndex === i && (
-                  <div className="px-3 pb-3 pt-1 border-t border-white/5 bg-white/[0.02] space-y-2">
-                    <input type="text" placeholder="Title *" value={item.title} onChange={(e) => updateMeta(i, "title", e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
-                    <input type="text" placeholder="Course name e.g. CHM 101" value={item.course} onChange={(e) => updateMeta(i, "course", e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
-                    <select value={item.university} onChange={(e) => updateMeta(i, "university", e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white/70 outline-none focus:border-violet-500/60 transition">
-                      <option value="">Select University</option>
-                      {universitiesList.map(u => <option key={u.id} value={u.shortName || u.name}>{u.name}</option>)}
-                    </select>
-                    <textarea placeholder="Description (optional)" value={item.description} onChange={(e) => updateMeta(i, "description", e.target.value)} rows={2} className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition" />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="flex items-center gap-3 mb-5">
-          <button type="button" onClick={() => setIsPublic(false)} className={`flex-1 py-2 rounded-xl text-sm font-medium border transition ${!isPublic ? "bg-violet-500 text-white border-violet-500" : "text-white/40 border-white/10"}`}>
-            <FontAwesomeIcon icon={faLock} className="mr-1" /> Private
-          </button>
-          <button type="button" onClick={() => setIsPublic(true)} className={`flex-1 py-2 rounded-xl text-sm font-medium border transition ${isPublic ? "bg-violet-500 text-white border-violet-500" : "text-white/40 border-white/10"}`}>
-            <FontAwesomeIcon icon={faGlobe} className="mr-1" /> Public
-          </button>
-        </div>
-        <button onClick={handleUpload} disabled={uploading || files.length === 0} className="w-full py-3 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white rounded-2xl font-medium transition">
-          {uploading ? `Uploading ${files.length} file(s)...` : `Upload${files.length > 0 ? ` (${files.length})` : ""}`}
-        </button>
       </div>
     </div>
   );
