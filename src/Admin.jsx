@@ -122,6 +122,22 @@ function UsersTab() {
                         {u.isBanned ? "Unban" : "Ban"}
                       </button>
                       <button onClick={() => setConfirm({ id: u.id, name: u.displayName })} className="text-pink-400 hover:text-pink-300 text-xs font-medium transition">Delete</button>
+                      <button
+  onClick={() => {
+    const subject = prompt('Email subject:');
+    const message = prompt('Your message:');
+    if (!subject || !message) return;
+    apiFetch('/admin/send-message', {
+      method: 'POST',
+      body: JSON.stringify({ userId: u.id, subject, message }),
+    })
+      .then(() => alert(`Message sent to ${u.displayName}!`))
+      .catch(() => alert('Failed to send message'));
+  }}
+  className="text-violet-400 hover:text-violet-300 text-xs font-medium transition"
+>
+  Message
+</button>
                     </td>
                   </tr>
                 ))}
