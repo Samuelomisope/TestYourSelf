@@ -612,7 +612,28 @@ function Admin() {
                 ))}
               </div>
             )}
+<div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 flex items-center justify-between">
+  <div>
+    <p className="text-sm font-semibold text-white/50">Inactive Users</p>
+    <p className="text-xs text-white/30 mt-1">Send a re-engagement email to users inactive for 7+ days</p>
+  </div>
+  <button
+    onClick={async () => {
+      try {
+        const res = await apiFetch('/admin/notify-inactive', { method: 'POST' });
+        alert(`Sent emails to ${res.sent} inactive users!`);
+      } catch{
+        alert(`Failed to send emails`);
+      }
+    }}
+    className="shrink-0 px-4 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium transition"
+  >
+    Notify Inactive Users
+  </button>
+</div>
           </div>
+
+          
         )}
 
         {activeTab === "users"        && <UsersTab />}
