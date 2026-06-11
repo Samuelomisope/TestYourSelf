@@ -23,6 +23,12 @@ async function apiFetch(path, options = {}) {
   return res.json();
 }
 
+function isActive(lastActiveAt) {
+  if (!lastActiveAt) return false;
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  return new Date(lastActiveAt) > sevenDaysAgo;
+}
 // ── Shared styles ──────────────────────────────────────────────────
 const inputCls = "w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/40 transition";
 const thCls = "px-4 py-3 text-left text-xs font-semibold text-white/30 uppercase tracking-wider";
@@ -107,6 +113,9 @@ function UsersTab() {
                       <img src={u.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${u.displayName}`} className="w-7 h-7 rounded-full object-cover border border-white/10" alt="" />
                       <span className="font-medium text-white text-sm">{u.displayName || "—"}</span>
                       {u.isBanned && <span className="px-1.5 py-0.5 bg-pink-500/15 text-pink-400 rounded text-xs">Banned</span>}
+                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${isActive(u.lastActiveAt) ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-white/30"}`}>
+                        {isActive(u.lastActiveAt) ? "Active" : "Inactive"}
+                      </span>
                     </td>
                     <td className={tdCls}>{u.email}</td>
                     <td className={tdCls}>{u.university?.shortName || "—"}</td>
@@ -662,6 +671,7 @@ function Admin() {
         {activeTab === "sellers"      && <SellersTab />}
         {activeTab === "reviews"      && <ReviewsTab />}
         {activeTab === "feedback" && <FeedbackTab />}
+        
       </div>
     </div>
   );
