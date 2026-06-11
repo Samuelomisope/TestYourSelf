@@ -99,7 +99,7 @@ function UsersTab() {
         <>
           <div className="overflow-x-auto rounded-2xl border border-white/10">
             <table className="w-full">
-              <thead className="bg-white/[0.03]"><tr><th className={thCls}>User</th><th className={thCls}>Email</th><th className={thCls}>University</th><th className={thCls}>Joined</th><th className={thCls}>Action</th></tr></thead>
+              <thead className="bg-white/[0.03]"><tr><th className={thCls}>User</th><th className={thCls}>Email</th><th className={thCls}>University</th><th className={thCls}>Joined</th><th className={thCls}>Action</th><th className={thCls}>Last Active</th></tr></thead>
               <tbody className="divide-y divide-white/5">
                 {paginated.map(u => (
                   <tr key={u.id} className="hover:bg-white/[0.02] transition">
@@ -111,6 +111,7 @@ function UsersTab() {
                     <td className={tdCls}>{u.email}</td>
                     <td className={tdCls}>{u.university?.shortName || "—"}</td>
                     <td className="px-4 py-3 text-xs text-white/30">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}</td>
+                    <td className="px-4 py-3 text-xs text-white/30">{u.lastActive ? new Date(u.lastActive).toLocaleDateString() : "—"}</td>
                     <td className="px-4 py-3 flex items-center gap-3 whitespace-nowrap min-w-[180px]">
                       <button onClick={async () => {
                         try {
@@ -138,6 +139,7 @@ function UsersTab() {
 >
   Message
 </button>
+
                     </td>
                   </tr>
                 ))}
