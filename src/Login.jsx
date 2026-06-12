@@ -247,7 +247,10 @@ function Login() {
             </a>
           </p>
           <p className="text-gray-400 text-sm mt-6">
-            By signing in, you agree to our Terms of Service and Privacy Policy.
+           By signing in, you agree to our{" "}
+            <a href="/terms" className="text-indigo-400 hover:underline">Terms of Service</a>
+              {" "}and{" "}
+            <a href="/privacy" className="text-indigo-400 hover:underline">Privacy Policy</a>.
           </p>
         </form>
         <div className="w-full border-t-2 border-gray-300" />
