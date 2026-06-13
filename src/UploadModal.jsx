@@ -14,6 +14,8 @@ const FILE_ICONS = {
   default: <FontAwesomeIcon icon={faFileLines} />,
 };
 
+const LEVELS = ["100", "200", "300", "400", "500"];
+
 const getFileType = (name) => {
   const ext = name?.split(".").pop().toLowerCase();
   if (["pdf"].includes(ext)) return "pdf";
@@ -22,9 +24,7 @@ const getFileType = (name) => {
   return "default";
 };
 
-
 // ─── Google Picker Loader ──────────────────────────────────────────
-// Call this once to load gapi + picker
 function loadGoogleApis() {
   return new Promise((resolve) => {
     if (window.gapi && window.google?.picker) return resolve();
@@ -64,7 +64,10 @@ export function UploadModal({ onClose, universitiesList = [] }) {
       ...valid.map((f) => ({
         file: f,
         title: f.name.replace(/\.[^/.]+$/, ""),
-        course: "",
+        course: "",       // faculty / course code e.g. "CHM 101"
+        department: "",   // e.g. "MINING ENGINEERING"
+        level: "",        // e.g. "100"
+        semester: "",     // "first" | "second"
         description: "",
         university: "",
         source: "local",
@@ -73,16 +76,12 @@ export function UploadModal({ onClose, universitiesList = [] }) {
     setExpandedIndex((prev) => (prev === null ? 0 : prev));
   };
 
-  // ── Get a Drive access token (works for ALL sign-in methods) ─────
-  // Uses Google Identity Services (GIS) to request a Drive token
-  // without touching the user's Firebase Auth session at all.
+  // ── Get a Drive access token ─────────────────────────────────────
   const getDriveAccessToken = () =>
     new Promise((resolve, reject) => {
-      // Return cached token if we already have one
       const cached = localStorage.getItem("googleAccessToken");
       if (cached) return resolve(cached);
 
-      // Load GIS script if not already present
       const loadGIS = () =>
         new Promise((res) => {
           if (window.google?.accounts?.oauth2) return res();
@@ -96,7 +95,6 @@ export function UploadModal({ onClose, universitiesList = [] }) {
         const client = window.google.accounts.oauth2.initTokenClient({
           client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
           scope: "https://www.googleapis.com/auth/drive.readonly",
-          // hint: use the current user's email so Google pre-selects the right account
           login_hint: auth.currentUser?.email ?? "",
           callback: (response) => {
             if (response.error) return reject(new Error(response.error));
@@ -104,8 +102,6 @@ export function UploadModal({ onClose, universitiesList = [] }) {
             resolve(response.access_token);
           },
         });
-        // requestAccessToken always shows the account picker / consent screen
-        // only when needed; silent if already consented.
         client.requestAccessToken();
       });
     });
@@ -118,7 +114,6 @@ export function UploadModal({ onClose, universitiesList = [] }) {
       await loadGoogleApis();
       const accessToken = await getDriveAccessToken();
 
-      // Build the picker
       const picker = new window.google.picker.PickerBuilder()
         .addView(
           new window.google.picker.DocsView()
@@ -155,7 +150,6 @@ export function UploadModal({ onClose, universitiesList = [] }) {
     }
   };
 
-  // Download each picked Drive file and convert to a File object
   const handleDriveFiles = async (docs, accessToken) => {
     setDriveLoading(true);
     const added = [];
@@ -176,6 +170,9 @@ export function UploadModal({ onClose, universitiesList = [] }) {
           file,
           title: doc.name.replace(/\.[^/.]+$/, ""),
           course: "",
+          department: "",
+          level: "",
+          semester: "",
           description: "",
           university: "",
           source: "drive",
@@ -210,7 +207,10 @@ export function UploadModal({ onClose, universitiesList = [] }) {
       formData.append("file", item.file);
       formData.append("title", item.title || item.file.name);
       formData.append("description", item.description);
-      formData.append("faculty", item.course);
+      formData.append("faculty", item.course);           // course code
+      formData.append("department", item.department);    // department name
+      formData.append("level", item.level);              // 100 / 200 / etc
+      formData.append("semester", item.semester);        // first / second
       formData.append("isPublic", String(isPublic));
       if (item.university) formData.append("university", item.university);
 
@@ -296,7 +296,7 @@ export function UploadModal({ onClose, universitiesList = [] }) {
           />
         </div>
 
-        {/* ── Google Drive button ── */}
+        {/* Google Drive button */}
         <button
           type="button"
           onClick={openGooglePicker}
@@ -323,6 +323,7 @@ export function UploadModal({ onClose, universitiesList = [] }) {
           <div className="mb-4 space-y-2">
             {files.map((item, i) => (
               <div key={i} className="border border-white/10 rounded-2xl overflow-hidden">
+                {/* File header row */}
                 <div
                   className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-white/5"
                   onClick={() => setExpandedIndex(expandedIndex === i ? null : i)}
@@ -363,8 +364,11 @@ export function UploadModal({ onClose, universitiesList = [] }) {
                   )}
                 </div>
 
+                {/* Expanded metadata form */}
                 {expandedIndex === i && (
                   <div className="px-3 pb-3 pt-1 border-t border-white/5 bg-white/[0.02] space-y-2">
+
+                    {/* Title */}
                     <input
                       type="text"
                       placeholder="Title *"
@@ -372,13 +376,50 @@ export function UploadModal({ onClose, universitiesList = [] }) {
                       onChange={(e) => updateMeta(i, "title", e.target.value)}
                       className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition"
                     />
+
+                    {/* Course code */}
                     <input
                       type="text"
-                      placeholder="Course name e.g. CHM 101"
+                      placeholder="Course code e.g. CHM 101"
                       value={item.course}
                       onChange={(e) => updateMeta(i, "course", e.target.value)}
                       className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition"
                     />
+
+                    {/* Department */}
+                    <input
+                      type="text"
+                      placeholder="Department e.g. MINING ENGINEERING"
+                      value={item.department}
+                      onChange={(e) => updateMeta(i, "department", e.target.value)}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+                    />
+
+                    {/* Level + Semester side by side */}
+                    <div className="flex gap-2">
+                      <select
+                        value={item.level}
+                        onChange={(e) => updateMeta(i, "level", e.target.value)}
+                        className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white/70 outline-none focus:border-violet-500/60 transition"
+                      >
+                        <option value="">Level</option>
+                        {LEVELS.map(l => (
+                          <option key={l} value={l}>{l} Level</option>
+                        ))}
+                      </select>
+
+                      <select
+                        value={item.semester}
+                        onChange={(e) => updateMeta(i, "semester", e.target.value)}
+                        className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white/70 outline-none focus:border-violet-500/60 transition"
+                      >
+                        <option value="">Semester</option>
+                        <option value="first">1st Semester</option>
+                        <option value="second">2nd Semester</option>
+                      </select>
+                    </div>
+
+                    {/* University */}
                     <select
                       value={item.university}
                       onChange={(e) => updateMeta(i, "university", e.target.value)}
@@ -391,6 +432,8 @@ export function UploadModal({ onClose, universitiesList = [] }) {
                         </option>
                       ))}
                     </select>
+
+                    {/* Description */}
                     <textarea
                       placeholder="Description (optional)"
                       value={item.description}

@@ -5,7 +5,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faFileLines, faLock, faVideo, faBox, faFile, faNoteSticky, faUser, faGlobe,
   faHouse, faBook, faRobot, faComments, faStore, faChevronDown, faXmark,
-  faCalculator, faUpload, faList, faGrip,
+  faCalculator, faUpload, faList, faGrip, faChevronRight, faFolder, faFolderOpen,
+  faLayerGroup, faBookOpen,
 } from '@fortawesome/free-solid-svg-icons';
 import { faFile as farFile } from '@fortawesome/free-regular-svg-icons';
 import { UploadModal } from "./UploadModal";
@@ -30,12 +31,16 @@ const formatDate = (ts) => {
   return new Date(ts).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
 };
 
+const LEVEL_ORDER = ["100", "200", "300", "400", "500"];
+const SEMESTER_ORDER = ["first", "second"];
+const SEMESTER_LABELS = { first: "First Semester", second: "Second Semester" };
+
 const TAB_LINKS = [
-  { href: "/home",          label: "Home",   icon: faHouse },
-  { href: "/study-material",label: "Study",  icon: faBook },
-  { href: "/ai",            label: "AI",     icon: faRobot },
-  { href: "/chat",          label: "Chat",   icon: faComments },
-  { href: "/marketplace",   label: "Market", icon: faStore },
+  { href: "/home",           label: "Home",   icon: faHouse },
+  { href: "/study-material", label: "Study",  icon: faBook },
+  { href: "/ai",             label: "AI",     icon: faRobot },
+  { href: "/chat",           label: "Chat",   icon: faComments },
+  { href: "/marketplace",    label: "Market", icon: faStore },
 ];
 
 // ─── Scientific Calculator ─────────────────────────────────────────
@@ -45,8 +50,8 @@ function Calculator({ onClose }) {
   const [justCalculated, setJustCalculated] = useState(false);
 
   const buttons = [
-    ["AC", "+/-", "%", "÷"],["7","8","9","×"],["4","5","6","−"],["1","2","3","+"],
-    ["sin","cos","tan","√"],["π","^","log","ln"],["(",")",".","="],["0"],
+    ["AC", "+/-", "%", "÷"], ["7","8","9","×"], ["4","5","6","−"], ["1","2","3","+"],
+    ["sin","cos","tan","√"], ["π","^","log","ln"], ["(",")",".","="], ["0"],
   ];
 
   const handleButton = (val) => {
@@ -120,6 +125,8 @@ function FileDetailModal({ file, onClose }) {
             <p className="text-5xl text-violet-400 mb-2">{FILE_ICONS[getMimeFileType(file.fileType)]}</p>
             <div className="flex items-center justify-center gap-2 flex-wrap">
               {file.faculty && <span className="px-3 py-1 bg-violet-500/15 text-violet-400 border border-violet-500/20 rounded-full text-xs">{file.faculty}</span>}
+              {file.level && <span className="px-3 py-1 bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 rounded-full text-xs">{file.level}L</span>}
+              {file.semester && <span className="px-3 py-1 bg-blue-500/15 text-blue-400 border border-blue-500/20 rounded-full text-xs">{SEMESTER_LABELS[file.semester] || file.semester}</span>}
               {file.university?.name && <span className="px-3 py-1 bg-white/5 text-white/50 border border-white/10 rounded-full text-xs">{file.university.shortName || file.university.name}</span>}
             </div>
           </div>
@@ -150,7 +157,221 @@ function FileDetailModal({ file, onClose }) {
   );
 }
 
-// ─── File Card ─────────────────────────────────────────────────────
+// ─── File Row (list item inside a course) ─────────────────────────
+function FileRow({ file, user, onSelect, onDelete }) {
+  const fileType = getMimeFileType(file.fileType);
+  return (
+    <div
+      onClick={() => onSelect(file)}
+      className="flex items-center gap-3 px-4 py-3 hover:bg-violet-500/5 rounded-xl cursor-pointer group transition"
+    >
+      <div className="w-8 h-8 bg-violet-500/10 rounded-lg flex items-center justify-center text-violet-400 text-sm shrink-0 group-hover:bg-violet-500/20 transition">
+        {FILE_ICONS[fileType]}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-white truncate">{file.title}</p>
+        <p className="text-xs text-white/30">{formatDate(file.createdAt)} · {file.user?.displayName}</p>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <span className={`text-xs px-2 py-0.5 rounded-full ${
+          fileType === "pdf" ? "bg-red-500/10 text-red-400" :
+          fileType === "video" ? "bg-blue-500/10 text-blue-400" :
+          "bg-white/5 text-white/40"
+        }`}>
+          {fileType === "pdf" ? "PDF" : fileType === "video" ? "Video" : "Note"}
+        </span>
+        {file.user?.displayName === user?.displayName && (
+          <button
+            onClick={async (e) => {
+              e.stopPropagation();
+              if (!window.confirm("Delete this file?")) return;
+              try {
+                const { auth } = await import("./firebase");
+                const { getIdToken } = await import("firebase/auth");
+                const token = await getIdToken(auth.currentUser, true);
+                await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material/${file.id}`, {
+                  method: "DELETE",
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                onDelete();
+              } catch (err) { console.error(err); }
+            }}
+            className="w-6 h-6 bg-pink-500/15 text-pink-400 rounded-full flex items-center justify-center hover:bg-pink-500/25 transition opacity-0 group-hover:opacity-100"
+          >
+            <FontAwesomeIcon icon={faXmark} className="text-xs" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Course Section (collapsible) ─────────────────────────────────
+function CourseSection({ courseName, files, user, onSelect, onDelete }) {
+  const [open, setOpen] = useState(false);
+  // Sort files alphabetically by title
+  const sorted = [...files].sort((a, b) => a.title.localeCompare(b.title));
+
+  return (
+    <div className="border border-white/[0.07] rounded-xl overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.03] transition text-left"
+      >
+        <FontAwesomeIcon
+          icon={open ? faFolderOpen : faFolder}
+          className="text-amber-400 text-sm shrink-0"
+        />
+        <span className="flex-1 text-sm font-semibold text-white/80 uppercase tracking-wide">{courseName}</span>
+        <span className="text-xs text-white/30 mr-2">{files.length} {files.length === 1 ? "file" : "files"}</span>
+        <FontAwesomeIcon
+          icon={faChevronRight}
+          className={`text-white/20 text-xs transition-transform ${open ? "rotate-90" : ""}`}
+        />
+      </button>
+      {open && (
+        <div className="border-t border-white/[0.05] bg-white/[0.01] py-1">
+          {sorted.map(file => (
+            <FileRow key={file.id} file={file} user={user} onSelect={onSelect} onDelete={onDelete} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Semester Block ────────────────────────────────────────────────
+function SemesterBlock({ semesterKey, courses, user, onSelect, onDelete }) {
+  const [open, setOpen] = useState(false);
+  const totalFiles = Object.values(courses).reduce((a, b) => a + b.length, 0);
+  const sortedCourses = Object.keys(courses).sort();
+
+  return (
+    <div className="ml-4 border-l-2 border-white/[0.06] pl-4">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2 py-2 group w-full text-left"
+      >
+        <FontAwesomeIcon
+          icon={faChevronRight}
+          className={`text-white/20 text-xs transition-transform ${open ? "rotate-90" : ""}`}
+        />
+        <span className="text-xs font-bold text-violet-400/80 uppercase tracking-widest">
+          {SEMESTER_LABELS[semesterKey] || semesterKey}
+        </span>
+        <span className="text-xs text-white/20 ml-auto">{totalFiles} files</span>
+      </button>
+      {open && (
+        <div className="flex flex-col gap-2 mt-1 mb-3">
+          {sortedCourses.map(course => (
+            <CourseSection
+              key={course}
+              courseName={course}
+              files={courses[course]}
+              user={user}
+              onSelect={onSelect}
+              onDelete={onDelete}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Level Block ──────────────────────────────────────────────────
+function LevelBlock({ levelKey, semesters, user, onSelect, onDelete }) {
+  const [open, setOpen] = useState(false);
+  const totalFiles = Object.values(semesters).reduce((a, semObj) =>
+    a + Object.values(semObj).reduce((b, arr) => b + arr.length, 0), 0
+  );
+
+  const orderedSemesters = SEMESTER_ORDER.filter(s => semesters[s]);
+
+  return (
+    <div className="border border-white/[0.08] rounded-2xl overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-white/[0.03] transition text-left"
+      >
+        <div className="w-8 h-8 bg-violet-500/15 rounded-xl flex items-center justify-center shrink-0">
+          <span className="text-violet-400 text-xs font-black">{levelKey}L</span>
+        </div>
+        <span className="flex-1 text-sm font-bold text-white">{levelKey} Level</span>
+        <span className="text-xs text-white/30 mr-2">{totalFiles} files</span>
+        <FontAwesomeIcon
+          icon={faChevronRight}
+          className={`text-white/30 text-xs transition-transform ${open ? "rotate-90" : ""}`}
+        />
+      </button>
+      {open && (
+        <div className="border-t border-white/[0.05] bg-white/[0.01] px-4 py-3 flex flex-col gap-2">
+          {orderedSemesters.map(sem => (
+            <SemesterBlock
+              key={sem}
+              semesterKey={sem}
+              courses={semesters[sem]}
+              user={user}
+              onSelect={onSelect}
+              onDelete={onDelete}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Department Block ─────────────────────────────────────────────
+function DepartmentBlock({ deptName, levels, user, onSelect, onDelete }) {
+  const [open, setOpen] = useState(false);
+  const totalFiles = Object.values(levels).reduce((a, levObj) =>
+    a + Object.values(levObj).reduce((b, semObj) =>
+      b + Object.values(semObj).reduce((c, arr) => c + arr.length, 0), 0), 0
+  );
+
+  const orderedLevels = LEVEL_ORDER.filter(l => levels[l]);
+
+  return (
+    <div className="bg-white/[0.02] border border-white/[0.08] rounded-2xl overflow-hidden">
+      {/* Department Header */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-4 px-5 py-4 hover:bg-violet-500/5 transition text-left"
+      >
+        <div className="w-10 h-10 bg-violet-500/10 border border-violet-500/20 rounded-2xl flex items-center justify-center shrink-0">
+          <FontAwesomeIcon icon={faBookOpen} className="text-violet-400 text-sm" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-black text-white uppercase tracking-wide truncate">{deptName}</p>
+          <p className="text-xs text-white/30 mt-0.5">{orderedLevels.length} levels · {totalFiles} files</p>
+        </div>
+        <FontAwesomeIcon
+          icon={faChevronDown}
+          className={`text-white/30 text-sm transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {/* Levels inside */}
+      {open && (
+        <div className="border-t border-white/[0.05] px-4 py-4 flex flex-col gap-3">
+          {orderedLevels.map(level => (
+            <LevelBlock
+              key={level}
+              levelKey={level}
+              semesters={levels[level]}
+              user={user}
+              onSelect={onSelect}
+              onDelete={onDelete}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Flat Grid Card (for search results) ─────────────────────────
 function FileCard({ file, user, onSelect, onDelete }) {
   return (
     <div onClick={() => onSelect(file)} className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 hover:border-violet-500/30 hover:bg-violet-500/5 transition cursor-pointer group relative">
@@ -163,7 +384,10 @@ function FileCard({ file, user, onSelect, onDelete }) {
               const { auth } = await import("./firebase");
               const { getIdToken } = await import("firebase/auth");
               const token = await getIdToken(auth.currentUser, true);
-              await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material/${file.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+              await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material/${file.id}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` },
+              });
               onDelete();
             } catch (err) { console.error(err); }
           }}
@@ -178,6 +402,7 @@ function FileCard({ file, user, onSelect, onDelete }) {
       <p className="text-sm font-semibold text-white truncate mb-1">{file.title}</p>
       <div className="flex flex-wrap gap-1 mb-2">
         {file.faculty && <span className="px-2 py-0.5 bg-violet-500/15 text-violet-400 rounded-full text-xs">{file.faculty}</span>}
+        {file.level && <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-400 rounded-full text-xs">{file.level}L</span>}
         {file.university?.shortName && <span className="px-2 py-0.5 bg-white/5 text-white/40 rounded-full text-xs">{file.university.shortName}</span>}
       </div>
       <p className="text-xs text-white/30">{formatDate(file.createdAt)}</p>
@@ -194,7 +419,7 @@ function StudyMaterial() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [universityFilter, setUniversityFilter] = useState("All");
-  const [viewMode, setViewMode] = useState("grid");
+  const [viewMode, setViewMode] = useState("hierarchy"); // "hierarchy" | "grid"
   const [showUpload, setShowUpload] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -210,11 +435,15 @@ function StudyMaterial() {
   useEffect(() => {
     if (!user) return;
     const fetchFiles = async () => {
+      setLoading(true);
       try {
         const { auth } = await import("./firebase");
         const { getIdToken } = await import("firebase/auth");
         const token = await getIdToken(auth.currentUser, true);
-        const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material?search=${debouncedSearch}`, { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material?search=${debouncedSearch}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         const data = await res.json();
         setFiles(Array.isArray(data) ? data : []);
       } catch (err) { console.error(err); setFiles([]); }
@@ -229,17 +458,38 @@ function StudyMaterial() {
         const { auth } = await import("./firebase");
         const { getIdToken } = await import("firebase/auth");
         const token = await getIdToken(auth.currentUser, true);
-        const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/universities`, { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/universities`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setUniversitiesList(await res.json());
       } catch (err) { console.error(err); }
     };
     load();
   }, []);
 
+  // Filter by university
   const filtered = files.filter(f => {
     if (universityFilter === "All") return true;
     return f.university?.shortName === universityFilter || f.university?.name === universityFilter;
   });
+
+  // ── Build hierarchy: dept → level → semester → course → files ──
+  const grouped = {};
+  filtered.forEach(file => {
+    const dept = file.department || "Uncategorized Department";
+    const lvl  = file.level     || "Unknown";
+    const sem  = file.semester  || "unknown";
+    const crs  = file.faculty   || "Uncategorized Course";
+
+    if (!grouped[dept]) grouped[dept] = {};
+    if (!grouped[dept][lvl]) grouped[dept][lvl] = {};
+    if (!grouped[dept][lvl][sem]) grouped[dept][lvl][sem] = {};
+    if (!grouped[dept][lvl][sem][crs]) grouped[dept][lvl][sem][crs] = [];
+    grouped[dept][lvl][sem][crs].push(file);
+  });
+
+  const sortedDepts = Object.keys(grouped).sort();
+  const isSearching = debouncedSearch.trim().length > 0;
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
@@ -252,7 +502,9 @@ function StudyMaterial() {
 
       {/* Success Toast */}
       {successMessage && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-white px-6 py-3 rounded-full text-sm shadow-lg">{successMessage}</div>
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-white px-6 py-3 rounded-full text-sm shadow-lg">
+          {successMessage}
+        </div>
       )}
 
       {/* HEADER */}
@@ -269,13 +521,24 @@ function StudyMaterial() {
               </h1>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => setShowCalculator(true)} className="w-9 h-9 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-white/40 hover:text-violet-400 hover:border-violet-500/40 transition" title="Calculator">
+              <button
+                onClick={() => setShowCalculator(true)}
+                className="w-9 h-9 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-white/40 hover:text-violet-400 hover:border-violet-500/40 transition"
+                title="Calculator"
+              >
                 <FontAwesomeIcon icon={faCalculator} />
               </button>
-              <button onClick={() => setViewMode(v => v === "grid" ? "list" : "grid")} className="w-9 h-9 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-white/40 hover:text-violet-400 hover:border-violet-500/40 transition">
-                <FontAwesomeIcon icon={viewMode === "grid" ? faList : faGrip} />
+              <button
+                onClick={() => setViewMode(v => v === "hierarchy" ? "grid" : "hierarchy")}
+                className="w-9 h-9 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-white/40 hover:text-violet-400 hover:border-violet-500/40 transition"
+                title={viewMode === "hierarchy" ? "Grid view" : "Hierarchy view"}
+              >
+                <FontAwesomeIcon icon={viewMode === "hierarchy" ? faGrip : faLayerGroup} />
               </button>
-              <button onClick={() => setShowUpload(true)} className="flex items-center gap-2 bg-violet-500 hover:bg-violet-400 text-white px-4 py-2 rounded-full text-sm font-medium transition">
+              <button
+                onClick={() => setShowUpload(true)}
+                className="flex items-center gap-2 bg-violet-500 hover:bg-violet-400 text-white px-4 py-2 rounded-full text-sm font-medium transition"
+              >
                 <FontAwesomeIcon icon={faUpload} />
                 Upload
               </button>
@@ -288,7 +551,9 @@ function StudyMaterial() {
               const isActive = location.pathname === tab.href;
               return (
                 <Link key={tab.href} to={tab.href}
-                  className={`flex flex-col items-center py-2 px-4 border-b-2 transition text-xs gap-0.5 ${isActive ? "border-violet-500 text-violet-400" : "border-transparent text-white/30 hover:text-white/60"}`}>
+                  className={`flex flex-col items-center py-2 px-4 border-b-2 transition text-xs gap-0.5 ${
+                    isActive ? "border-violet-500 text-violet-400" : "border-transparent text-white/30 hover:text-white/60"
+                  }`}>
                   <FontAwesomeIcon icon={tab.icon} className="w-4 h-4" />
                   <span>{tab.label}</span>
                 </Link>
@@ -302,31 +567,60 @@ function StudyMaterial() {
 
         {/* Search Bar */}
         <div className="flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-full px-4 py-2.5 mt-4 mb-4 focus-within:border-violet-500/40 transition">
-          <svg className="w-4 h-4 text-white/30" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" strokeLinecap="round" /></svg>
-          <input type="text" placeholder="Search by title, course or keyword..." value={search} onChange={(e) => setSearch(e.target.value)} className="flex-1 bg-transparent text-sm outline-none text-white placeholder-white/20" />
-          {search && <button onClick={() => setSearch("")} className="text-white/30 hover:text-white/60 transition"><FontAwesomeIcon icon={faXmark} className="text-xs" /></button>}
+          <svg className="w-4 h-4 text-white/30 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" strokeLinecap="round" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search by title, course or keyword..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 bg-transparent text-sm outline-none text-white placeholder-white/20"
+          />
+          {search && (
+            <button onClick={() => setSearch("")} className="text-white/30 hover:text-white/60 transition">
+              <FontAwesomeIcon icon={faXmark} className="text-xs" />
+            </button>
+          )}
         </div>
 
         {/* University Filter */}
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
           {["All", ...universitiesList.map(u => u.shortName || u.name)].map(u => (
             <button key={u} onClick={() => setUniversityFilter(u)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition border ${universityFilter === u ? "bg-violet-500 text-white border-violet-500" : "bg-white/[0.03] border-white/10 text-white/50 hover:border-violet-500/30 hover:text-violet-400"}`}>
+              className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition border ${
+                universityFilter === u
+                  ? "bg-violet-500 text-white border-violet-500"
+                  : "bg-white/[0.03] border-white/10 text-white/50 hover:border-violet-500/30 hover:text-violet-400"
+              }`}>
               {u}
             </button>
           ))}
         </div>
 
-        <p className="text-xs text-white/30 mb-4">{filtered.length} {filtered.length === 1 ? "file" : "files"} found</p>
+        {/* Stats bar */}
+        <div className="flex items-center justify-between mb-5">
+          <p className="text-xs text-white/30">
+            {filtered.length} {filtered.length === 1 ? "file" : "files"}
+            {isSearching ? ` matching "${debouncedSearch}"` : ""}
+          </p>
+          {!isSearching && (
+            <p className="text-xs text-white/20">{sortedDepts.length} {sortedDepts.length === 1 ? "department" : "departments"}</p>
+          )}
+        </div>
 
         {/* Loading Skeleton */}
         {loading && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {[1,2,3,4].map(i => (
+          <div className="flex flex-col gap-3">
+            {[1,2,3].map(i => (
               <div key={i} className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 animate-pulse">
-                <div className="h-12 w-12 bg-white/10 rounded-xl mb-3" />
-                <div className="h-3 bg-white/10 rounded w-3/4 mb-2" />
-                <div className="h-3 bg-white/10 rounded w-1/2" />
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 bg-white/10 rounded-2xl" />
+                  <div className="flex-1">
+                    <div className="h-3 bg-white/10 rounded w-1/3 mb-2" />
+                    <div className="h-2 bg-white/10 rounded w-1/5" />
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -337,31 +631,68 @@ function StudyMaterial() {
           <div className="text-center py-20">
             <p className="text-5xl mb-4 text-white/10"><FontAwesomeIcon icon={faFile} /></p>
             <p className="text-white/40 font-medium">No files found</p>
-            <p className="text-white/20 text-sm mt-1">{search ? "Try a different search term" : "Upload your first file to get started"}</p>
-            <button onClick={() => setShowUpload(true)} className="mt-4 px-6 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm transition">Upload File</button>
+            <p className="text-white/20 text-sm mt-1">
+              {search ? "Try a different search term" : "Upload your first file to get started"}
+            </p>
+            <button
+              onClick={() => setShowUpload(true)}
+              className="mt-4 px-6 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm transition"
+            >
+              Upload File
+            </button>
           </div>
         )}
 
-        {/* Grid View */}
-        {!loading && filtered.length > 0 && viewMode === "grid" && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filtered.map(file => <FileCard key={file.id} file={file} user={user} onSelect={setSelectedFile} onDelete={() => setRefreshKey(k => k + 1)} />)}
+        {/* ── HIERARCHY VIEW (default) ── */}
+        {!loading && filtered.length > 0 && (viewMode === "hierarchy" || !isSearching) && viewMode !== "grid" && (
+          <div className="flex flex-col gap-4">
+            {sortedDepts.map(dept => (
+              <DepartmentBlock
+                key={dept}
+                deptName={dept}
+                levels={grouped[dept]}
+                user={user}
+                onSelect={setSelectedFile}
+                onDelete={() => setRefreshKey(k => k + 1)}
+              />
+            ))}
           </div>
         )}
 
-        {/* List View */}
-        {!loading && filtered.length > 0 && viewMode === "list" && (
-          <div className="flex flex-col gap-3">
-            {filtered.map(file => <FileCard key={file.id} file={file} user={user} onSelect={setSelectedFile} onDelete={() => setRefreshKey(k => k + 1)} />)}
-          </div>
+        {/* ── GRID VIEW (when toggled or searching) ── */}
+        {!loading && filtered.length > 0 && (viewMode === "grid" || isSearching) && (
+          <>
+            {isSearching && viewMode !== "grid" && (
+              <p className="text-xs text-white/30 mb-3">Showing flat results for search. Switch to grid or clear search to return to hierarchy.</p>
+            )}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {filtered.map(file => (
+                <FileCard
+                  key={file.id}
+                  file={file}
+                  user={user}
+                  onSelect={setSelectedFile}
+                  onDelete={() => setRefreshKey(k => k + 1)}
+                />
+              ))}
+            </div>
+          </>
         )}
       </main>
 
       {showUpload && (
-        <UploadModal onClose={(uploaded) => {
-          setShowUpload(false);
-          if (uploaded) { setSuccessMessage("File uploaded successfully!"); setTimeout(() => setSuccessMessage(""), 3000); setRefreshKey(k => k + 1); }
-        }} user={user} universitiesList={universitiesList} />
+        <UploadModal
+          onClose={(uploaded) => {
+            setShowUpload(false);
+            if (uploaded) {
+              setSuccessMessage("File uploaded successfully!");
+              setTimeout(() => setSuccessMessage(""), 3000);
+              setRefreshKey(k => k + 1);
+            }
+          }}
+          user={user}
+          universitiesList={universitiesList}
+        />
       )}
       {showCalculator && <Calculator onClose={() => setShowCalculator(false)} />}
       {selectedFile && <FileDetailModal file={selectedFile} onClose={() => setSelectedFile(null)} />}
