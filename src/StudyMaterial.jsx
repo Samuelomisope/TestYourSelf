@@ -111,46 +111,208 @@ function Calculator({ onClose }) {
 }
 
 // ─── File Detail Modal ─────────────────────────────────────────────
-function FileDetailModal({ file, onClose }) {
+function FileDetailModal({ file, user, onClose, onUpdated }) {
+  const [editMode, setEditMode] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [form, setForm] = useState({
+    title: file.title || "",
+    faculty: file.faculty || "",
+    department: file.department || "",
+    level: file.level || "",
+    semester: file.semester || "",
+    description: file.description || "",
+  });
+
   if (!file) return null;
+
+  const isOwner = file.user?.displayName === user?.displayName;
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveError("");
+    try {
+      const { auth } = await import("./firebase");
+      const { getIdToken } = await import("firebase/auth");
+      const token = await getIdToken(auth.currentUser, true);
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material/${file.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(form),
+        }
+      );
+      if (!res.ok) throw new Error("Failed to save");
+      setEditMode(false);
+      onUpdated(); // refresh the file list
+    } catch (err) {
+      console.error(err);
+      setSaveError("Could not save changes. Try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="bg-[#0d0d14] border border-white/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
+      <div className="bg-[#0d0d14] border border-white/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
+
+        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-          <h2 className="font-bold text-white">{file.title}</h2>
-          <button onClick={onClose} className="text-white/30 hover:text-white transition"><FontAwesomeIcon icon={faXmark} /></button>
+          <h2 className="font-bold text-white truncate pr-4">
+            {editMode ? "Edit File Info" : file.title}
+          </h2>
+          <div className="flex items-center gap-2 shrink-0">
+            {isOwner && !editMode && (
+              <button
+                onClick={() => setEditMode(true)}
+                className="px-3 py-1.5 text-xs font-medium bg-white/5 border border-white/10 text-white/50 hover:text-violet-400 hover:border-violet-500/40 rounded-xl transition"
+              >
+                Edit
+              </button>
+            )}
+            {editMode && (
+              <button
+                onClick={() => { setEditMode(false); setSaveError(""); }}
+                className="px-3 py-1.5 text-xs font-medium bg-white/5 border border-white/10 text-white/50 hover:text-white/80 rounded-xl transition"
+              >
+                Cancel
+              </button>
+            )}
+            <button onClick={onClose} className="text-white/30 hover:text-white transition">
+              <FontAwesomeIcon icon={faXmark} />
+            </button>
+          </div>
         </div>
+
         <div className="p-6">
-          <div className="text-center mb-5">
-            <p className="text-5xl text-violet-400 mb-2">{FILE_ICONS[getMimeFileType(file.fileType)]}</p>
-            <div className="flex items-center justify-center gap-2 flex-wrap">
-              {file.faculty && <span className="px-3 py-1 bg-violet-500/15 text-violet-400 border border-violet-500/20 rounded-full text-xs">{file.faculty}</span>}
-              {file.level && <span className="px-3 py-1 bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 rounded-full text-xs">{file.level}L</span>}
-              {file.semester && <span className="px-3 py-1 bg-blue-500/15 text-blue-400 border border-blue-500/20 rounded-full text-xs">{SEMESTER_LABELS[file.semester] || file.semester}</span>}
-              {file.university?.name && <span className="px-3 py-1 bg-white/5 text-white/50 border border-white/10 rounded-full text-xs">{file.university.shortName || file.university.name}</span>}
-            </div>
-          </div>
-          <div className="space-y-2 mb-5 text-sm text-white/50">
-            {file.description && <p className="text-white/40">{file.description}</p>}
-            <p><FontAwesomeIcon icon={faFile} className="mr-1" /> Uploaded: {formatDate(file.createdAt)}</p>
-            <p><FontAwesomeIcon icon={faUser} className="mr-1" /> By: {file.user?.displayName}</p>
-            <p>{file.isPublic ? <><FontAwesomeIcon icon={faGlobe} className="mr-1" />Public</> : <><FontAwesomeIcon icon={faLock} className="mr-1" />Private</>}</p>
-            {file.fileSize && <p><FontAwesomeIcon icon={faBox} className="mr-1" /> Size: {(file.fileSize / 1024 / 1024).toFixed(2)} MB</p>}
-          </div>
-          {getMimeFileType(file.fileType) === "pdf" && (
-            <div className="mb-4 rounded-xl overflow-hidden border border-white/10" style={{ height: 300 }}>
-              <iframe src={file.signedUrl} className="w-full h-full" title={file.title} />
+
+          {/* ── VIEW MODE ── */}
+          {!editMode && (
+            <>
+              <div className="text-center mb-5">
+                <p className="text-5xl text-violet-400 mb-2">{FILE_ICONS[getMimeFileType(file.fileType)]}</p>
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  {file.faculty && <span className="px-3 py-1 bg-violet-500/15 text-violet-400 border border-violet-500/20 rounded-full text-xs">{file.faculty}</span>}
+                  {file.level && <span className="px-3 py-1 bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 rounded-full text-xs">{file.level}L</span>}
+                  {file.semester && <span className="px-3 py-1 bg-blue-500/15 text-blue-400 border border-blue-500/20 rounded-full text-xs">{SEMESTER_LABELS[file.semester] || file.semester}</span>}
+                  {file.university?.name && <span className="px-3 py-1 bg-white/5 text-white/50 border border-white/10 rounded-full text-xs">{file.university.shortName || file.university.name}</span>}
+                </div>
+              </div>
+              <div className="space-y-2 mb-5 text-sm text-white/50">
+                {file.department && <p className="text-white/40"><span className="text-white/20 mr-1">Dept:</span>{file.department}</p>}
+                {file.description && <p className="text-white/40">{file.description}</p>}
+                <p><FontAwesomeIcon icon={faFile} className="mr-1" /> Uploaded: {formatDate(file.createdAt)}</p>
+                <p><FontAwesomeIcon icon={faUser} className="mr-1" /> By: {file.user?.displayName}</p>
+                <p>{file.isPublic ? <><FontAwesomeIcon icon={faGlobe} className="mr-1" />Public</> : <><FontAwesomeIcon icon={faLock} className="mr-1" />Private</>}</p>
+                {file.fileSize && <p><FontAwesomeIcon icon={faBox} className="mr-1" /> Size: {(file.fileSize / 1024 / 1024).toFixed(2)} MB</p>}
+              </div>
+              {getMimeFileType(file.fileType) === "pdf" && (
+                <div className="mb-4 rounded-xl overflow-hidden border border-white/10" style={{ height: 300 }}>
+                  <iframe src={file.signedUrl} className="w-full h-full" title={file.title} />
+                </div>
+              )}
+              {getMimeFileType(file.fileType) === "video" && (
+                <div className="mb-4 rounded-xl overflow-hidden bg-black">
+                  <video controls className="w-full max-h-64" src={file.signedUrl} />
+                </div>
+              )}
+              <div className="flex gap-3">
+                <a href={file.signedUrl} target="_blank" rel="noopener noreferrer" className="flex-1 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium text-center transition">Open</a>
+                <a href={file.signedUrl} download className="flex-1 py-2.5 border border-violet-500/30 text-violet-400 rounded-xl text-sm font-medium text-center hover:bg-violet-500/10 transition">Download</a>
+              </div>
+            </>
+          )}
+
+          {/* ── EDIT MODE ── */}
+          {editMode && (
+            <div className="space-y-3">
+              {saveError && <p className="text-pink-400 text-sm">{saveError}</p>}
+
+              <div>
+                <label className="text-xs text-white/30 mb-1 block">Title</label>
+                <input
+                  type="text"
+                  value={form.title}
+                  onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-white/30 mb-1 block">Course code</label>
+                <input
+                  type="text"
+                  placeholder="e.g. CHM 101"
+                  value={form.faculty}
+                  onChange={e => setForm(f => ({ ...f, faculty: e.target.value }))}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-white/30 mb-1 block">Department</label>
+                <input
+                  type="text"
+                  placeholder="e.g. MINING ENGINEERING"
+                  value={form.department}
+                  onChange={e => setForm(f => ({ ...f, department: e.target.value }))}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="text-xs text-white/30 mb-1 block">Level</label>
+                  <select
+                    value={form.level}
+                    onChange={e => setForm(f => ({ ...f, level: e.target.value }))}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white/70 outline-none focus:border-violet-500/60 transition"
+                  >
+                    <option value="">— Level —</option>
+                    {["100","200","300","400","500"].map(l => (
+                      <option key={l} value={l}>{l} Level</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-white/30 mb-1 block">Semester</label>
+                  <select
+                    value={form.semester}
+                    onChange={e => setForm(f => ({ ...f, semester: e.target.value }))}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white/70 outline-none focus:border-violet-500/60 transition"
+                  >
+                    <option value="">— Semester —</option>
+                    <option value="first">1st Semester</option>
+                    <option value="second">2nd Semester</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-white/30 mb-1 block">Description</label>
+                <textarea
+                  placeholder="Optional description..."
+                  value={form.description}
+                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                  rows={3}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
+                />
+              </div>
+
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="w-full py-3 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white rounded-xl text-sm font-medium transition mt-2"
+              >
+                {saving ? "Saving…" : "Save Changes"}
+              </button>
             </div>
           )}
-          {getMimeFileType(file.fileType) === "video" && (
-            <div className="mb-4 rounded-xl overflow-hidden bg-black">
-              <video controls className="w-full max-h-64" src={file.signedUrl} />
-            </div>
-          )}
-          <div className="flex gap-3">
-            <a href={file.signedUrl} target="_blank" rel="noopener noreferrer" className="flex-1 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium text-center transition">Open</a>
-            <a href={file.signedUrl} download className="flex-1 py-2.5 border border-violet-500/30 text-violet-400 rounded-xl text-sm font-medium text-center hover:bg-violet-500/10 transition">Download</a>
-          </div>
         </div>
       </div>
     </div>
@@ -695,7 +857,14 @@ function StudyMaterial() {
         />
       )}
       {showCalculator && <Calculator onClose={() => setShowCalculator(false)} />}
-      {selectedFile && <FileDetailModal file={selectedFile} onClose={() => setSelectedFile(null)} />}
+      {selectedFile && (
+        <FileDetailModal
+          file={selectedFile}
+          user={user}
+          onClose={() => setSelectedFile(null)}
+          onUpdated={() => { setRefreshKey(k => k + 1); setSelectedFile(null); }}
+        />
+      )}
     </div>
   );
 }

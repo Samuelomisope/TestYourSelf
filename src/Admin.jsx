@@ -5,9 +5,9 @@ import { getIdToken } from "firebase/auth";
 import { useAuth } from "./useAuth";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-   faBook, faUsers, faShoppingBag, faGraduationCap,
+  faBook, faUsers, faShoppingBag, faGraduationCap,
   faFlag, faBan, faCheckCircle, faChartBar, faStore, faStar,
-  faChevronLeft, faComment,
+  faChevronLeft, faComment, faBullhorn,
 } from "@fortawesome/free-solid-svg-icons";
 import { API } from "./config";
 
@@ -29,6 +29,7 @@ function isActive(lastActiveAt) {
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   return new Date(lastActiveAt) > sevenDaysAgo;
 }
+
 // ── Shared styles ──────────────────────────────────────────────────
 const inputCls = "w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/40 transition";
 const thCls = "px-4 py-3 text-left text-xs font-semibold text-white/30 uppercase tracking-wider";
@@ -75,6 +76,161 @@ function Pagination({ page, totalPages, setPage }) {
       <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-3 py-1.5 rounded-lg border border-white/10 text-sm text-white/40 hover:border-violet-500/30 disabled:opacity-30 transition">Previous</button>
       <span className="text-sm text-white/30">Page {page} of {totalPages}</span>
       <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-3 py-1.5 rounded-lg border border-white/10 text-sm text-white/40 hover:border-violet-500/30 disabled:opacity-30 transition">Next</button>
+    </div>
+  );
+}
+
+// ── Announcements Tab ──────────────────────────────────────────────
+function AnnouncementsTab() {
+  const [mode, setMode] = useState("all"); // "all" | "one"
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [email, setEmail] = useState("");
+  const [sending, setSending] = useState(false);
+  const [status, setStatus] = useState(null); // { type: "success"|"error", message }
+  const [history, setHistory] = useState([]);
+
+  const reset = () => { setTitle(""); setDescription(""); setEmail(""); };
+
+  const send = async () => {
+    setStatus(null);
+    if (!title.trim() || !description.trim()) {
+      setStatus({ type: "error", message: "Please fill in both the subject line and message body." });
+      return;
+    }
+    if (mode === "one" && !email.trim()) {
+      setStatus({ type: "error", message: "Please enter a user email." });
+      return;
+    }
+
+    setSending(true);
+    try {
+      if (mode === "all") {
+        const data = await apiFetch("/admin/broadcast", {
+          method: "POST",
+          body: JSON.stringify({ title, description }),
+        });
+        setStatus({ type: "success", message: `Sent to ${data.sent} user${data.sent !== 1 ? "s" : ""} successfully.` });
+        setHistory(h => [{ type: "all", title, description, sent: data.sent, time: new Date().toLocaleString() }, ...h]);
+      } else {
+        await apiFetch("/admin/broadcast/single", {
+          method: "POST",
+          body: JSON.stringify({ email, title, description }),
+        });
+        setStatus({ type: "success", message: `Email sent to ${email} successfully.` });
+        setHistory(h => [{ type: "one", title, description, email, time: new Date().toLocaleString() }, ...h]);
+      }
+      reset();
+    } catch (err) {
+      setStatus({ type: "error", message: err.message || "Something went wrong." });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Compose card */}
+      <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 space-y-4">
+        <p className="text-xs font-semibold text-white/30 uppercase tracking-wider">New announcement</p>
+
+        {/* Mode toggle */}
+        <div className="flex gap-1 p-1 bg-black/30 rounded-xl w-fit">
+          <button
+            onClick={() => { setMode("all"); setStatus(null); }}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${mode === "all" ? "bg-violet-500 text-white" : "text-white/40 hover:text-white/60"}`}
+          >
+            All users
+          </button>
+          <button
+            onClick={() => { setMode("one"); setStatus(null); }}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${mode === "one" ? "bg-violet-500 text-white" : "text-white/40 hover:text-white/60"}`}
+          >
+            Specific user
+          </button>
+        </div>
+
+        {/* Email field (specific user only) */}
+        {mode === "one" && (
+          <div>
+            <label className="text-xs text-white/30 mb-1.5 block">User email</label>
+            <input
+              type="email"
+              placeholder="user@example.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              className={inputCls}
+            />
+          </div>
+        )}
+
+        <div>
+          <label className="text-xs text-white/30 mb-1.5 block">Subject line</label>
+          <input
+            type="text"
+            placeholder="e.g. Study Material Page Updated"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            className={inputCls}
+          />
+        </div>
+
+        <div>
+          <label className="text-xs text-white/30 mb-1.5 block">Message body</label>
+          <textarea
+            placeholder="Describe the update — what changed and why users should care..."
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            rows={4}
+            className={`${inputCls} resize-none`}
+          />
+        </div>
+
+        {/* Status feedback */}
+        {status && (
+          <div className={`rounded-xl px-4 py-2.5 text-sm ${status.type === "success" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-pink-500/10 text-pink-400 border border-pink-500/20"}`}>
+            {status.message}
+          </div>
+        )}
+
+        <button
+          onClick={send}
+          disabled={sending}
+          className="flex items-center gap-2 px-5 py-2.5 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white rounded-xl text-sm font-medium transition"
+        >
+          <FontAwesomeIcon icon={faBullhorn} />
+          {sending ? "Sending..." : mode === "all" ? "Send to all users" : "Send to this user"}
+        </button>
+      </div>
+
+      {/* History */}
+      <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-xs font-semibold text-white/30 uppercase tracking-wider">Sent announcements</p>
+          {history.length > 0 && (
+            <span className="px-2 py-0.5 bg-violet-500/15 text-violet-400 rounded-full text-xs font-semibold">{history.length}</span>
+          )}
+        </div>
+
+        {history.length === 0 ? (
+          <p className="text-white/20 text-sm text-center py-6">No announcements sent yet.</p>
+        ) : (
+          <div className="divide-y divide-white/5">
+            {history.map((h, i) => (
+              <div key={i} className="py-3 first:pt-0 last:pb-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="text-sm font-medium text-white">{h.title}</p>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${h.type === "all" ? "bg-violet-500/15 text-violet-400" : "bg-emerald-500/15 text-emerald-400"}`}>
+                    {h.type === "all" ? `${h.sent} users` : h.email}
+                  </span>
+                </div>
+                <p className="text-xs text-white/30">{h.time}</p>
+                <p className="text-xs text-white/40 mt-1 truncate">{h.description}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -133,22 +289,21 @@ function UsersTab() {
                       </button>
                       <button onClick={() => setConfirm({ id: u.id, name: u.displayName })} className="text-pink-400 hover:text-pink-300 text-xs font-medium transition">Delete</button>
                       <button
-  onClick={() => {
-    const subject = prompt('Email subject:');
-    const message = prompt('Your message:');
-    if (!subject || !message) return;
-    apiFetch('/admin/send-message', {
-      method: 'POST',
-      body: JSON.stringify({ userId: u.id, subject, message }),
-    })
-      .then(() => alert(`Message sent to ${u.displayName}!`))
-      .catch(() => alert('Failed to send message'));
-  }}
-  className="text-violet-400 hover:text-violet-300 text-xs font-medium transition"
->
-  Message
-</button>
-
+                        onClick={() => {
+                          const subject = prompt('Email subject:');
+                          const message = prompt('Your message:');
+                          if (!subject || !message) return;
+                          apiFetch('/admin/send-message', {
+                            method: 'POST',
+                            body: JSON.stringify({ userId: u.id, subject, message }),
+                          })
+                            .then(() => alert(`Message sent to ${u.displayName}!`))
+                            .catch(() => alert('Failed to send message'));
+                        }}
+                        className="text-violet-400 hover:text-violet-300 text-xs font-medium transition"
+                      >
+                        Message
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -548,15 +703,16 @@ function Admin() {
   }
 
   const tabs = [
-    { id: "overview", label: "Overview", icon: <FontAwesomeIcon icon={faChartBar} /> },
-    { id: "users", label: "Users", icon: <FontAwesomeIcon icon={faUsers} /> },
-    { id: "materials", label: "Materials", icon: <FontAwesomeIcon icon={faBook} /> },
-    { id: "products", label: "Products", icon: <FontAwesomeIcon icon={faShoppingBag} /> },
-    { id: "sellers", label: "Sellers", icon: <FontAwesomeIcon icon={faStore} /> },
-    { id: "reviews", label: "Reviews", icon: <FontAwesomeIcon icon={faStar} /> },
-    { id: "universities", label: "Universities", icon: <FontAwesomeIcon icon={faGraduationCap} /> },
-    { id: "reports", label: "Reports", icon: <FontAwesomeIcon icon={faFlag} /> },
-    { id: "feedback", label: "Feedback", icon: <FontAwesomeIcon icon={faComment} /> },
+    { id: "overview",       label: "Overview",       icon: <FontAwesomeIcon icon={faChartBar} /> },
+    { id: "users",          label: "Users",          icon: <FontAwesomeIcon icon={faUsers} /> },
+    { id: "materials",      label: "Materials",      icon: <FontAwesomeIcon icon={faBook} /> },
+    { id: "products",       label: "Products",       icon: <FontAwesomeIcon icon={faShoppingBag} /> },
+    { id: "sellers",        label: "Sellers",        icon: <FontAwesomeIcon icon={faStore} /> },
+    { id: "reviews",        label: "Reviews",        icon: <FontAwesomeIcon icon={faStar} /> },
+    { id: "universities",   label: "Universities",   icon: <FontAwesomeIcon icon={faGraduationCap} /> },
+    { id: "reports",        label: "Reports",        icon: <FontAwesomeIcon icon={faFlag} /> },
+    { id: "feedback",       label: "Feedback",       icon: <FontAwesomeIcon icon={faComment} /> },
+    { id: "announcements",  label: "Announcements",  icon: <FontAwesomeIcon icon={faBullhorn} /> },
   ];
 
   return (
@@ -639,39 +795,38 @@ function Admin() {
                 ))}
               </div>
             )}
-<div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 flex items-center justify-between">
-  <div>
-    <p className="text-sm font-semibold text-white/50">Inactive Users</p>
-    <p className="text-xs text-white/30 mt-1">Send a re-engagement email to users inactive for 7+ days</p>
-  </div>
-  <button
-    onClick={async () => {
-      try {
-        const res = await apiFetch('/admin/notify-inactive', { method: 'POST' });
-        alert(`Sent emails to ${res.sent} inactive users!`);
-      } catch{
-        alert(`Failed to send emails`);
-      }
-    }}
-    className="shrink-0 px-4 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium transition"
-  >
-    Notify Inactive Users
-  </button>
-</div>
-          </div>
 
-          
+            <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-white/50">Inactive Users</p>
+                <p className="text-xs text-white/30 mt-1">Send a re-engagement email to users inactive for 7+ days</p>
+              </div>
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await apiFetch('/admin/notify-inactive', { method: 'POST' });
+                    alert(`Sent emails to ${res.sent} inactive users!`);
+                  } catch {
+                    alert(`Failed to send emails`);
+                  }
+                }}
+                className="shrink-0 px-4 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium transition"
+              >
+                Notify Inactive Users
+              </button>
+            </div>
+          </div>
         )}
 
-        {activeTab === "users"        && <UsersTab />}
-        {activeTab === "materials"    && <MaterialsTab />}
-        {activeTab === "products"     && <ProductsTab />}
-        {activeTab === "universities" && <UniversitiesTab />}
-        {activeTab === "reports"      && <ReportsTab />}
-        {activeTab === "sellers"      && <SellersTab />}
-        {activeTab === "reviews"      && <ReviewsTab />}
-        {activeTab === "feedback" && <FeedbackTab />}
-        
+        {activeTab === "users"          && <UsersTab />}
+        {activeTab === "materials"      && <MaterialsTab />}
+        {activeTab === "products"       && <ProductsTab />}
+        {activeTab === "universities"   && <UniversitiesTab />}
+        {activeTab === "reports"        && <ReportsTab />}
+        {activeTab === "sellers"        && <SellersTab />}
+        {activeTab === "reviews"        && <ReviewsTab />}
+        {activeTab === "feedback"       && <FeedbackTab />}
+        {activeTab === "announcements"  && <AnnouncementsTab />}
       </div>
     </div>
   );
