@@ -78,33 +78,30 @@ export function UploadModal({ onClose, universitiesList = [] }) {
 
   // ── Get a Drive access token ─────────────────────────────────────
   const getDriveAccessToken = () =>
-    new Promise((resolve, reject) => {
-      const cached = localStorage.getItem("googleAccessToken");
-      if (cached) return resolve(cached);
-
-      const loadGIS = () =>
-        new Promise((res) => {
-          if (window.google?.accounts?.oauth2) return res();
-          const s = document.createElement("script");
-          s.src = "https://accounts.google.com/gsi/client";
-          s.onload = res;
-          document.body.appendChild(s);
-        });
-
-      loadGIS().then(() => {
-        const client = window.google.accounts.oauth2.initTokenClient({
-          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-          scope: "https://www.googleapis.com/auth/drive.readonly",
-          login_hint: auth.currentUser?.email ?? "",
-          callback: (response) => {
-            if (response.error) return reject(new Error(response.error));
-            localStorage.setItem("googleAccessToken", response.access_token);
-            resolve(response.access_token);
-          },
-        });
-        client.requestAccessToken();
+  new Promise((resolve, reject) => {
+    const loadGIS = () =>
+      new Promise((res) => {
+        if (window.google?.accounts?.oauth2) return res();
+        const s = document.createElement("script");
+        s.src = "https://accounts.google.com/gsi/client";
+        s.onload = res;
+        document.body.appendChild(s);
       });
+
+    loadGIS().then(() => {
+      const client = window.google.accounts.oauth2.initTokenClient({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        scope: "https://www.googleapis.com/auth/drive.file",
+        login_hint: auth.currentUser?.email ?? "",
+        callback: (response) => {
+          if (response.error) return reject(new Error(response.error));
+          localStorage.setItem("googleAccessToken", response.access_token);
+          resolve(response.access_token);
+        },
+      });
+      client.requestAccessToken();
     });
+  });
 
   // ── Google Drive picker ──────────────────────────────────────────
   const openGooglePicker = async () => {
