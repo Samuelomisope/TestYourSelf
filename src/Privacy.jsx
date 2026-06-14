@@ -63,7 +63,7 @@ function Privacy() {
             {[
               { label: "Account information", desc: "Your name, email address, and profile photo when you sign up via Google or email." },
               { label: "Study materials", desc: "Files you upload (PDFs, videos, documents) and metadata like title, course name, and university." },
-              { label: "Google Drive access", desc: "If you choose to import files from Google Drive, we request read-only access to let you select and download those files. We do not store your Drive credentials or access any files you do not explicitly select." },
+              { label: "Google Drive access", desc: "If you choose to import files from Google Drive, we request access only to files you explicitly select through the Google Picker. We cannot access any other files in your Drive." },
               { label: "Usage data", desc: "Basic interaction data such as pages visited and features used, to help us improve the product." },
             ].map((item) => (
               <li key={item.label} className="flex gap-2">
@@ -99,7 +99,7 @@ function Privacy() {
           </p>
           <ul className="space-y-2 mt-2">
             {[
-              "We request read-only access (drive.readonly scope) — we cannot modify or delete your Drive files.",
+             "We request access only to files you select (drive.file scope) — we cannot access any other files in your Drive.",
               "We only access files you explicitly select through the Google Picker.",
               "Selected files are downloaded once and uploaded to your TestYourself study library.",
               "We do not store your Google OAuth token beyond your current session.",

@@ -56,7 +56,7 @@ function Login() {
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     // Request Drive read access so the Study Material upload can use Google Picker
-    provider.addScope("https://www.googleapis.com/auth/drive.readonly");
+    provider.addScope("https://www.googleapis.com/auth/drive.file");
     try {
       setLoading(true);
       setError("");
