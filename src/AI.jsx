@@ -415,25 +415,26 @@ function AskTab() {
 
     try {
       let question = msg;
-      let imageData = null;
-      let imageMediaType = null;
+      // NEW
+let fileData = null;
+let fileMimeType = null;
 
-      if (attachedFile) {
-        const base64 = await fileToBase64(attachedFile);
-        if (attachedFile.type.startsWith("image/")) {
-          imageData = base64;
-          imageMediaType = attachedFile.type;
-          question = msg || "Please explain what you see in this image.";
-        } else {
-          question = msg || `Please analyze this file: ${attachedFile.name}`;
-        }
-      }
+if (attachedFile) {
+  fileData = await fileToBase64(attachedFile);
+  fileMimeType = attachedFile.type;
+  question = msg || (
+    attachedFile.type.startsWith("image/") ? "Please explain what you see in this image." :
+    attachedFile.type === "application/pdf" ? "Please summarize and explain this PDF." :
+    attachedFile.type.startsWith("video/") ? "Please explain what is in this video." :
+    `Please analyze this file: ${attachedFile.name}`
+  );
+}
 
-      const payload = { question };
-      if (imageData) {
-        payload.imageData = imageData;
-        payload.imageMediaType = imageMediaType;
-      }
+const payload = { question };
+if (fileData) {
+  payload.fileData = fileData;
+  payload.fileMimeType = fileMimeType;
+}
 
       const data = await fetchAI("ask", payload);
       const aiText = data.answer;
@@ -672,17 +673,20 @@ function SummarizeTab() {
       let imageData = null;
       let imageMediaType = null;
 
-      if (attachedFile && attachedFile.type.startsWith("image/")) {
-        imageData = await fileToBase64(attachedFile);
-        imageMediaType = attachedFile.type;
-        finalText = text || "Summarize what is in this image.";
-      }
+let fileData = null;
+let fileMimeType = null;
 
-      const payload = { text: finalText, style };
-      if (imageData) {
-        payload.imageData = imageData;
-        payload.imageMediaType = imageMediaType;
-      }
+if (attachedFile) {
+  fileData = await fileToBase64(attachedFile);
+  fileMimeType = attachedFile.type;
+  finalText = text || `Summarize this ${attachedFile.type === 'application/pdf' ? 'PDF' : 'file'}.`;
+}
+
+const payload = { text: finalText, style };
+if (fileData) {
+  payload.fileData = fileData;
+  payload.fileMimeType = fileMimeType;
+}
 
       const data = await fetchAI("summarize", payload);
       setSummary(data.summary);
