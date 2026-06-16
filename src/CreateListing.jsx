@@ -8,6 +8,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChevronLeft, faPlus, faImage, faTag, faTimes, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { uploadMultiple } from "./useUpload";
 import { API } from "./config";
+import { createNotification } from "./notifications";
+import { useAuth } from "./useAuth";
 
 async function apiFetch(path, options = {}) {
   const token = await getIdToken(auth.currentUser, true);
@@ -27,7 +29,7 @@ function CreateListing() {
   const [tagInput, setTagInput] = useState("");
   const [form, setForm] = useState({ title:"", description:"", price:"", images:[], category:"", type:"PHYSICAL", condition:"GOOD", tags:[] });
   const set = (key, value) => setForm(f => ({ ...f, [key]: value }));
-
+  const { user } = useAuth();
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
@@ -37,13 +39,19 @@ function CreateListing() {
     setUploading(false);
   };
 
-  const submit = async () => {
-    if (!form.title || !form.description || !form.price) return;
-    setSubmitting(true);
-    try { await apiFetch("/marketplace", { method:"POST", body:JSON.stringify({ ...form, price: parseFloat(form.price) }) }); navigate("/marketplace/my-listings"); }
-    catch (err) { console.error(err); alert("Failed to create listing. Make sure you belong to a university."); }
-    setSubmitting(false);
-  };
+ const submit = async () => {
+  if (!form.title || !form.description || !form.price) return;
+  setSubmitting(true);
+  try {
+    await apiFetch("/marketplace", { method: "POST", body: JSON.stringify({ ...form, price: parseFloat(form.price) }) });
+    await createNotification(user.uid, {
+      type: "marketplace",
+      message: `Your listing "${form.title}" is now live on the marketplace.`,
+    });
+    navigate("/marketplace/my-listings");
+  } catch (err) { console.error(err); alert("Failed to create listing. Make sure you belong to a university."); }
+  setSubmitting(false);
+};
 
   const inputCls = "w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/40 transition";
   const selectCls = "w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white/70 outline-none focus:border-violet-500/40 transition";

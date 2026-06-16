@@ -10,6 +10,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { faFile as farFile } from '@fortawesome/free-regular-svg-icons';
 import { UploadModal } from "./UploadModal";
+import { createNotification } from "./notifications";
 
 const FILE_ICONS = {
   pdf: <FontAwesomeIcon icon={faFileLines} />,
@@ -843,19 +844,23 @@ function StudyMaterial() {
       </main>
 
       {showUpload && (
-        <UploadModal
-          onClose={(uploaded) => {
-            setShowUpload(false);
-            if (uploaded) {
-              setSuccessMessage("File uploaded successfully!");
-              setTimeout(() => setSuccessMessage(""), 3000);
-              setRefreshKey(k => k + 1);
-            }
-          }}
-          user={user}
-          universitiesList={universitiesList}
-        />
-      )}
+  <UploadModal
+    onClose={async (uploaded) => {
+      setShowUpload(false);
+      if (uploaded) {
+        setSuccessMessage("File uploaded successfully!");
+        setTimeout(() => setSuccessMessage(""), 3000);
+        setRefreshKey(k => k + 1);
+        await createNotification(user.uid, {
+          type: "material",
+          message: `Your file "${uploaded.title || "File"}" was uploaded successfully.`,
+        });
+      }
+    }}
+    user={user}
+    universitiesList={universitiesList}
+  />
+)}
       {showCalculator && <Calculator onClose={() => setShowCalculator(false)} />}
       {selectedFile && (
         <FileDetailModal
