@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { auth } from "./firebase";
 import { getIdToken } from "firebase/auth";
@@ -35,15 +35,19 @@ import {
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-async function fetchAI(endpoint, body) {
+async function fetchAIWithFile(endpoint, fields, file) {
   const token = await getIdToken(auth.currentUser, true);
+
+  const formData = new FormData();
+  Object.entries(fields).forEach(([k, v]) => {
+    if (v !== null && v !== undefined) formData.append(k, String(v));
+  });
+  if (file) formData.append("file", file);
+
   const res = await fetch(`${API_URL}/ai/${endpoint}`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(body),
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
   });
   if (!res.ok) throw new Error("Request failed");
   return res.json();
@@ -58,6 +62,32 @@ async function apiGet(path) {
   return res.json();
 }
 
+// ✅ Moved outside all components — fixes the "impure function during render" error
+function timeAgo(dateStr) {
+  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
+// ✅ Moved outside all components
+async function logActivity(type, description, href) {
+  try {
+    const token = await getIdToken(auth.currentUser, true);
+    await fetch(`${API_URL}/users/me/activity`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ type, description, href }),
+    });
+  } catch {
+    // non-critical, don't throw
+  }
+}
+
 function fileIcon(type) {
   if (!type) return faFile;
   if (type.startsWith("image/")) return faImage;
@@ -65,15 +95,6 @@ function fileIcon(type) {
   if (type.includes("word")) return faFileWord;
   if (type.includes("presentation") || type.includes("powerpoint")) return faFilePowerpoint;
   return faFile;
-}
-
-function fileToBase64(file) {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result.split(",")[1]);
-    r.onerror = () => rej(new Error("Read failed"));
-    r.readAsDataURL(file);
-  });
 }
 
 function speak(text) {
@@ -214,7 +235,7 @@ function QuizTab() {
     setQuestions([]);
     setAnswers({});
     try {
-      const data = await fetchAI("quiz", { text, count: Number(count), difficulty });
+      const data = await fetchAIWithFile("quiz", { text, count: Number(count), difficulty }, null);
       setQuestions(data.questions);
     } catch {
       setError("Failed to generate quiz. Please try again.");
@@ -356,7 +377,25 @@ function AskTab() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  // Voice recording
+  // ✅ Listen for history restore events
+  useEffect(() => {
+    const handler = (e) => {
+      const item = e.detail;
+      setMessages([
+        {
+          role: "ai",
+          text: "Hi! I'm TESTYOURSELF AI. Ask me anything — type, speak, snap a photo, or upload a file!",
+        },
+        {
+          role: "ai",
+          text: `You previously asked: "${item.description}". Feel free to continue or ask something new!`,
+        },
+      ]);
+    };
+    window.addEventListener("ai:load-chat", handler);
+    return () => window.removeEventListener("ai:load-chat", handler);
+  }, []);
+
   async function toggleRecording() {
     if (recording) {
       mediaRecorderRef.current?.stop();
@@ -370,14 +409,9 @@ function AskTab() {
       mr.ondataavailable = (e) => audioChunksRef.current.push(e.data);
       mr.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        // Use Web Speech API for transcription (browser-native, free)
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.lang = "en-US";
-        recognition.onresult = (e) => {
-          const transcript = e.results[0][0].transcript;
-          setInput(transcript);
-        };
+        recognition.onresult = (e) => setInput(e.results[0][0].transcript);
         recognition.onerror = () => setInput("[Voice not recognized, please try again]");
         recognition.start();
       };
@@ -389,63 +423,50 @@ function AskTab() {
     }
   }
 
-  // File attach
   function handleFileAttach(e) {
     const file = e.target.files[0];
     if (file) setAttachedFile(file);
     e.target.value = "";
   }
 
-  // Camera capture
   function handleCapture(file) {
     setAttachedFile(file);
     setShowCamera(false);
   }
 
-  // Send message
   async function send() {
     const msg = input.trim();
     if ((!msg && !attachedFile) || loading) return;
     setInput("");
 
-    const userMsg = { role: "user", text: msg, file: attachedFile };
+    // ✅ Capture file ref before clearing state
+    const fileToSend = attachedFile;
+    const userMsg = { role: "user", text: msg, file: fileToSend };
     setMessages((prev) => [...prev, userMsg]);
     setAttachedFile(null);
     setLoading(true);
 
     try {
-      let question = msg;
-      // NEW
-let fileData = null;
-let fileMimeType = null;
+      const question = msg || (
+        fileToSend?.type.startsWith("image/") ? "Please explain what you see in this image." :
+        fileToSend?.type === "application/pdf" ? "Please summarize and explain this PDF." :
+        fileToSend?.type.startsWith("video/") ? "Please explain what is in this video." :
+        fileToSend ? `Please analyze this file: ${fileToSend.name}` : ""
+      );
 
-if (attachedFile) {
-  fileData = await fileToBase64(attachedFile);
-  fileMimeType = attachedFile.type;
-  question = msg || (
-    attachedFile.type.startsWith("image/") ? "Please explain what you see in this image." :
-    attachedFile.type === "application/pdf" ? "Please summarize and explain this PDF." :
-    attachedFile.type.startsWith("video/") ? "Please explain what is in this video." :
-    `Please analyze this file: ${attachedFile.name}`
-  );
-}
-
-const payload = { question };
-if (fileData) {
-  payload.fileData = fileData;
-  payload.fileMimeType = fileMimeType;
-}
-
-      const data = await fetchAI("ask", payload);
+      const data = await fetchAIWithFile("ask", { question }, fileToSend);
       const aiText = data.answer;
 
       setMessages((prev) => [...prev, { role: "ai", text: aiText }]);
 
+      // ✅ Log activity
+      await logActivity("ai", msg.slice(0, 80) || fileToSend?.name || "AI conversation", "/ai");
+
       if (ttsEnabled) {
-        const idx = messages.length + 1;
-        setSpeakingIndex(idx);
-        speak(aiText);
-        const utt = window.speechSynthesis.speaking;
+        setSpeakingIndex((prev) => {
+          speak(aiText);
+          return messages.length + 1;
+        });
         const check = setInterval(() => {
           if (!window.speechSynthesis.speaking) {
             setSpeakingIndex(null);
@@ -519,9 +540,7 @@ if (fileData) {
               </div>
             )}
             <div className="max-w-[80%] flex flex-col gap-1">
-              {m.file && (
-                <FileChip file={m.file} />
-              )}
+              {m.file && <FileChip file={m.file} />}
               {m.text && (
                 <div
                   className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
@@ -585,7 +604,6 @@ if (fileData) {
       {/* Input bar */}
       <div className="flex flex-col gap-2 pt-2 border-t border-white/5">
         <div className="flex items-center gap-2">
-          {/* Camera */}
           <button
             onClick={() => setShowCamera(true)}
             className="w-9 h-9 rounded-xl border border-white/10 text-white/40 hover:text-violet-400 hover:border-violet-500/40 flex items-center justify-center transition shrink-0"
@@ -593,8 +611,6 @@ if (fileData) {
           >
             <FontAwesomeIcon icon={faCamera} />
           </button>
-
-          {/* File upload */}
           <button
             onClick={() => fileInputRef.current?.click()}
             className="w-9 h-9 rounded-xl border border-white/10 text-white/40 hover:text-violet-400 hover:border-violet-500/40 flex items-center justify-center transition shrink-0"
@@ -609,8 +625,6 @@ if (fileData) {
             className="hidden"
             onChange={handleFileAttach}
           />
-
-          {/* Text input */}
           <input
             type="text"
             placeholder={recording ? "Listening…" : "Ask a question…"}
@@ -620,8 +634,6 @@ if (fileData) {
             disabled={loading}
             className="flex-1 bg-black/40 border border-white/10 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition"
           />
-
-          {/* Voice */}
           <button
             onClick={toggleRecording}
             className={`w-9 h-9 rounded-xl border flex items-center justify-center transition shrink-0 ${
@@ -633,8 +645,6 @@ if (fileData) {
           >
             <FontAwesomeIcon icon={recording ? faMicrophoneSlash : faMicrophone} />
           </button>
-
-          {/* Send */}
           <button
             onClick={send}
             disabled={loading || (!input.trim() && !attachedFile)}
@@ -664,35 +674,21 @@ function SummarizeTab() {
   const fileInputRef = useRef(null);
 
   async function summarize() {
-  if (!text.trim() && !attachedFile) return;
-  setLoading(true);
-  setError("");
-  setSummary("");
-  try {
-    let finalText = text;
-    let fileData = null;
-    let fileMimeType = null;
-
-    if (attachedFile) {
-      fileData = await fileToBase64(attachedFile);
-      fileMimeType = attachedFile.type;
-      finalText = text || `Summarize this ${attachedFile.type === 'application/pdf' ? 'PDF' : 'file'}.`;
+    if (!text.trim() && !attachedFile) return;
+    setLoading(true);
+    setError("");
+    setSummary("");
+    try {
+      const finalText = text || `Summarize this ${attachedFile?.type === "application/pdf" ? "PDF" : "file"}.`;
+      // ✅ Removed dead base64 code, using fetchAIWithFile directly
+      const data = await fetchAIWithFile("summarize", { text: finalText, style }, attachedFile);
+      setSummary(data.summary);
+    } catch {
+      setError("Failed to summarize. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    const payload = { text: finalText, style };
-    if (fileData) {
-      payload.fileData = fileData;
-      payload.fileMimeType = fileMimeType;
-    }
-
-    const data = await fetchAI("summarize", payload);
-    setSummary(data.summary);
-  } catch {
-    setError("Failed to summarize. Please try again.");
-  } finally {
-    setLoading(false);
   }
-}
 
   function copy() {
     navigator.clipboard.writeText(summary);
@@ -708,7 +704,6 @@ function SummarizeTab() {
           onClose={() => setShowCamera(false)}
         />
       )}
-
       <div>
         <label className="block text-xs font-semibold text-violet-400 tracking-widest uppercase mb-2">
           Paste Your Notes
@@ -721,8 +716,6 @@ function SummarizeTab() {
           className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
         />
       </div>
-
-      {/* File attach row */}
       <div className="flex items-center gap-2">
         <button
           onClick={() => setShowCamera(true)}
@@ -747,7 +740,6 @@ function SummarizeTab() {
         />
         {attachedFile && <FileChip file={attachedFile} onRemove={() => setAttachedFile(null)} />}
       </div>
-
       <div className="flex gap-2">
         <select
           value={style}
@@ -766,7 +758,6 @@ function SummarizeTab() {
           Summarize
         </button>
       </div>
-
       {loading && <Spinner label="Summarizing…" />}
       {error && (
         <p className="text-pink-400 text-sm flex items-center gap-2">
@@ -774,7 +765,6 @@ function SummarizeTab() {
           {error}
         </p>
       )}
-
       {summary && (
         <div className="rounded-2xl border border-violet-500/20 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2.5 bg-violet-500/10 border-b border-violet-500/20">
@@ -804,22 +794,11 @@ function HistoryPanel({ onClose, onSelectChat }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiGet("/users/me/activity")
-      .then((data) => {
-        const aiChats = data.filter((item) => item.type === "ai");
-        setHistory(aiChats);
-      })
+    apiGet("/users/me/activity?type=ai")
+      .then((data) => setHistory(data))
       .catch(() => setHistory([]))
       .finally(() => setLoading(false));
   }, []);
-
-  function timeAgo(dateStr) {
-    const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
-    if (diff < 60) return `${diff}s ago`;
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    return `${Math.floor(diff / 86400)}d ago`;
-  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -875,7 +854,6 @@ function AI() {
 
   function handleSelectChat(item) {
     setActiveTab("ask");
-    // The AskTab is stateful — we trigger a custom event to pre-fill it
     window.dispatchEvent(new CustomEvent("ai:load-chat", { detail: item }));
   }
 
@@ -888,14 +866,12 @@ function AI() {
         />
       )}
 
-      {/* Ambient orbs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
         <div className="absolute top-1/2 -right-20 w-72 h-72 bg-emerald-500 rounded-full opacity-8 blur-[100px]" />
         <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-pink-500 rounded-full opacity-8 blur-[100px]" />
       </div>
 
-      {/* HEADER */}
       <header className="fixed top-0 left-0 w-full z-40 bg-[#0a0a0f]/80 backdrop-blur-md border-b border-white/5">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between px-4 py-2.5">
@@ -911,7 +887,6 @@ function AI() {
               </h1>
             </div>
             <div className="flex items-center gap-3">
-              {/* History button */}
               <button
                 onClick={() => setShowHistory(true)}
                 className="flex items-center gap-1.5 text-xs text-white/40 hover:text-violet-400 transition border border-white/10 hover:border-violet-500/40 rounded-full px-3 py-1.5"
@@ -926,8 +901,6 @@ function AI() {
               </span>
             </div>
           </div>
-
-          {/* Nav tabs */}
           <div className="flex items-center justify-around border-t border-white/5 px-2">
             {TAB_LINKS.map((tab) => {
               const isActive = location.pathname === tab.href;
@@ -950,9 +923,7 @@ function AI() {
         </div>
       </header>
 
-      {/* MAIN */}
       <main className="relative z-10 pt-28 px-4 pb-16 max-w-2xl mx-auto">
-        {/* Hero */}
         <div className="text-center mb-8 mt-2">
           <div className="inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/25 rounded-full px-4 py-1.5 text-xs text-violet-400 font-medium mb-4">
             <span className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-pulse" />
@@ -966,7 +937,6 @@ function AI() {
           </p>
         </div>
 
-        {/* Feature tabs */}
         <div className="flex gap-1.5 bg-white/5 border border-white/10 rounded-2xl p-1.5 mb-6">
           {TABS.map((tab) => (
             <button
@@ -983,7 +953,6 @@ function AI() {
           ))}
         </div>
 
-        {/* Panel */}
         <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-6 backdrop-blur-sm">
           {activeTab === "quiz" && <QuizTab />}
           {activeTab === "ask" && <AskTab />}
