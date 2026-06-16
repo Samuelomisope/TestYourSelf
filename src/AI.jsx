@@ -664,38 +664,35 @@ function SummarizeTab() {
   const fileInputRef = useRef(null);
 
   async function summarize() {
-    if (!text.trim() && !attachedFile) return;
-    setLoading(true);
-    setError("");
-    setSummary("");
-    try {
-      let finalText = text;
-      let imageData = null;
-      let imageMediaType = null;
+  if (!text.trim() && !attachedFile) return;
+  setLoading(true);
+  setError("");
+  setSummary("");
+  try {
+    let finalText = text;
+    let fileData = null;
+    let fileMimeType = null;
 
-let fileData = null;
-let fileMimeType = null;
-
-if (attachedFile) {
-  fileData = await fileToBase64(attachedFile);
-  fileMimeType = attachedFile.type;
-  finalText = text || `Summarize this ${attachedFile.type === 'application/pdf' ? 'PDF' : 'file'}.`;
-}
-
-const payload = { text: finalText, style };
-if (fileData) {
-  payload.fileData = fileData;
-  payload.fileMimeType = fileMimeType;
-}
-
-      const data = await fetchAI("summarize", payload);
-      setSummary(data.summary);
-    } catch {
-      setError("Failed to summarize. Please try again.");
-    } finally {
-      setLoading(false);
+    if (attachedFile) {
+      fileData = await fileToBase64(attachedFile);
+      fileMimeType = attachedFile.type;
+      finalText = text || `Summarize this ${attachedFile.type === 'application/pdf' ? 'PDF' : 'file'}.`;
     }
+
+    const payload = { text: finalText, style };
+    if (fileData) {
+      payload.fileData = fileData;
+      payload.fileMimeType = fileMimeType;
+    }
+
+    const data = await fetchAI("summarize", payload);
+    setSummary(data.summary);
+  } catch {
+    setError("Failed to summarize. Please try again.");
+  } finally {
+    setLoading(false);
   }
+}
 
   function copy() {
     navigator.clipboard.writeText(summary);
