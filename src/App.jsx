@@ -19,7 +19,7 @@ import Profile from "./Profile";
 import FeedbackWidget from "./FeedbackWidget";
 import Privacy from "./Privacy";
 import Terms from "./Terms";
-import Flashcards from "./Flashcards";
+import Flashcard from "./Flashcards";
 
 function App() {
   return (
