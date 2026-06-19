@@ -34,3 +34,8 @@ export async function uploadMultiple(files, folder = "general") {
   const data = await res.json();
   return data.urls;
 }
+
+
+
+
+

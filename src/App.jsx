@@ -19,6 +19,7 @@ import Profile from "./Profile";
 import FeedbackWidget from "./FeedbackWidget";
 import Privacy from "./Privacy";
 import Terms from "./Terms";
+import Flashcards from "./Flashcards";
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/privacy" element={<ProtectedRoute><Privacy /></ProtectedRoute>} />
         <Route path="/terms" element={<ProtectedRoute><Terms /></ProtectedRoute>} />
+        <Route path="/flashcards" element={<Flashcards />} />
         
       </Routes>
     </BrowserRouter>
