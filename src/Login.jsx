@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { auth } from "./firebase";
 import {
   setPersistence,
@@ -45,6 +45,10 @@ function Login() {
   const [successMsg, setSuccessMsg] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Where the user was trying to go before being redirected to login
+  const from = location.state?.from?.pathname || "/home";
 
   // Pick up the Google redirect result when the user lands back on this page
   useEffect(() => {
@@ -75,7 +79,7 @@ function Login() {
         photoURL: result.user.photoURL || null,
         createdAt: new Date(),
       }, { merge: true });
-      navigate("/home", { state: { fromLogin: true } });
+      navigate(from, { state: { fromLogin: true } });
     } catch (err) {
       console.error(err);
       setError("Failed to sign in with Google. Please try again.");
@@ -94,7 +98,7 @@ function Login() {
         rememberMe ? browserLocalPersistence : browserSessionPersistence
       );
       await signInWithEmailAndPassword(auth, email, password);
-      navigate("/home", { state: { fromLogin: true } });
+      navigate(from, { state: { fromLogin: true } });
     } catch {
       setError("Failed to sign in. Check your email and password and try again.");
     } finally {

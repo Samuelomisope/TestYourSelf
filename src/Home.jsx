@@ -12,6 +12,7 @@ import {
   faRobot, faBookOpen, faCartShopping, faComments, faBookmark,
   faCamera, faBagShopping, faMessage, faFile,
   faHouse, faBook, faStore, faBell, faSearch, faBars, faXmark,
+  faLayerGroup,
 } from '@fortawesome/free-solid-svg-icons';
 import AppTour from "./components/AppTour/AppTour";
 
@@ -228,6 +229,7 @@ function Home() {
   const sidebarLinks = [
     { name: "Home", href: "/home", icon: faHouse },
     { name: "Study Material", href: "/study-material", icon: faBook },
+    { name: "Flashcards", href: "/flashcards", icon: faLayerGroup },
     { name: "AI Assistant", href: "/ai", icon: faRobot },
     { name: "Chat", href: "/chat", icon: faComments },
     { name: "Marketplace", href: "/marketplace", icon: faStore },
