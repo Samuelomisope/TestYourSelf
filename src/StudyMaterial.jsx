@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, createContext, useContext } from "react";
 import { useAuth } from "./useAuth";
 import { Link, useLocation } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -6,11 +6,13 @@ import {
   faFileLines, faLock, faVideo, faBox, faFile, faNoteSticky, faUser, faGlobe,
   faHouse, faBook, faRobot, faComments, faStore, faChevronDown, faXmark,
   faCalculator, faUpload, faList, faGrip, faChevronRight, faFolder, faFolderOpen,
-  faLayerGroup, faBookOpen,
+  faLayerGroup, faBookOpen, faDownload, faCheck, faTrash, faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons';
 import { faFile as farFile } from '@fortawesome/free-regular-svg-icons';
 import { UploadModal } from "./UploadModal";
 import { createNotification } from "./notifications";
+import { useOfflineDownload } from "./useOfflineDownload";
+import { listDownloadedMaterials, getOfflineBlobUrl } from "./offlineStorage";
 
 const FILE_ICONS = {
   pdf: <FontAwesomeIcon icon={faFileLines} />,
@@ -32,6 +34,11 @@ const formatDate = (ts) => {
   return new Date(ts).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
 };
 
+const formatBytes = (bytes) => {
+  if (!bytes) return "0 MB";
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+};
+
 const LEVEL_ORDER = ["100", "200", "300", "400", "500"];
 const SEMESTER_ORDER = ["first", "second"];
 const SEMESTER_LABELS = { first: "First Semester", second: "Second Semester" };
@@ -43,6 +50,10 @@ const TAB_LINKS = [
   { href: "/chat",           label: "Chat",   icon: faComments },
   { href: "/marketplace",    label: "Market", icon: faStore },
 ];
+
+// Lets deeply-nested list components (FileRow/FileCard) show a "downloaded"
+// badge without threading the prop through every intermediate block.
+const OfflineContext = createContext({ downloadedIds: new Set() });
 
 // ─── Scientific Calculator ─────────────────────────────────────────
 function Calculator({ onClose }) {
@@ -112,7 +123,7 @@ function Calculator({ onClose }) {
 }
 
 // ─── File Detail Modal ─────────────────────────────────────────────
-function FileDetailModal({ file, user, onClose, onUpdated }) {
+function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -124,6 +135,46 @@ function FileDetailModal({ file, user, onClose, onUpdated }) {
     semester: file.semester || "",
     description: file.description || "",
   });
+
+  // Resolve the URL to actually use for viewing/opening/downloading.
+  // Prefer the live signed URL when online; fall back to the cached blob
+  // when offline or when this entry has no signed URL (i.e. it came from
+  // the offline-only file list rather than a fresh API fetch).
+  const [resolvedUrl, setResolvedUrl] = useState(file.signedUrl || null);
+  const [resolvingUrl, setResolvingUrl] = useState(!file.signedUrl);
+
+  const { downloaded, downloading, progress, error: downloadError, download, remove } = useOfflineDownload(file);
+
+  useEffect(() => {
+    let createdBlobUrl = null;
+    let cancelled = false;
+
+    (async () => {
+      const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+      if (file.signedUrl && !offline) {
+        setResolvedUrl(file.signedUrl);
+        setResolvingUrl(false);
+        return;
+      }
+      setResolvingUrl(true);
+      const blobUrl = await getOfflineBlobUrl(file.id);
+      if (cancelled) return;
+      if (blobUrl) {
+        createdBlobUrl = blobUrl;
+        setResolvedUrl(blobUrl);
+      } else if (file.signedUrl) {
+        // Offline but not actually cached — try the signed URL anyway, it'll
+        // just fail to load, which is expected.
+        setResolvedUrl(file.signedUrl);
+      }
+      setResolvingUrl(false);
+    })();
+
+    return () => {
+      cancelled = true;
+      if (createdBlobUrl) URL.revokeObjectURL(createdBlobUrl);
+    };
+  }, [file.id, file.signedUrl]);
 
   if (!file) return null;
 
@@ -156,6 +207,16 @@ function FileDetailModal({ file, user, onClose, onUpdated }) {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDownloadClick = async () => {
+    await download();
+    onDownloadChange?.();
+  };
+
+  const handleRemoveClick = async () => {
+    await remove();
+    onDownloadChange?.();
   };
 
   return (
@@ -202,30 +263,78 @@ function FileDetailModal({ file, user, onClose, onUpdated }) {
                   {file.level && <span className="px-3 py-1 bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 rounded-full text-xs">{file.level}L</span>}
                   {file.semester && <span className="px-3 py-1 bg-blue-500/15 text-blue-400 border border-blue-500/20 rounded-full text-xs">{SEMESTER_LABELS[file.semester] || file.semester}</span>}
                   {file.university?.name && <span className="px-3 py-1 bg-white/5 text-white/50 border border-white/10 rounded-full text-xs">{file.university.shortName || file.university.name}</span>}
+                  {downloaded && (
+                    <span className="px-3 py-1 bg-sky-500/15 text-sky-400 border border-sky-500/20 rounded-full text-xs">
+                      <FontAwesomeIcon icon={faCheck} className="mr-1" />Downloaded
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="space-y-2 mb-5 text-sm text-white/50">
                 {file.department && <p className="text-white/40"><span className="text-white/20 mr-1">Dept:</span>{file.department}</p>}
                 {file.description && <p className="text-white/40">{file.description}</p>}
-                <p><FontAwesomeIcon icon={faFile} className="mr-1" /> Uploaded: {formatDate(file.createdAt)}</p>
-                <p><FontAwesomeIcon icon={faUser} className="mr-1" /> By: {file.user?.displayName}</p>
-                <p>{file.isPublic ? <><FontAwesomeIcon icon={faGlobe} className="mr-1" />Public</> : <><FontAwesomeIcon icon={faLock} className="mr-1" />Private</>}</p>
-                {file.fileSize && <p><FontAwesomeIcon icon={faBox} className="mr-1" /> Size: {(file.fileSize / 1024 / 1024).toFixed(2)} MB</p>}
+                {file.createdAt && <p><FontAwesomeIcon icon={faFile} className="mr-1" /> Uploaded: {formatDate(file.createdAt)}</p>}
+                {file.user?.displayName && <p><FontAwesomeIcon icon={faUser} className="mr-1" /> By: {file.user?.displayName}</p>}
+                {file.isPublic != null && (
+                  <p>{file.isPublic ? <><FontAwesomeIcon icon={faGlobe} className="mr-1" />Public</> : <><FontAwesomeIcon icon={faLock} className="mr-1" />Private</>}</p>
+                )}
+                {file.fileSize && <p><FontAwesomeIcon icon={faBox} className="mr-1" /> Size: {formatBytes(file.fileSize)}</p>}
               </div>
-              {getMimeFileType(file.fileType) === "pdf" && (
+
+              {resolvingUrl && (
+                <div className="mb-4 py-8 text-center text-white/30 text-sm">Loading file…</div>
+              )}
+
+              {!resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "pdf" && (
                 <div className="mb-4 rounded-xl overflow-hidden border border-white/10" style={{ height: 300 }}>
-                  <iframe src={file.signedUrl} className="w-full h-full" title={file.title} />
+                  <iframe src={resolvedUrl} className="w-full h-full" title={file.title} />
                 </div>
               )}
-              {getMimeFileType(file.fileType) === "video" && (
+              {!resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "video" && (
                 <div className="mb-4 rounded-xl overflow-hidden bg-black">
-                  <video controls className="w-full max-h-64" src={file.signedUrl} />
+                  <video controls className="w-full max-h-64" src={resolvedUrl} />
                 </div>
               )}
-              <div className="flex gap-3">
-                <a href={file.signedUrl} target="_blank" rel="noopener noreferrer" className="flex-1 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium text-center transition">Open</a>
-                <a href={file.signedUrl} download className="flex-1 py-2.5 border border-violet-500/30 text-violet-400 rounded-xl text-sm font-medium text-center hover:bg-violet-500/10 transition">Download</a>
-              </div>
+
+              {!resolvingUrl && resolvedUrl && (
+                <div className="flex gap-3 mb-3">
+                  <a href={resolvedUrl} target="_blank" rel="noopener noreferrer" className="flex-1 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium text-center transition">Open</a>
+                  <a href={resolvedUrl} download={file.title} className="flex-1 py-2.5 border border-violet-500/30 text-violet-400 rounded-xl text-sm font-medium text-center hover:bg-violet-500/10 transition">Download</a>
+                </div>
+              )}
+
+              {/* ── Offline save / remove ── */}
+              {downloadError && <p className="text-pink-400 text-xs mb-2">{downloadError}</p>}
+
+              {downloading ? (
+                <div className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+                  <div className="flex items-center justify-between text-xs text-white/40 mb-1.5">
+                    <span>Saving for offline…</span>
+                    <span>{progress}%</span>
+                  </div>
+                  <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-violet-500 transition-all" style={{ width: `${progress}%` }} />
+                  </div>
+                </div>
+              ) : downloaded ? (
+                <button
+                  onClick={handleRemoveClick}
+                  className="w-full py-2.5 border border-pink-500/30 text-pink-400 rounded-xl text-sm font-medium hover:bg-pink-500/10 transition flex items-center justify-center gap-2"
+                >
+                  <FontAwesomeIcon icon={faTrash} className="text-xs" />
+                  Remove offline copy
+                </button>
+              ) : (
+                file.signedUrl && (
+                  <button
+                    onClick={handleDownloadClick}
+                    className="w-full py-2.5 border border-sky-500/30 text-sky-400 rounded-xl text-sm font-medium hover:bg-sky-500/10 transition flex items-center justify-center gap-2"
+                  >
+                    <FontAwesomeIcon icon={faDownload} className="text-xs" />
+                    Save for offline
+                  </button>
+                )
+              )}
             </>
           )}
 
@@ -323,6 +432,9 @@ function FileDetailModal({ file, user, onClose, onUpdated }) {
 // ─── File Row (list item inside a course) ─────────────────────────
 function FileRow({ file, user, onSelect, onDelete }) {
   const fileType = getMimeFileType(file.fileType);
+  const { downloadedIds } = useContext(OfflineContext);
+  const isDownloaded = downloadedIds.has(file.id);
+
   return (
     <div
       onClick={() => onSelect(file)}
@@ -336,6 +448,11 @@ function FileRow({ file, user, onSelect, onDelete }) {
         <p className="text-xs text-white/30">{formatDate(file.createdAt)} · {file.user?.displayName}</p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
+        {isDownloaded && (
+          <span title="Downloaded for offline use" className="w-5 h-5 bg-sky-500/15 text-sky-400 rounded-full flex items-center justify-center text-[10px]">
+            <FontAwesomeIcon icon={faDownload} />
+          </span>
+        )}
         <span className={`text-xs px-2 py-0.5 rounded-full ${
           fileType === "pdf" ? "bg-red-500/10 text-red-400" :
           fileType === "video" ? "bg-blue-500/10 text-blue-400" :
@@ -536,6 +653,9 @@ function DepartmentBlock({ deptName, levels, user, onSelect, onDelete }) {
 
 // ─── Flat Grid Card (for search results) ─────────────────────────
 function FileCard({ file, user, onSelect, onDelete }) {
+  const { downloadedIds } = useContext(OfflineContext);
+  const isDownloaded = downloadedIds.has(file.id);
+
   return (
     <div onClick={() => onSelect(file)} className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 hover:border-violet-500/30 hover:bg-violet-500/5 transition cursor-pointer group relative">
       {file.user?.displayName === user?.displayName && (
@@ -558,6 +678,11 @@ function FileCard({ file, user, onSelect, onDelete }) {
         >
           <FontAwesomeIcon icon={faXmark} className="text-xs" />
         </button>
+      )}
+      {isDownloaded && (
+        <span title="Downloaded for offline use" className="absolute top-2 left-2 w-6 h-6 bg-sky-500/15 text-sky-400 rounded-full flex items-center justify-center text-[10px]">
+          <FontAwesomeIcon icon={faDownload} />
+        </span>
       )}
       <div className="w-12 h-12 bg-violet-500/10 rounded-xl flex items-center justify-center text-2xl text-violet-400 mb-3 group-hover:bg-violet-500/20 transition">
         {FILE_ICONS[getMimeFileType(file.fileType)]}
@@ -590,6 +715,30 @@ function StudyMaterial() {
   const [successMessage, setSuccessMessage] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // ── Offline state ──
+  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+  const [downloadedIds, setDownloadedIds] = useState(new Set());
+  const [showDownloadedOnly, setShowDownloadedOnly] = useState(false);
+  const [usingOfflineFallback, setUsingOfflineFallback] = useState(false);
+
+  const refreshDownloads = useCallback(async () => {
+    const meta = await listDownloadedMaterials();
+    setDownloadedIds(new Set(meta.map(m => m.id)));
+  }, []);
+
+  useEffect(() => { refreshDownloads(); }, [refreshDownloads]);
+
+  useEffect(() => {
+    const goOnline = () => setIsOnline(true);
+    const goOffline = () => setIsOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 400);
     return () => clearTimeout(timer);
@@ -599,6 +748,15 @@ function StudyMaterial() {
     if (!user) return;
     const fetchFiles = async () => {
       setLoading(true);
+
+      if (!isOnline) {
+        const offlineFiles = await listDownloadedMaterials();
+        setFiles(offlineFiles);
+        setUsingOfflineFallback(true);
+        setLoading(false);
+        return;
+      }
+
       try {
         const { auth } = await import("./firebase");
         const { getIdToken } = await import("firebase/auth");
@@ -607,13 +765,23 @@ function StudyMaterial() {
           `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material?search=${debouncedSearch}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
+        if (!res.ok) throw new Error("Request failed");
         const data = await res.json();
         setFiles(Array.isArray(data) ? data : []);
-      } catch (err) { console.error(err); setFiles([]); }
-      finally { setLoading(false); }
+        setUsingOfflineFallback(false);
+      } catch (err) {
+        console.error(err);
+        // Network error even though navigator.onLine said we're online (e.g.
+        // server down, flaky connection) — fall back to whatever's cached.
+        const offlineFiles = await listDownloadedMaterials();
+        setFiles(offlineFiles);
+        setUsingOfflineFallback(true);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchFiles();
-  }, [user, debouncedSearch, refreshKey]);
+  }, [user, debouncedSearch, refreshKey, isOnline]);
 
   useEffect(() => {
     const load = async () => {
@@ -630,10 +798,18 @@ function StudyMaterial() {
     load();
   }, []);
 
-  // Filter by university
+  const handleDownloadChange = useCallback(() => {
+    refreshDownloads();
+  }, [refreshDownloads]);
+
+  // Filter by university, then by "downloaded only" if toggled
   const filtered = files.filter(f => {
-    if (universityFilter === "All") return true;
-    return f.university?.shortName === universityFilter || f.university?.name === universityFilter;
+    if (universityFilter !== "All") {
+      const matchesUni = f.university?.shortName === universityFilter || f.university?.name === universityFilter;
+      if (!matchesUni) return false;
+    }
+    if (showDownloadedOnly && !downloadedIds.has(f.id)) return false;
+    return true;
   });
 
   // ── Build hierarchy: dept → level → semester → course → files ──
@@ -655,6 +831,7 @@ function StudyMaterial() {
   const isSearching = debouncedSearch.trim().length > 0;
 
   return (
+    <OfflineContext.Provider value={{ downloadedIds }}>
     <div className="min-h-screen bg-[#0a0a0f] text-white">
 
       {/* Ambient orbs */}
@@ -685,6 +862,22 @@ function StudyMaterial() {
             </div>
             <div className="flex items-center gap-2">
               <button
+                onClick={() => setShowDownloadedOnly(d => !d)}
+                className={`relative w-9 h-9 rounded-xl flex items-center justify-center transition border ${
+                  showDownloadedOnly
+                    ? "bg-sky-500/20 border-sky-500/40 text-sky-400"
+                    : "bg-white/5 border-white/10 text-white/40 hover:text-sky-400 hover:border-sky-500/40"
+                }`}
+                title="Show downloaded files only"
+              >
+                <FontAwesomeIcon icon={faDownload} />
+                {downloadedIds.size > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 bg-sky-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                    {downloadedIds.size}
+                  </span>
+                )}
+              </button>
+              <button
                 onClick={() => setShowCalculator(true)}
                 className="w-9 h-9 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-white/40 hover:text-violet-400 hover:border-violet-500/40 transition"
                 title="Calculator"
@@ -700,7 +893,8 @@ function StudyMaterial() {
               </button>
               <button
                 onClick={() => setShowUpload(true)}
-                className="flex items-center gap-2 bg-violet-500 hover:bg-violet-400 text-white px-4 py-2 rounded-full text-sm font-medium transition"
+                disabled={!isOnline}
+                className="flex items-center gap-2 bg-violet-500 hover:bg-violet-400 disabled:opacity-30 disabled:cursor-not-allowed text-white px-4 py-2 rounded-full text-sm font-medium transition"
               >
                 <FontAwesomeIcon icon={faUpload} />
                 Upload
@@ -727,6 +921,16 @@ function StudyMaterial() {
       </header>
 
       <main className="relative z-10 pt-28 px-4 pb-10 max-w-6xl mx-auto">
+
+        {/* Offline / fallback banner */}
+        {(!isOnline || usingOfflineFallback) && (
+          <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl px-4 py-2.5 mb-4 text-sm">
+            <FontAwesomeIcon icon={faTriangleExclamation} className="text-xs shrink-0" />
+            <span>
+              {!isOnline ? "You're offline — showing your downloaded files." : "Couldn't reach the server — showing downloaded files."}
+            </span>
+          </div>
+        )}
 
         {/* Search Bar */}
         <div className="flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-full px-4 py-2.5 mt-4 mb-4 focus-within:border-violet-500/40 transition">
@@ -766,6 +970,7 @@ function StudyMaterial() {
           <p className="text-xs text-white/30">
             {filtered.length} {filtered.length === 1 ? "file" : "files"}
             {isSearching ? ` matching "${debouncedSearch}"` : ""}
+            {showDownloadedOnly ? " · downloaded only" : ""}
           </p>
           {!isSearching && (
             <p className="text-xs text-white/20">{sortedDepts.length} {sortedDepts.length === 1 ? "department" : "departments"}</p>
@@ -793,16 +998,22 @@ function StudyMaterial() {
         {!loading && filtered.length === 0 && (
           <div className="text-center py-20">
             <p className="text-5xl mb-4 text-white/10"><FontAwesomeIcon icon={faFile} /></p>
-            <p className="text-white/40 font-medium">No files found</p>
-            <p className="text-white/20 text-sm mt-1">
-              {search ? "Try a different search term" : "Upload your first file to get started"}
+            <p className="text-white/40 font-medium">
+              {showDownloadedOnly ? "No downloaded files yet" : "No files found"}
             </p>
-            <button
-              onClick={() => setShowUpload(true)}
-              className="mt-4 px-6 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm transition"
-            >
-              Upload File
-            </button>
+            <p className="text-white/20 text-sm mt-1">
+              {showDownloadedOnly
+                ? "Open a file and tap \"Save for offline\" to keep it here."
+                : search ? "Try a different search term" : "Upload your first file to get started"}
+            </p>
+            {!showDownloadedOnly && isOnline && (
+              <button
+                onClick={() => setShowUpload(true)}
+                className="mt-4 px-6 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm transition"
+              >
+                Upload File
+              </button>
+            )}
           </div>
         )}
 
@@ -868,9 +1079,11 @@ function StudyMaterial() {
           user={user}
           onClose={() => setSelectedFile(null)}
           onUpdated={() => { setRefreshKey(k => k + 1); setSelectedFile(null); }}
+          onDownloadChange={handleDownloadChange}
         />
       )}
     </div>
+    </OfflineContext.Provider>
   );
 }
 
