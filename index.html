@@ -9,5 +9,23 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+  (function () {
+    try {
+      var stored = localStorage.getItem('theme');
+      var theme = stored;
+      if (!theme) {
+        var legacy = localStorage.getItem('darkMode');
+        theme = legacy === 'false' ? 'light' : 'dark';
+      }
+      var resolved = theme === 'system'
+        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : theme;
+      if (resolved === 'dark') {
+        document.documentElement.classList.add('dark');
+      }
+    } catch (e) {}
+  })();
+</script>
   </body>
 </html>
