@@ -62,7 +62,7 @@ async function apiGet(path) {
   return res.json();
 }
 
-// ✅ Moved outside all components — fixes the "impure function during render" error
+// Moved outside all components — fixes the "impure function during render" error
 function timeAgo(dateStr) {
   const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
   if (diff < 60) return `${diff}s ago`;
@@ -71,7 +71,7 @@ function timeAgo(dateStr) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-// ✅ Moved outside all components
+//Moved outside all components
 async function logActivity(type, description, href) {
   try {
     const token = await getIdToken(auth.currentUser, true);
@@ -353,7 +353,7 @@ function QuizTab() {
 }
 
 // ─── Ask AI Tab ───────────────────────────────────────────────────────────────
-function AskTab() {
+function AskTab({ preloadedFile }) {
   const [messages, setMessages] = useState([
     {
       role: "ai",
@@ -377,7 +377,7 @@ function AskTab() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  // ✅ Listen for history restore events
+  // Listen for history restore events
   useEffect(() => {
     const handler = (e) => {
       const item = e.detail;
@@ -395,6 +395,19 @@ function AskTab() {
     window.addEventListener("ai:load-chat", handler);
     return () => window.removeEventListener("ai:load-chat", handler);
   }, []);
+
+  // Pre-load a PDF passed from the study material viewer
+  useEffect(() => {
+    if (!preloadedFile) return;
+    setAttachedFile(preloadedFile);
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "ai",
+        text: `I've loaded "${preloadedFile.name.replace(".pdf", "")}" — ask me anything about it!`,
+      },
+    ]);
+  }, [preloadedFile]);
 
   async function toggleRecording() {
     if (recording) {
@@ -439,7 +452,7 @@ function AskTab() {
     if ((!msg && !attachedFile) || loading) return;
     setInput("");
 
-    // ✅ Capture file ref before clearing state
+    // Capture file ref before clearing state
     const fileToSend = attachedFile;
     const userMsg = { role: "user", text: msg, file: fileToSend };
     setMessages((prev) => [...prev, userMsg]);
@@ -459,7 +472,7 @@ function AskTab() {
 
       setMessages((prev) => [...prev, { role: "ai", text: aiText }]);
 
-      // ✅ Log activity
+      // Log activity
       await logActivity("ai", msg.slice(0, 80) || fileToSend?.name || "AI conversation", "/ai");
 
       if (ttsEnabled) {
@@ -680,7 +693,7 @@ function SummarizeTab() {
     setSummary("");
     try {
       const finalText = text || `Summarize this ${attachedFile?.type === "application/pdf" ? "PDF" : "file"}.`;
-      // ✅ Removed dead base64 code, using fetchAIWithFile directly
+      // Removed dead base64 code, using fetchAIWithFile directly
       const data = await fetchAIWithFile("summarize", { text: finalText, style }, attachedFile);
       setSummary(data.summary);
     } catch {
@@ -843,8 +856,9 @@ function HistoryPanel({ onClose, onSelectChat }) {
 // ─── Main AI Page ─────────────────────────────────────────────────────────────
 function AI() {
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState("quiz");
   const [showHistory, setShowHistory] = useState(false);
+  const preloadedFile = location.state?.preloadedFile || null;
+  const [activeTab, setActiveTab] = useState(preloadedFile ? "ask" : "quiz");
 
   const TABS = [
     { id: "quiz", label: "Quiz" },
@@ -955,7 +969,7 @@ function AI() {
 
         <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-6 backdrop-blur-sm">
           {activeTab === "quiz" && <QuizTab />}
-          {activeTab === "ask" && <AskTab />}
+         {activeTab === "ask" && <AskTab preloadedFile={preloadedFile} />}
           {activeTab === "summarize" && <SummarizeTab />}
         </div>
       </main>

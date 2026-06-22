@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, createContext, useContext } from "react";
 import { useAuth } from "./useAuth";
+import { useNavigate } from "react-router-dom";
 import { Link, useLocation } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -118,6 +119,44 @@ function Calculator({ onClose }) {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function AskAIButton({ fileUrl, fileName, onClose }) {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleAskAI() {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(fileUrl);
+      if (!res.ok) throw new Error("Could not fetch file");
+      const blob = await res.blob();
+      const file = new File([blob], (fileName || "material") + ".pdf", { type: "application/pdf" });
+      onClose();
+      navigate("/ai", { state: { preloadedFile: file } });
+    } catch (err) {
+      console.error(err);
+      setError("Could not load PDF. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="mb-3">
+      {error && <p className="text-pink-400 text-xs mb-1">{error}</p>}
+      <button
+        onClick={handleAskAI}
+        disabled={loading}
+        className="w-full py-2.5 border border-violet-500/30 text-violet-400 rounded-xl text-sm font-medium hover:bg-violet-500/10 disabled:opacity-40 transition flex items-center justify-center gap-2"
+      >
+        <FontAwesomeIcon icon={faRobot} />
+        {loading ? "Loading PDF…" : "Ask AI about this"}
+      </button>
     </div>
   );
 }
@@ -297,11 +336,15 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
               )}
 
               {!resolvingUrl && resolvedUrl && (
-                <div className="flex gap-3 mb-3">
-                  <a href={resolvedUrl} target="_blank" rel="noopener noreferrer" className="flex-1 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium text-center transition">Open</a>
-                  <a href={resolvedUrl} download={file.title} className="flex-1 py-2.5 border border-violet-500/30 text-violet-400 rounded-xl text-sm font-medium text-center hover:bg-violet-500/10 transition">Download</a>
-                </div>
-              )}
+  <div className="flex gap-3 mb-3">
+    <a href={resolvedUrl} target="_blank" rel="noopener noreferrer" className="flex-1 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium text-center transition">Open</a>
+    <a href={resolvedUrl} download={file.title} className="flex-1 py-2.5 border border-violet-500/30 text-violet-400 rounded-xl text-sm font-medium text-center hover:bg-violet-500/10 transition">Download</a>
+  </div>
+)}
+
+{!resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "pdf" && (
+  <AskAIButton fileUrl={resolvedUrl} fileName={file.title} onClose={onClose} />
+)}
 
               {/* ── Offline save / remove ── */}
               {downloadError && <p className="text-pink-400 text-xs mb-2">{downloadError}</p>}
