@@ -1,49 +1,75 @@
-import { useEffect, useState } from "react";
-import { auth } from "./firebase";
-import { onAuthStateChanged, reload } from "firebase/auth";
+import { useEffect, useState, useCallback } from "react";
 import { AuthContext } from "./AuthContext";
 import { API } from "./config";
+import { setAccessToken } from "./token";
+import { apiGet } from "./api";
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(undefined); // undefined = still loading
-  const [emailVerified, setEmailVerified] = useState(false);
-  const refreshUser = async () => {
-  if (auth.currentUser) {
-    await reload(auth.currentUser);
-    setEmailVerified(auth.currentUser.emailVerified);
-  }
-};
+  const [user, setUser] = useState(undefined);
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        // Reload to get the freshest emailVerified from Firebase
-        await reload(currentUser);
 
-        // Read emailVerified immediately after reload
-        setEmailVerified(currentUser.emailVerified);
-
-        try {
-          const token = await currentUser.getIdToken(true);
-          const res = await fetch(`${API}/users/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const data = await res.json();
-          setUser({ ...currentUser, photoURL: data.photoURL || currentUser.photoURL });
-        } catch {
-          setUser(currentUser);
-        }
-      } else {
-        setUser(null);
-        setEmailVerified(false);
-      }
-      setLoading(false);
-    });
-    return () => unsubscribe();
+  const fetchMe = useCallback(async () => {
+    const data = await apiGet('/users/me');
+    setUser(data);
+    return data;
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      await fetchMe();
+    } catch {
+      // silent — interceptor in api.js already tried refreshing once
+    }
+  }, [fetchMe]);
+
+  const loginWithGoogle = useCallback(async (idToken) => {
+    const res = await fetch(`${API}/auth/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ idToken }),
+    });
+    if (!res.ok) throw new Error("Google login failed");
+    const data = await res.json();
+    setAccessToken(data.accessToken);
+    setUser(data.user);
+    return data.user;
+  }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      await fetch(`${API}/auth/logout`, { method: "POST", credentials: "include" });
+    } finally {
+      setAccessToken(null);
+      setUser(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    async function restoreSession() {
+      try {
+        const res = await fetch(`${API}/auth/refresh`, {
+          method: "POST",
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (data.accessToken) {
+          setAccessToken(data.accessToken);
+          await fetchMe();
+        } else {
+          setUser(null);
+        }
+      } catch {
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+    restoreSession();
+  }, [fetchMe]);
+
   return (
-   <AuthContext.Provider value={{ user, loading, refreshUser, emailVerified }}>
+    <AuthContext.Provider value={{ user, loading, refreshUser, loginWithGoogle, logout }}>
       {!loading && children}
     </AuthContext.Provider>
   );

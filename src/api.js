@@ -1,63 +1,70 @@
-import { auth } from "./firebase";
-import { getIdToken } from "firebase/auth";
-
 import { API } from "./config";
+import { getAccessToken, setAccessToken } from "./token";
+
 const BASE_URL = API;
 
-async function getAuthHeaders() {
-  const user = auth.currentUser;
-  if (!user) throw new Error("Not authenticated");
-  const token = await getIdToken(user);
+let refreshPromise = null;
+
+async function refreshAccessToken() {
+  if (!refreshPromise) {
+    refreshPromise = fetch(`${BASE_URL}/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Refresh failed");
+        const data = await res.json();
+        setAccessToken(data.accessToken);
+        return data.accessToken;
+      })
+      .finally(() => { refreshPromise = null; });
+  }
+  return refreshPromise;
+}
+
+function getAuthHeaders() {
+  const token = getAccessToken();
   return {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }
 
-// GET request
+async function request(path, options = {}, retried = false) {
+  const headers = { ...getAuthHeaders(), ...(options.headers || {}) };
+  const res = await fetch(`${BASE_URL}${path}`, {
+    ...options,
+    headers,
+    credentials: "include",
+  });
+
+  if (res.status === 401 && !retried) {
+    const newToken = await refreshAccessToken().catch(() => null);
+    if (newToken) {
+      return request(path, options, true);
+    }
+  }
+
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+}
+
 export async function apiGet(path) {
-  const headers = await getAuthHeaders();
-  const res = await fetch(`${BASE_URL}${path}`, { headers });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
-  return res.json();
+  return request(path);
 }
 
-// POST request
 export async function apiPost(path, body) {
-  const headers = await getAuthHeaders();
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
-  return res.json();
+  return request(path, { method: "POST", body: JSON.stringify(body) });
 }
 
-// PATCH request
 export async function apiPatch(path, body) {
-  const headers = await getAuthHeaders();
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method: "PATCH",
-    headers,
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
-  return res.json();
+  return request(path, { method: "PATCH", body: JSON.stringify(body) });
 }
 
-// DELETE request
 export async function apiDelete(path) {
-  const headers = await getAuthHeaders();
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method: "DELETE",
-    headers,
-  });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
-  return res.json();
+  return request(path, { method: "DELETE" });
 }
 
-// Get all universities
 export async function getUniversities() {
   const res = await fetch(`${BASE_URL}/universities`);
   if (!res.ok) throw new Error("Failed to fetch universities");
@@ -65,7 +72,7 @@ export async function getUniversities() {
 }
 
 export async function updateMe(data) {
-    return apiPatch("/users/me", data)
+  return apiPatch("/users/me", data);
 }
 
 export async function getUniversityByName(name) {
