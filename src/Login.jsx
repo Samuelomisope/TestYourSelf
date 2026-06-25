@@ -6,14 +6,15 @@ import {
   browserLocalPersistence,
   browserSessionPersistence,
   GoogleAuthProvider,
-  signInWithRedirect,
+  signInWithPopup,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
 } from "firebase/auth";
+import { db } from "./firebase";
+import { doc, setDoc } from "firebase/firestore";
 import login1 from "./assets/login1.webp";
 import login2 from "./assets/login2.avif";
 import login3 from "./assets/login3.webp";
-import { handleGoogleRedirectResult } from "./auth-redirect";
 
 const images = [login1, login2, login3];
 
@@ -48,31 +49,35 @@ function Login() {
   // Where the user was trying to go before being redirected to login
   const from = location.state?.from?.pathname || "/home";
 
-  // Pick up the Google redirect result when the user lands back on this page
-  useEffect(() => {
-    (async () => {
-      await handleGoogleRedirectResult(navigate, setError);
-    })();
-  }, []);
-const signInWithGoogle = async () => {
-  const provider = new GoogleAuthProvider();
-  // Request Drive read access so the Study Material upload can use Google Picker
-  provider.addScope("https://www.googleapis.com/auth/drive.file");
+  const signInWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    // Request Drive read access so the Study Material upload can use Google Picker
+    provider.addScope("https://www.googleapis.com/auth/drive.file");
+    try {
+      setLoading(true);
+      setError("");
+      const result = await signInWithPopup(auth, provider);
 
-  // Persist "from" since location.state won't survive the redirect round-trip
-  sessionStorage.setItem("redirectAfterLogin", from);
+      // Save the Google OAuth access token for the Google Drive Picker
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential?.accessToken) {
+        localStorage.setItem("googleAccessToken", credential.accessToken);
+      }
 
-  setLoading(true);
-  setError("");
-  try {
-    await signInWithRedirect(auth, provider);
-    // Browser navigates away here — nothing below this line will run
-  } catch (err) {
-    console.error(err);
-    setError("Failed to sign in with Google. Please try again.");
-    setLoading(false);
-  }
-};
+      await setDoc(doc(db, "users", result.user.uid), {
+        uid: result.user.uid,
+        displayName: result.user.displayName,
+        email: result.user.email,
+        photoURL: result.user.photoURL || null,
+        createdAt: new Date(),
+      }, { merge: true });
+      navigate(from, { state: { fromLogin: true } });
+    } catch (err) {
+      console.error(err);
+      setError("Failed to sign in with Google. Please try again.");
+      setLoading(false);
+    }
+  };
 
   const handleEmailLogin = async (e) => {
     e.preventDefault();
@@ -148,7 +153,7 @@ const signInWithGoogle = async () => {
             className="w-full bg-white border border-gray-300 flex items-center justify-center h-12 rounded-full hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
-              "Redirecting..."
+              "Signing in..."
             ) : (
               <img
                 src="https://raw.githubusercontent.com/prebuiltui/prebuiltui/main/assets/login/googleLogo.svg"
