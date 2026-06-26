@@ -3,13 +3,12 @@ import { useAuth } from "./useAuth";
 import ThemeToggle from "./components/ThemeToggle.jsx"; // adjust path to match where you saved it
 
 function ProtectedRoute({ children }) {
-  const { user, emailVerified } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
 
   if (user === undefined) return null;
 
   if (!user) return <Navigate to="/" state={{ from: location }} replace />;
-  if (!emailVerified) return <Navigate to="/verify-email" />;
 
   return (
     <>
