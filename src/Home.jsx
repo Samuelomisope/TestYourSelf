@@ -1,3 +1,4 @@
+import { getAccessToken } from "./token";
 import { useState, useEffect } from "react";
 import { useAuth } from "./useAuth";
 import { auth, db } from "./firebase";
@@ -187,7 +188,7 @@ function Home() {
     const file = e.target.files[0];
     if (!file) return;
     try {
-      const token = await getIdToken(auth.currentUser, true);
+      const token = getAccessToken();
       const formData = new FormData();
       formData.append("file", file);
       const uploadRes = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/upload/single?folder=profile`, {
@@ -523,3 +524,5 @@ function Home() {
 }
 
 export default Home;
+
+

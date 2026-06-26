@@ -1,7 +1,7 @@
+import { getAccessToken } from "./token";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "./firebase";
-import { getIdToken } from "firebase/auth";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch, faBook, faUser, faStore,
@@ -11,7 +11,7 @@ import {
 import { API } from "./config";
 
 async function searchApi(q, type = "all") {
-  const token = await getIdToken(auth.currentUser, true);
+  const token = getAccessToken();
   const res = await fetch(`${API}/search?q=${encodeURIComponent(q)}&type=${type}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -209,3 +209,4 @@ function Search() {
 }
 
 export default Search;
+

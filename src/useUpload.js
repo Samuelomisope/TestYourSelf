@@ -1,10 +1,10 @@
+import { getAccessToken } from "./token";
 import { auth } from "./firebase";
-import { getIdToken } from "firebase/auth";
 
 import { API } from "./config";
 
 export async function uploadSingle(file, folder = "general") {
-  const token = await getIdToken(auth.currentUser, true);
+  const token = getAccessToken();
   const formData = new FormData();
   formData.append("file", file);
 
@@ -20,7 +20,7 @@ export async function uploadSingle(file, folder = "general") {
 }
 
 export async function uploadMultiple(files, folder = "general") {
-  const token = await getIdToken(auth.currentUser, true);
+  const token = getAccessToken();
   const formData = new FormData();
   files.forEach(file => formData.append("files", file));
 
@@ -34,6 +34,8 @@ export async function uploadMultiple(files, folder = "general") {
   const data = await res.json();
   return data.urls;
 }
+
+
 
 
 

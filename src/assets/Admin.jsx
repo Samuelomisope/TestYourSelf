@@ -1,7 +1,7 @@
+import { getAccessToken } from "./token";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "./firebase";
-import { getIdToken } from "firebase/auth";
 import { useAuth } from "./useAuth";
 
 const ADMIN_EMAILS = ["omisope34@gmail.com"];
@@ -9,7 +9,7 @@ const ADMIN_EMAILS = ["omisope34@gmail.com"];
 const API = "http://localhost:3000";
 
 async function apiFetch(path, options = {}) {
-  const token = await getIdToken(auth.currentUser, true);
+  const token = getAccessToken();
   const res = await fetch(`${API}${path}`, {
     ...options,
     headers: {
@@ -547,3 +547,5 @@ function Admin() {
 }
 
 export default Admin;
+
+

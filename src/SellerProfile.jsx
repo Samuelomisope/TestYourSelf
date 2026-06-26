@@ -1,14 +1,14 @@
+import { getAccessToken } from "./token";
 // ── SellerProfile.jsx ─────────────────────────────────────────────
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { auth } from "./firebase";
-import { getIdToken } from "firebase/auth";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChevronLeft, faBoxOpen, faStar, faStore, faCommentDots, faUser } from "@fortawesome/free-solid-svg-icons";
 import { API } from "./config";
 
 async function apiFetch(path, options = {}) {
-  const token = await getIdToken(auth.currentUser, true);
+  const token = getAccessToken();
   const res = await fetch(`${API}${path}`, { ...options, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(options.headers || {}) } });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
@@ -125,3 +125,4 @@ function SellerProfile() {
 }
 
 export default SellerProfile;
+

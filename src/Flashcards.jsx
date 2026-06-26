@@ -1,3 +1,4 @@
+import { getAccessToken } from "./token";
 import { useState, useEffect } from "react";
 import { useAuth } from "./useAuth";
 import { Link, useLocation } from "react-router-dom";
@@ -27,7 +28,7 @@ const formatDate = (ts) => {
 async function authedFetch(path, options = {}) {
   const { auth } = await import("./firebase");
   const { getIdToken } = await import("firebase/auth");
-  const token = await getIdToken(auth.currentUser, true);
+  const token = getAccessToken();
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
@@ -46,7 +47,7 @@ async function authedFetch(path, options = {}) {
 async function authedFetchForm(path, formData) {
   const { auth } = await import("./firebase");
   const { getIdToken } = await import("firebase/auth");
-  const token = await getIdToken(auth.currentUser, true);
+  const token = getAccessToken();
   const res = await fetch(`${API_URL}${path}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
@@ -619,3 +620,5 @@ function Flashcards() {
 }
 
 export default Flashcards;
+
+

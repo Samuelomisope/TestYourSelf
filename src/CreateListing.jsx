@@ -1,9 +1,9 @@
+import { getAccessToken } from "./token";
 
 // ── CreateListing.jsx (dark theme) ────────────────────────────────
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "./firebase";
-import { getIdToken } from "firebase/auth";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChevronLeft, faPlus, faImage, faTag, faTimes, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { uploadMultiple } from "./useUpload";
@@ -12,7 +12,7 @@ import { createNotification } from "./notifications";
 import { useAuth } from "./useAuth";
 
 async function apiFetch(path, options = {}) {
-  const token = await getIdToken(auth.currentUser, true);
+  const token = getAccessToken();
   const res = await fetch(`${API}${path}`, { ...options, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(options.headers || {}) } });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
@@ -129,3 +129,4 @@ function CreateListing() {
 }
 
 export default CreateListing;
+

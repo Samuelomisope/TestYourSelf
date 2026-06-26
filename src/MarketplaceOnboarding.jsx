@@ -1,7 +1,7 @@
+import { getAccessToken } from "./token";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "./firebase";
-import { getIdToken } from "firebase/auth";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faStore, faUser, faComment, faPhone, faChevronRight, faCheckCircle
@@ -9,7 +9,7 @@ import {
 import { API } from "./config";
 
 async function apiFetch(path, options = {}) {
-  const token = await getIdToken(auth.currentUser, true);
+  const token = getAccessToken();
   const res = await fetch(`${API}${path}`, {
     ...options,
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(options.headers || {}) },
@@ -142,3 +142,4 @@ function MarketplaceOnboarding() {
 }
 
 export default MarketplaceOnboarding;
+

@@ -1,3 +1,4 @@
+import { getAccessToken } from "./token";
 import { useState, useEffect, useCallback, createContext, useContext } from "react";
 import { useAuth } from "./useAuth";
 import { useNavigate } from "react-router-dom";
@@ -225,7 +226,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
     try {
       const { auth } = await import("./firebase");
       const { getIdToken } = await import("firebase/auth");
-      const token = await getIdToken(auth.currentUser, true);
+      const token = getAccessToken();
       const res = await fetch(
         `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material/${file.id}`,
         {
@@ -511,7 +512,7 @@ function FileRow({ file, user, onSelect, onDelete }) {
               try {
                 const { auth } = await import("./firebase");
                 const { getIdToken } = await import("firebase/auth");
-                const token = await getIdToken(auth.currentUser, true);
+                const token = getAccessToken();
                 await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material/${file.id}`, {
                   method: "DELETE",
                   headers: { Authorization: `Bearer ${token}` },
@@ -709,7 +710,7 @@ function FileCard({ file, user, onSelect, onDelete }) {
             try {
               const { auth } = await import("./firebase");
               const { getIdToken } = await import("firebase/auth");
-              const token = await getIdToken(auth.currentUser, true);
+              const token = getAccessToken();
               await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material/${file.id}`, {
                 method: "DELETE",
                 headers: { Authorization: `Bearer ${token}` },
@@ -803,7 +804,7 @@ function StudyMaterial() {
       try {
         const { auth } = await import("./firebase");
         const { getIdToken } = await import("firebase/auth");
-        const token = await getIdToken(auth.currentUser, true);
+        const token = getAccessToken();
         const res = await fetch(
           `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material?search=${debouncedSearch}`,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -831,7 +832,7 @@ function StudyMaterial() {
       try {
         const { auth } = await import("./firebase");
         const { getIdToken } = await import("firebase/auth");
-        const token = await getIdToken(auth.currentUser, true);
+        const token = getAccessToken();
         const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/universities`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -1131,3 +1132,4 @@ function StudyMaterial() {
 }
 
 export default StudyMaterial;
+

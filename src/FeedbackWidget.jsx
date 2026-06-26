@@ -1,6 +1,6 @@
+import { getAccessToken } from "./token";
 import { useState } from "react";
 import { auth } from "./firebase";
-import { getIdToken } from "firebase/auth";
 import { API } from "./config";
 import { useLocation } from "react-router-dom";
 
@@ -52,7 +52,7 @@ function FeedbackWidget() {
     setSubmitting(true);
     setError("");
     try {
-      const token = await getIdToken(auth.currentUser, true);
+      const token = getAccessToken();
       const res = await fetch(`${API}/feedback`, {
         method: "POST",
         headers: {
@@ -167,3 +167,4 @@ function FeedbackWidget() {
 }
 
 export default FeedbackWidget;
+

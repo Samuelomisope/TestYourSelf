@@ -1,7 +1,7 @@
+import { getAccessToken } from "./token";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "./firebase";
-import { getIdToken } from "firebase/auth";
 import { useAuth } from "./useAuth";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -14,7 +14,7 @@ import { API } from "./config";
 const ADMIN_EMAILS = ["omisope34@gmail.com"];
 
 async function apiFetch(path, options = {}) {
-  const token = await getIdToken(auth.currentUser, true);
+  const token = getAccessToken();
   const res = await fetch(`${API}${path}`, {
     ...options,
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(options.headers || {}) },
@@ -280,7 +280,7 @@ function UsersTab() {
                     <td className="px-4 py-3 flex items-center gap-3 whitespace-nowrap min-w-[180px]">
                       <button onClick={async () => {
                         try {
-                          const token = await getIdToken(auth.currentUser, true);
+                          const token = getAccessToken();
                           await fetch(`${API}/admin/users/${u.id}/ban`, { method: "PATCH", headers: { Authorization: `Bearer ${token}` } });
                           setUsers(prev => prev.map(x => x.id === u.id ? { ...x, isBanned: !x.isBanned } : x));
                         } catch (err) { console.error(err); }
@@ -463,7 +463,7 @@ function UniversitiesTab() {
                   <td className="px-4 py-3">
                     <button onClick={async () => {
                       try {
-                        const token = await getIdToken(auth.currentUser, true);
+                        const token = getAccessToken();
                         await fetch(`${API}/universities/${u.id}`, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ isVerified: !u.isVerified }) });
                         setUniversities(prev => prev.map(x => x.id === u.id ? { ...x, isVerified: !x.isVerified } : x));
                       } catch (err) { console.error(err); }
@@ -833,3 +833,5 @@ function Admin() {
 }
 
 export default Admin;
+
+

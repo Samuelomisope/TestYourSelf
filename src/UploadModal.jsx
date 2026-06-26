@@ -1,3 +1,4 @@
+import { getAccessToken } from "./token";
 import { useState, useEffect, useRef } from "react";
 import { auth } from "./firebase";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -276,7 +277,7 @@ const handleZipUpload = async () => {
   setError("");
   try {
     const { getIdToken } = await import("firebase/auth");
-    const token = await getIdToken(auth.currentUser, true);
+    const token = getAccessToken();
     const summary = await uploadZip(token);
     setZipSummary(summary);
     if (summary.skipped.length === 0) onClose(true);
@@ -295,7 +296,7 @@ const handleZipUpload = async () => {
     try {
       const { auth } = await import("./firebase");
       const { getIdToken } = await import("firebase/auth");
-      const token = await getIdToken(auth.currentUser, true);
+      const token = getAccessToken();
       const results = await Promise.allSettled(files.map((f) => uploadSingle(f, token)));
       const failed = results.filter((r) => r.status === "rejected");
       if (failed.length === 0) onClose(true);
@@ -553,3 +554,5 @@ const handleZipUpload = async () => {
 }
 
 export default UploadModal;
+
+

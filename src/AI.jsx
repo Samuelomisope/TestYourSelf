@@ -1,7 +1,7 @@
+import { getAccessToken } from "./token";
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { auth } from "./firebase";
-import { getIdToken } from "firebase/auth";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faHouse,
@@ -36,7 +36,7 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 async function fetchAIWithFile(endpoint, fields, file) {
-  const token = await getIdToken(auth.currentUser, true);
+  const token = getAccessToken();
 
   const formData = new FormData();
   Object.entries(fields).forEach(([k, v]) => {
@@ -54,7 +54,7 @@ async function fetchAIWithFile(endpoint, fields, file) {
 }
 
 async function apiGet(path) {
-  const token = await getIdToken(auth.currentUser, true);
+  const token = getAccessToken();
   const res = await fetch(`${API_URL}${path}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -74,7 +74,7 @@ function timeAgo(dateStr) {
 //Moved outside all components
 async function logActivity(type, description, href) {
   try {
-    const token = await getIdToken(auth.currentUser, true);
+    const token = getAccessToken();
     await fetch(`${API_URL}/users/me/activity`, {
       method: "POST",
       headers: {
@@ -978,3 +978,5 @@ function AI() {
 }
 
 export default AI;
+
+

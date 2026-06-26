@@ -1,7 +1,7 @@
+import { getAccessToken } from "./token";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { auth } from "./firebase";
-import { getIdToken } from "firebase/auth";
 import { useAuth } from "./useAuth";
 import { io } from "socket.io-client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -22,7 +22,7 @@ import { API } from "./config";
 
 // ── Helpers ────────────────────────────────────────────────────────
 async function apiFetch(path, options = {}) {
-  const token = await getIdToken(auth.currentUser, true);
+  const token = getAccessToken();
   const res = await fetch(`${API}${path}`, {
     ...options,
     headers: {
@@ -678,7 +678,7 @@ function ChatRoom({ room, dbUserId, onBack, onOpenWallpaper }) {
 
       if (!mounted) return;
       try {
-        const token = await getIdToken(auth.currentUser, true);
+        const token = getAccessToken();
         if (!mounted) return;
         socket = io(`${API}/chat`, { transports: ["websocket"], auth: { token } });
         socketRef.current = socket;
@@ -1535,3 +1535,4 @@ function Chat() {
 }
 
 export default Chat;
+

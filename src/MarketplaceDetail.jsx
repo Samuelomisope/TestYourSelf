@@ -1,8 +1,8 @@
+import { getAccessToken } from "./token";
 // MarketplaceDetail.jsx - dark theme
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { auth } from "./firebase";
-import { getIdToken } from "firebase/auth";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faStar, faUniversity, faTag, faBoxOpen,
@@ -12,7 +12,7 @@ import {
 import { API } from "./config";
 
 async function apiFetch(path, options = {}) {
-  const token = await getIdToken(auth.currentUser, true);
+  const token = getAccessToken();
   const res = await fetch(`${API}${path}`, {
     ...options,
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...(options.headers || {}) },
@@ -182,3 +182,4 @@ function MarketplaceDetail() {
 }
 
 export default MarketplaceDetail;
+
