@@ -54,6 +54,32 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
+  async function restoreSession() {
+    try {
+      // Wake up Render first
+      await fetch(`${API}/universities`, { method: "GET" }).catch(() => {});
+      
+      const res = await fetch(`${API}/auth/refresh`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (data.accessToken) {
+        setAccessToken(data.accessToken);
+        await fetchMe();
+      } else {
+        setUser(null);
+      }
+    } catch {
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }
+  restoreSession();
+}, [fetchMe]);
+
+  useEffect(() => {
     async function restoreSession() {
       try {
         const res = await fetch(`${API}/auth/refresh`, {
@@ -73,6 +99,8 @@ export function AuthProvider({ children }) {
         setLoading(false);
       }
     }
+
+    
     restoreSession();
   }, [fetchMe]);
 
