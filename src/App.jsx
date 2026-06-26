@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Signup from "./Signup";
 import Login from "./Login";
 import Home from "./Home";
 import StudyMaterial from "./StudyMaterial";
@@ -13,7 +12,6 @@ import SellerProfile from "./SellerProfile";
 import MarketplaceOnboarding from "./MarketplaceOnboarding";
 import ProtectedRoute from "./ProtectedRoute";
 import Search from "./Search";
-import VerifyEmail from "./VerifyEmail";
 import Admin from "./Admin";
 import Profile from "./Profile";
 import FeedbackWidget from "./FeedbackWidget";
@@ -27,8 +25,6 @@ function App() {
      <FeedbackWidget />
       <Routes>
         <Route path="/" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/study-material" element={<ProtectedRoute><StudyMaterial /></ProtectedRoute>} />
         <Route path="/ai" element={<ProtectedRoute><AI /></ProtectedRoute>} />
