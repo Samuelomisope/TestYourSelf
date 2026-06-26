@@ -3,6 +3,8 @@ import { AuthContext } from "./AuthContext";
 import { API } from "./config";
 import { setAccessToken } from "./token";
 import { apiGet } from "./api";
+import { signInWithCredential, GoogleAuthProvider } from "firebase/auth";
+import { auth } from "./firebase";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(undefined);
@@ -23,18 +25,24 @@ export function AuthProvider({ children }) {
   }, [fetchMe]);
 
   const loginWithGoogle = useCallback(async (idToken) => {
-    const res = await fetch(`${API}/auth/google`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ idToken }),
-    });
-    if (!res.ok) throw new Error("Google login failed");
-    const data = await res.json();
-    setAccessToken(data.accessToken);
-    setUser(data.user);
-    return data.user;
-  }, []);
+  // 1. Sign into your backend
+  const res = await fetch(`${API}/auth/google`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ idToken }),
+  });
+  if (!res.ok) throw new Error("Google login failed");
+  const data = await res.json();
+  setAccessToken(data.accessToken);
+  setUser(data.user);
+
+  // 2. Also sign into Firebase Auth on the client so Firestore queries work
+  const credential = GoogleAuthProvider.credential(idToken);
+  await signInWithCredential(auth, credential);
+
+  return data.user;
+}, []);
 
   const logout = useCallback(async () => {
     try {

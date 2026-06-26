@@ -8,13 +8,20 @@ export function useNotifications() {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
+  if (!user) return;
+  console.log("user object:", user);
+}, [user]);
+
+  useEffect(() => {
     if (!user) return;
 
     const q = query(
       collection(db, "notifications"),
-      where("userId", "==", user.uid),
+      where("userId", "==", user.firebaseUid),
       orderBy("createdAt", "desc")
     );
+
+    
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const notifs = snapshot.docs.map((doc) => ({
