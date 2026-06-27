@@ -606,8 +606,10 @@ function LevelBlock({ levelKey, semesters, user, onSelect, onDelete }) {
     a + Object.values(semObj).reduce((b, arr) => b + arr.length, 0), 0
   );
 
-  const orderedSemesters = SEMESTER_ORDER.filter(s => semesters[s]);
-
+const orderedSemesters = [
+  ...SEMESTER_ORDER.filter(s => semesters[s]),
+  ...Object.keys(semesters).filter(s => !SEMESTER_ORDER.includes(s)),
+];
   return (
     <div className="border border-white/[0.08] rounded-2xl overflow-hidden">
       <button
