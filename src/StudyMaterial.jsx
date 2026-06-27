@@ -224,8 +224,6 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
     setSaving(true);
     setSaveError("");
     try {
-      const { auth } = await import("./firebase");
-      const { getIdToken } = await import("firebase/auth");
       const token = getAccessToken();
       const res = await fetch(
         `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material/${file.id}`,
@@ -510,8 +508,6 @@ function FileRow({ file, user, onSelect, onDelete }) {
               e.stopPropagation();
               if (!window.confirm("Delete this file?")) return;
               try {
-                const { auth } = await import("./firebase");
-                const { getIdToken } = await import("firebase/auth");
                 const token = getAccessToken();
                 await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material/${file.id}`, {
                   method: "DELETE",
@@ -654,7 +650,10 @@ function DepartmentBlock({ deptName, levels, user, onSelect, onDelete }) {
       b + Object.values(semObj).reduce((c, arr) => c + arr.length, 0), 0), 0
   );
 
-  const orderedLevels = LEVEL_ORDER.filter(l => levels[l]);
+  const orderedLevels = [
+  ...LEVEL_ORDER.filter(l => levels[l]),
+  ...Object.keys(levels).filter(l => !LEVEL_ORDER.includes(l)),
+];
 
   return (
     <div className="bg-white/[0.02] border border-white/[0.08] rounded-2xl overflow-hidden">
@@ -708,8 +707,6 @@ function FileCard({ file, user, onSelect, onDelete }) {
             e.stopPropagation();
             if (!window.confirm("Delete this file?")) return;
             try {
-              const { auth } = await import("./firebase");
-              const { getIdToken } = await import("firebase/auth");
               const token = getAccessToken();
               await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material/${file.id}`, {
                 method: "DELETE",
@@ -802,8 +799,6 @@ function StudyMaterial() {
       }
 
       try {
-        const { auth } = await import("./firebase");
-        const { getIdToken } = await import("firebase/auth");
         const token = getAccessToken();
         const res = await fetch(
           `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material?search=${debouncedSearch}`,
@@ -830,8 +825,6 @@ function StudyMaterial() {
   useEffect(() => {
     const load = async () => {
       try {
-        const { auth } = await import("./firebase");
-        const { getIdToken } = await import("firebase/auth");
         const token = getAccessToken();
         const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/universities`, {
           headers: { Authorization: `Bearer ${token}` },
