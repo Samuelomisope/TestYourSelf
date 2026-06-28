@@ -56,13 +56,8 @@ export function AuthProvider({ children }) {
   useEffect(() => {
   async function restoreSession() {
     try {
-      // Wake up Render first
       await fetch(`${API}/universities`, { method: "GET" }).catch(() => {});
-      
-      const res = await fetch(`${API}/auth/refresh`, {
-        method: "POST",
-        credentials: "include",
-      });
+      const res = await fetch(`${API}/auth/refresh`, { method: "POST", credentials: "include" });
       const data = await res.json();
       if (data.accessToken) {
         setAccessToken(data.accessToken);
@@ -78,31 +73,6 @@ export function AuthProvider({ children }) {
   }
   restoreSession();
 }, [fetchMe]);
-
-  useEffect(() => {
-    async function restoreSession() {
-      try {
-        const res = await fetch(`${API}/auth/refresh`, {
-          method: "POST",
-          credentials: "include",
-        });
-        const data = await res.json();
-        if (data.accessToken) {
-          setAccessToken(data.accessToken);
-          await fetchMe();
-        } else {
-          setUser(null);
-        }
-      } catch {
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    
-    restoreSession();
-  }, [fetchMe]);
 
   return (
     <AuthContext.Provider value={{ user, loading, refreshUser, loginWithGoogle, logout }}>

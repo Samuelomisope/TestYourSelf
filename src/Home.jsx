@@ -2,11 +2,11 @@ import { getAccessToken } from "./token";
 import { useState, useEffect } from "react";
 import { useAuth } from "./useAuth";
 import { auth, db } from "./firebase";
-import { apiGet, apiPatch, updateMe, getUniversityByName } from "./api";
+import { apiGet, updateMe, getUniversityByName } from "./api";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import NotificationPanel from "./NotificationPanel";
 import { useNotifications } from "./useNotifications";
-import { signOut, getIdToken } from "firebase/auth";
+import { signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -125,7 +125,7 @@ function LiveClock() {
 }
 
 function Home() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -137,8 +137,20 @@ function Home() {
   const [streak, setStreak] = useState(0);
   const [recentActivity, setRecentActivity] = useState([]);
   const [lastMaterial, setLastMaterial] = useState(null);
-  const [quote] = useState({ text: "The secret of getting ahead is getting started.", author: "Mark Twain" });
+ // ─── Quotes pool ──────────────────────────────────────────────
+const QUOTES = [
+  { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+  { text: "Whether you think you can or you think you can't, you're right.", author: "Henry Ford" },
+  { text: "The expert in anything was once a beginner.", author: "Helen Hayes" },
+  { text: "Success is the sum of small efforts repeated daily.", author: "Robert Collier" },
+  { text: "Don't watch the clock; do what it does. Keep going.", author: "Sam Levenson" },
+  { text: "It always seems impossible until it's done.", author: "Nelson Mandela" },
+  { text: "Discipline is choosing between what you want now and what you want most.", author: "Abraham Lincoln" },
+];
+  const dayIndex = Math.floor(Date.now() / 86400000) % QUOTES.length;
+  const [quote] = useState(QUOTES[dayIndex]);
   const [leaderboardRank, setLeaderboardRank] = useState(null);
+  const [activityDays, setActivityDays] = useState(7);
   const { unreadCount } = useNotifications();
   const [, setLastMarketplace] = useState(null);
 
@@ -154,13 +166,14 @@ function Home() {
     return () => clearTimeout(t);
   }, []);
 
-  useEffect(() => {
+ useEffect(() => {
     if (!user) return;
     const fetchAll = async () => {
       try {
         const pgUser = await apiGet("/users/me");
-        if (!pgUser.universityId) {
-          const firestoreUser = await getDoc(doc(db, "users", user.uid));
+
+        if (pgUser.firebaseUid && !pgUser.universityId) {
+          const firestoreUser = await getDoc(doc(db, "users", pgUser.firebaseUid));
           if (firestoreUser.exists()) {
             const data = firestoreUser.data();
             if (data.university) {
@@ -169,11 +182,12 @@ function Home() {
             }
           }
         }
+
         const statsData = await apiGet("/users/me/stats");
         setStats({ files: statsData.files ?? 0, aiQuestions: 0, products: statsData.products ?? 0, messages: statsData.messages ?? 0 });
         if (statsData.leaderboardScore > 0) setLeaderboardRank(1);
         setStreak(pgUser.streakCount || 0);
-        try { const activityData = await apiGet("/users/me/activity"); setRecentActivity(activityData); } catch { setRecentActivity([]); }
+
         try { const myMaterials = await apiGet("/study-material/my"); if (myMaterials.length > 0) setLastMaterial(myMaterials[0]); } catch { setLastMaterial(null); }
         try { const marketplace = await apiGet("/marketplace/my"); if (marketplace.length > 0) setLastMarketplace(marketplace[0]); } catch { setLastMarketplace(null); }
       } catch (err) { console.error(err); }
@@ -181,9 +195,30 @@ function Home() {
     };
     fetchAll();
   }, [user]);
+  const handleLogout = async () => {
+  await logout();
+  await signOut(auth).catch(() => {});
+  navigate("/");
+};
 
-  const handleLogout = async () => { await signOut(auth); navigate("/"); };
 
+const [activityLoading, setActivityLoading] = useState(true);
+
+useEffect(() => {
+    if (!user) return;
+    const fetchActivity = async () => {
+      setActivityLoading(true);
+      try {
+        const activityData = await apiGet(`/users/me/activity?days=${activityDays}`);
+        setRecentActivity(activityData);
+      } catch {
+        setRecentActivity([]);
+      } finally {
+        setActivityLoading(false);
+      }
+    };
+    fetchActivity();
+  }, [user, activityDays]);
   const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -236,7 +271,7 @@ function Home() {
     { name: "Chat", href: "/chat", icon: faComments },
     { name: "Marketplace", href: "/marketplace", icon: faStore },
   ];
-
+ 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
 
@@ -412,27 +447,42 @@ function Home() {
                 )
               ))}
             </div>
-
-            {/* Recent Activity */}
-            <div>
-              <h2 className="text-xs font-semibold text-white/30 tracking-widest uppercase mb-3">Recent Activity</h2>
-              {loading ? [1, 2, 3].map(i => <SkeletonCard key={i} />) :
-                recentActivity.length === 0 ? (
-                  <p className="text-sm text-white/20 text-center py-4">No recent activity yet.</p>
-                ) : (
-                  recentActivity.map((item) => (
-                    <Link key={item.id} to={item.href || "#"}
-                      className="flex items-start gap-3 bg-white/[0.03] border border-white/5 rounded-xl px-4 py-3 mb-2 hover:border-violet-500/30 hover:bg-violet-500/5 transition">
-                      <span className="text-violet-400 mt-0.5">{activityIcon(item.type)}</span>
-                      <div>
-                        <p className="text-sm text-white/70">{item.description}</p>
-                        <p className="text-xs text-white/30 mt-0.5">{timeAgo(item.createdAt)}</p>
-                      </div>
-                    </Link>
-                  ))
-                )
-              }
-            </div>
+<div>
+  <div className="flex items-center justify-between mb-3">
+    <h2 className="text-xs font-semibold text-white/30 tracking-widest uppercase">Recent Activity</h2>
+    <div className="flex gap-1">
+      {[3, 7, 30].map((d) => (
+        <button
+          key={d}
+          onClick={() => setActivityDays(d)}
+          className={`px-2.5 py-1 rounded-full text-xs transition ${
+            activityDays === d
+              ? "bg-violet-500/20 text-violet-400 border border-violet-500/30"
+              : "text-white/30 hover:text-white/60"
+          }`}
+        >
+          {d}d
+        </button>
+      ))}
+    </div>
+  </div>
+  {activityLoading ? [1, 2, 3].map(i => <SkeletonCard key={i} />) :
+    recentActivity.length === 0 ? (
+      <p className="text-sm text-white/20 text-center py-4">No recent activity yet.</p>
+    ) : (
+      recentActivity.map((item) => (
+        <Link key={item.id} to={item.href || "#"}
+          className="flex items-start gap-3 bg-white/[0.03] border border-white/5 rounded-xl px-4 py-3 mb-2 hover:border-violet-500/30 hover:bg-violet-500/5 transition">
+          <span className="text-violet-400 mt-0.5">{activityIcon(item.type)}</span>
+          <div>
+            <p className="text-sm text-white/70">{item.description}</p>
+            <p className="text-xs text-white/30 mt-0.5">{timeAgo(item.createdAt)}</p>
+          </div>
+        </Link>
+      ))
+    )
+  }
+</div>
 
             {/* Module Cards */}
             <div>

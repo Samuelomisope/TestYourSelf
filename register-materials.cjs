@@ -61,12 +61,19 @@ async function main() {
   const r2Files = await listAllR2Files();
   
   // Only register study-materials and PQs folders
-  const toRegister = r2Files.filter(f => 
-    f.Key.startsWith('study-materials/') || 
-    f.Key.startsWith('PQs/') ||
-    f.Key.startsWith('2nd Semester/')
-  );
-
+ const toRegister = r2Files.filter(f => 
+  f.Key.startsWith('study-materials/') || 
+  f.Key.startsWith('PQs/') ||
+  f.Key.startsWith('2nd Semester/') ||
+  f.Key.startsWith('1st Semester/') ||
+  f.Key.startsWith('MEE/') ||
+  f.Key.startsWith('MTS/') ||
+  f.Key.startsWith('CSC/') ||
+  f.Key.startsWith('PHY/') ||
+  f.Key.startsWith('CHE/') ||
+  f.Key.startsWith('GNS/') ||
+  f.Key.startsWith('BIO/')
+);
   console.log(`Files to register: ${toRegister.length}`);
 
   // Get existing URLs

@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faFileLines, faLock, faVideo, faBox, faFile, faNoteSticky, faUser, faGlobe,
   faHouse, faBook, faRobot, faComments, faStore, faChevronDown, faXmark,
-  faCalculator, faUpload, faList, faGrip, faChevronRight, faFolder, faFolderOpen,
+  faCalculator, faUpload, faGrip, faChevronRight, faFolder, faFolderOpen,
   faLayerGroup, faBookOpen, faDownload, faCheck, faTrash, faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons';
 import { faFile as farFile } from '@fortawesome/free-regular-svg-icons';
@@ -1101,10 +1101,10 @@ function StudyMaterial() {
         setSuccessMessage("File uploaded successfully!");
         setTimeout(() => setSuccessMessage(""), 3000);
         setRefreshKey(k => k + 1);
-        await createNotification(user.uid, {
-          type: "material",
-          message: `Your file "${uploaded.title || "File"}" was uploaded successfully.`,
-        });
+       await createNotification(user.id, {
+  type: "material",
+  message: `Your file "${uploaded.title || "File"}" was uploaded successfully.`,
+});
       }
     }}
     user={user}
