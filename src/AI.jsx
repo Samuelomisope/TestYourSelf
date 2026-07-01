@@ -31,6 +31,7 @@ import {
   faChevronDown,
   faClockRotateLeft,
 } from "@fortawesome/free-solid-svg-icons";
+import { apiGet, apiPost } from "./api";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
@@ -53,14 +54,6 @@ async function fetchAIWithFile(endpoint, fields, file) {
   return res.json();
 }
 
-async function apiGet(path) {
-  const token = getAccessToken();
-  const res = await fetch(`${API_URL}${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error("Request failed");
-  return res.json();
-}
 
 // Moved outside all components — fixes the "impure function during render" error
 function timeAgo(dateStr) {
@@ -220,22 +213,85 @@ function CameraModal({ onCapture, onClose }) {
 
 // ─── Quiz Tab ─────────────────────────────────────────────────────────────────
 function QuizTab() {
+  const [mode, setMode] = useState("text"); // "text" | "upload" | "scan" | "library"
   const [text, setText] = useState("");
   const [count, setCount] = useState("5");
   const [difficulty, setDifficulty] = useState("Medium");
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(""); 
+
+// File / camera state
+  const [file, setFile] = useState(null);
+  const [showCamera, setShowCamera] = useState(false);
+
+  // Library state
+  const [materials, setMaterials] = useState([]);
+  const [materialsLoading, setMaterialsLoading] = useState(false);
+  const [selectedMaterial, setSelectedMaterial] = useState(null); // full material object
+
+  const fileInputRef = useRef(null);
+
+  // Load library materials when mode switches to "library"
+  useEffect(() => {
+    if (mode !== "library" || materials.length > 0) return;
+    setMaterialsLoading(true);
+    apiGet("/study-material")
+      .then((data) => {
+        // Only show PDFs
+        const pdfs = data.filter(
+          (m) => m.fileType === "application/pdf" || m.fileType === "pdf"
+        );
+        setMaterials(pdfs);
+      })
+      .catch(() => setMaterials([]))
+      .finally(() => setMaterialsLoading(false));
+  }, [mode]);
+
+  function handleFileChange(e, source) {
+    const picked = e.target.files?.[0];
+    if (!picked) return;
+    setFile(picked);
+    setMode(source);
+    e.target.value = "";
+  }
+
+  function handleCapture(capturedFile) {
+    setFile(capturedFile);
+    setMode("scan");
+    setShowCamera(false);
+  }
 
   async function generate() {
-    if (!text.trim()) return;
     setLoading(true);
     setError("");
     setQuestions([]);
     setAnswers({});
+
     try {
-      const data = await fetchAIWithFile("quiz", { text, count: Number(count), difficulty }, null);
+      let data;
+
+      if (mode === "text") {
+        if (!text.trim()) { setError("Paste some text first."); setLoading(false); return; }
+        data = await fetchAIWithFile("quiz", { text, count: Number(count), difficulty }, null);
+
+      } else if (mode === "upload" || mode === "scan") {
+        if (!file) { setError("Add a file first."); setLoading(false); return; }
+        data = await fetchAIWithFile("quiz", { text: "", count: Number(count), difficulty }, file);
+
+      } else if (mode === "library") {
+        if (!selectedMaterial) { setError("Select a material first."); setLoading(false); return; }
+        // Use signedUrl (authenticated) if available, otherwise fall back to fileUrl
+        const fileUrl = selectedMaterial.signedUrl || selectedMaterial.fileUrl;
+        data = await apiPost("/ai/quiz/from-material", {
+          materialId: selectedMaterial.id,
+          fileUrl,
+          count: Number(count),
+          difficulty,
+        });
+      }
+
       setQuestions(data.questions);
     } catch {
       setError("Failed to generate quiz. Please try again.");
@@ -254,18 +310,112 @@ function QuizTab() {
 
   return (
     <div className="space-y-4">
+      {showCamera && (
+        <CameraModal onCapture={handleCapture} onClose={() => setShowCamera(false)} />
+      )}
+
+      {/* Hidden inputs */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,application/pdf"
+        className="hidden"
+        onChange={(e) => handleFileChange(e, "upload")}
+      />
+
+      {/* Source mode tabs */}
       <div>
         <label className="block text-xs font-semibold text-violet-400 tracking-widest uppercase mb-2">
-          Paste Your Study Material
+          Source
         </label>
-        <textarea
-          rows={5}
-          placeholder="e.g. The mitochondria is the powerhouse of the cell…"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
-        />
+        <div className="flex gap-2 flex-wrap">
+          {[
+            { id: "text", label: "Paste Text" },
+            { id: "upload", label: "Upload PDF" },
+            { id: "scan", label: "Scan Notes" },
+            { id: "library", label: "My Library" },
+          ].map((m) => (
+            <button
+              key={m.id}
+              onClick={() => {
+                if (m.id === "upload") { fileInputRef.current?.click(); return; }
+                if (m.id === "scan") { setShowCamera(true); return; }
+                setMode(m.id);
+                setFile(null);
+              }}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition border ${
+                mode === m.id
+                  ? "bg-violet-600 text-white border-violet-500"
+                  : "bg-white/5 text-white/50 border-white/10 hover:border-violet-500/40 hover:text-white/80"
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {/* Text input */}
+      {mode === "text" && (
+        <div>
+          <label className="block text-xs font-semibold text-violet-400 tracking-widest uppercase mb-2">
+            Paste Your Study Material
+          </label>
+          <textarea
+            rows={5}
+            placeholder="e.g. The mitochondria is the powerhouse of the cell…"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
+          />
+        </div>
+      )}
+
+      {/* File selected */}
+      {(mode === "upload" || mode === "scan") && file && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-500/10 border border-violet-500/20 text-sm text-violet-300">
+          <FontAwesomeIcon icon={mode === "scan" ? faCamera : faPaperclip} className="text-xs" />
+          <span className="truncate">{file.name}</span>
+          <button
+            onClick={() => { setFile(null); setMode("text"); }}
+            className="ml-auto text-white/30 hover:text-white transition"
+          >
+            <FontAwesomeIcon icon={faXmark} />
+          </button>
+        </div>
+      )}
+
+      {/* Library picker */}
+      {mode === "library" && (
+        <div>
+          <label className="block text-xs font-semibold text-violet-400 tracking-widest uppercase mb-2">
+            Select a PDF
+          </label>
+          {materialsLoading ? (
+            <Spinner label="Loading materials…" />
+          ) : materials.length === 0 ? (
+            <p className="text-sm text-white/30">No PDF materials found in your library.</p>
+          ) : (
+            <select
+              value={selectedMaterial?.id || ""}
+              onChange={(e) => {
+                const mat = materials.find((m) => m.id === e.target.value);
+                setSelectedMaterial(mat || null);
+              }}
+              className="w-full bg-black/40 border border-white/10 rounded-2xl px-3 py-2.5 text-sm text-white/70 outline-none focus:border-violet-500/60 transition"
+            >
+              <option value="">Select a material…</option>
+              {materials.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.title}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
+
+      {/* Controls */}
       <div className="flex gap-2">
         <select
           value={count}
@@ -287,12 +437,13 @@ function QuizTab() {
         </select>
         <button
           onClick={generate}
-          disabled={loading || !text.trim()}
+          disabled={loading}
           className="px-5 py-2.5 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white rounded-2xl text-sm font-bold transition whitespace-nowrap"
         >
           Generate
         </button>
       </div>
+
       {loading && <Spinner label="Generating quiz…" />}
       {error && (
         <p className="text-pink-400 text-sm flex items-center gap-2">
@@ -300,6 +451,8 @@ function QuizTab() {
           {error}
         </p>
       )}
+
+      {/* Questions */}
       {questions.map((q, qi) => (
         <div key={qi} className="bg-violet-500/10 border border-violet-500/20 rounded-2xl p-4">
           <p className="text-sm font-semibold text-white mb-3">
@@ -336,6 +489,7 @@ function QuizTab() {
           )}
         </div>
       ))}
+
       {allDone && (
         <div className="rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 text-white text-center py-5 font-bold text-lg shadow-lg shadow-violet-500/20">
           Score: {score} / {questions.length}
