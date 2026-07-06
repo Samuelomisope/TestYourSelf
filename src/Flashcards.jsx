@@ -16,6 +16,7 @@ const TAB_LINKS = [
   { href: "/study-material", label: "Study",  icon: faBook },
   { href: "/flashcards",     label: "Cards",  icon: faLayerGroup },
   { href: "/ai",             label: "AI",     icon: faRobot },
+   { href: "/novels",         label: "Novels", icon: faBookOpen },
   { href: "/chat",           label: "Chat",   icon: faComments },
   { href: "/marketplace",    label: "Market", icon: faStore },
 ];
@@ -26,8 +27,6 @@ const formatDate = (ts) => {
 };
 
 async function authedFetch(path, options = {}) {
-  const { auth } = await import("./firebase");
-  const { getIdToken } = await import("firebase/auth");
   const token = getAccessToken();
   const res = await fetch(`${API_URL}${path}`, {
     ...options,

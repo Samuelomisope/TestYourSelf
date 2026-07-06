@@ -13,6 +13,7 @@ const TAB_LINKS = [
   { href: "/home",          label: "Home",   icon: faHouse },
   { href: "/study-material",label: "Study",  icon: faBook },
   { href: "/ai",            label: "AI",     icon: faRobot },
+   { href: "/novels",         label: "Novels", icon: faBookOpen },
   { href: "/chat",          label: "Chat",   icon: faComments },
   { href: "/marketplace",   label: "Market", icon: faStore },
 ];

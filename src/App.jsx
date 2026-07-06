@@ -18,6 +18,12 @@ import FeedbackWidget from "./FeedbackWidget";
 import Privacy from "./Privacy";
 import Terms from "./Terms";
 import Flashcards from "./Flashcards";
+import Novels from "./Novels";
+import BecomeWriter from "./BecomeWriter";
+import WriterDashboard from "./WriterDashboard";
+import NovelDetail from "./NovelDetail";
+import EpisodeReader from "./EpisodeReader";
+import WriterRoute from "./WriterRoute";
 
 function App() {
   return (
@@ -41,7 +47,18 @@ function App() {
         <Route path="/privacy" element={<ProtectedRoute><Privacy /></ProtectedRoute>} />
         <Route path="/terms" element={<ProtectedRoute><Terms /></ProtectedRoute>} />
         <Route path="/flashcards" element={<ProtectedRoute><Flashcards /></ProtectedRoute>} />
-        
+        <Route path="/novels" element={<ProtectedRoute><Novels /></ProtectedRoute>} />
+        <Route path="/novels/become-writer" element={<ProtectedRoute><BecomeWriter /></ProtectedRoute>} />
+        <Route path="/writer/dashboard" element={<ProtectedRoute><WriterDashboard /></ProtectedRoute>} />
+        <Route path="/novels/:id" element={<ProtectedRoute><NovelDetail /></ProtectedRoute>} />
+        <Route path="/episodes/:id" element={<ProtectedRoute><EpisodeReader /></ProtectedRoute>} />
+        <Route path="/writer/dashboard" 
+        element={
+        <ProtectedRoute>
+          <WriterRoute>
+            <WriterDashboard />
+            </WriterRoute>
+            </ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

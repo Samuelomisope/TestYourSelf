@@ -22,6 +22,7 @@ const TAB_LINKS = [
   { href: "/home",           label: "Home",   icon: faHouse },
   { href: "/study-material", label: "Study",  icon: faBook,     tour: "nav-study" },
   { href: "/ai",             label: "AI",     icon: faRobot,    tour: "nav-ai" },
+   { href: "/novels",         label: "Novels", icon: faBookOpen },
   { href: "/chat",           label: "Chat",   icon: faComments, tour: "nav-chat" },
   { href: "/marketplace",    label: "Market", icon: faStore,    tour: "nav-market" },
 ];
