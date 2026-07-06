@@ -2,17 +2,44 @@ import { useState } from "react";
 import { useAuth } from "./useAuth";
 import { useNavigate, Link } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronDown, faFeatherPointed } from '@fortawesome/free-solid-svg-icons';
+import { faChevronDown, faFeatherPointed, faCamera } from '@fortawesome/free-solid-svg-icons';
 import { apiPost } from "./api";
+import { getAccessToken } from "./token";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+async function uploadAvatarFile(file) {
+  const token = getAccessToken();
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_URL}/upload/single?folder=writer-avatars`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  if (!res.ok) throw new Error("Upload failed");
+  const data = await res.json();
+  return data.url;
+}
 
 function BecomeWriter() {
   const { refreshUser } = useAuth();
   const navigate = useNavigate();
   const [penName, setPenName] = useState("");
   const [bio, setBio] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+
+  const handleAvatarSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
 
   const handleSubmit = async () => {
     setError("");
@@ -22,10 +49,17 @@ function BecomeWriter() {
     }
     setSaving(true);
     try {
+      let avatarUrl;
+      if (avatarFile) {
+        setUploading(true);
+        avatarUrl = await uploadAvatarFile(avatarFile);
+        setUploading(false);
+      }
+
       await apiPost("/auth/become-writer", {
         penName: penName.trim(),
         bio: bio.trim() || undefined,
-        avatarUrl: avatarUrl.trim() || undefined,
+        avatarUrl,
       });
       await refreshUser();
       navigate("/writer/dashboard");
@@ -34,6 +68,7 @@ function BecomeWriter() {
       setError("Something went wrong. Try again.");
     } finally {
       setSaving(false);
+      setUploading(false);
     }
   };
 
@@ -82,16 +117,28 @@ function BecomeWriter() {
 
           <div className="mb-4">
             <label className="text-xs text-white/30 mb-1 block">Writer profile picture (optional)</label>
-            <p className="text-xs text-white/20 mb-2">
+            <p className="text-xs text-white/20 mb-3">
               This is separate from your main account photo — readers will only ever see this one.
             </p>
-            <input
-              type="text"
-              placeholder="https://…"
-              value={avatarUrl}
-              onChange={e => setAvatarUrl(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition"
-            />
+
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-violet-500/10 border border-violet-500/20 flex items-center justify-center overflow-hidden shrink-0">
+                {avatarPreview ? (
+                  <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <FontAwesomeIcon icon={faCamera} className="text-violet-400 opacity-40" />
+                )}
+              </div>
+              <label className="px-4 py-2 bg-white/5 border border-white/10 hover:border-violet-500/40 text-white/70 hover:text-violet-400 rounded-xl text-sm cursor-pointer transition">
+                {avatarFile ? "Change photo" : "Choose photo"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarSelect}
+                  className="hidden"
+                />
+              </label>
+            </div>
           </div>
 
           <div className="mb-6">
@@ -110,7 +157,7 @@ function BecomeWriter() {
             disabled={saving}
             className="w-full py-3 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white rounded-xl text-sm font-medium transition"
           >
-            {saving ? "Setting up…" : "Start Writing"}
+            {uploading ? "Uploading photo…" : saving ? "Setting up…" : "Start Writing"}
           </button>
         </div>
       </main>

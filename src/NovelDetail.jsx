@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useAuth } from "./useAuth";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faChevronDown, faBookOpen, faUser, faLock, faCircleCheck,
+  faChevronDown, faBookOpen, faUser, faCircleCheck, faStar,
 } from '@fortawesome/free-solid-svg-icons';
-import { apiGet } from "./api";
+import { faStar as faStarOutline } from '@fortawesome/free-regular-svg-icons';
+import { apiGet, apiPost } from "./api";
 
 const GENRE_LABELS = {
   ROMANCE: "Romance", FANTASY: "Fantasy", THRILLER: "Thriller",
@@ -24,19 +26,120 @@ const formatDate = (ts) => {
   return new Date(ts).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
 };
 
+// ─── Star Rating (display, read-only) ────────────────────────
+function StarDisplay({ rating, size = "text-sm" }) {
+  return (
+    <div className={`flex items-center gap-0.5 ${size}`}>
+      {[1, 2, 3, 4, 5].map(i => (
+        <FontAwesomeIcon
+          key={i}
+          icon={rating >= i ? faStar : faStarOutline}
+          className={rating >= i ? "text-amber-400" : "text-white/15"}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ─── Star Rating (interactive input) ──────────────────────────
+function StarInput({ value, onChange }) {
+  const [hover, setHover] = useState(0);
+  return (
+    <div className="flex items-center gap-1 text-2xl">
+      {[1, 2, 3, 4, 5].map(i => (
+        <button
+          key={i}
+          type="button"
+          onClick={() => onChange(i)}
+          onMouseEnter={() => setHover(i)}
+          onMouseLeave={() => setHover(0)}
+          className="transition"
+        >
+          <FontAwesomeIcon
+            icon={(hover || value) >= i ? faStar : faStarOutline}
+            className={(hover || value) >= i ? "text-amber-400" : "text-white/15"}
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Review Form ───────────────────────────────────────────────
+function ReviewForm({ novelId, existingReview, onSubmitted }) {
+  const [rating, setRating] = useState(existingReview?.rating || 0);
+  const [comment, setComment] = useState(existingReview?.comment || "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async () => {
+    setError("");
+    if (rating === 0) {
+      setError("Pick a star rating first.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const saved = await apiPost(`/novels/${novelId}/reviews`, { rating, comment: comment.trim() || undefined });
+      onSubmitted(saved);
+    } catch (err) {
+      console.error(err);
+      setError("Could not save your review. Try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 mb-5">
+      <p className="text-sm font-semibold text-white mb-3">
+        {existingReview ? "Update your review" : "Rate this novel"}
+      </p>
+      {error && <p className="text-pink-400 text-xs mb-3">{error}</p>}
+      <StarInput value={rating} onChange={setRating} />
+      <textarea
+        placeholder="Share your thoughts (optional)…"
+        value={comment}
+        onChange={e => setComment(e.target.value)}
+        rows={3}
+        className="w-full mt-3 bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
+      />
+      <button
+        onClick={handleSubmit}
+        disabled={saving}
+        className="mt-3 px-5 py-2 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white rounded-xl text-sm font-medium transition"
+      >
+        {saving ? "Saving…" : existingReview ? "Update Review" : "Submit Review"}
+      </button>
+    </div>
+  );
+}
+
+// ─── Main Component ─────────────────────────────────────────
 function NovelDetail() {
   const { id } = useParams();
+  const { user } = useAuth();
   const [novel, setNovel] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
+  const loadNovel = () => {
+    apiGet(`/novels/${id}`).then(setNovel).catch(() => setError(true));
+  };
+  const loadReviews = () => {
+    apiGet(`/novels/${id}/reviews`).then(setReviews).catch(() => setReviews([]));
+  };
+
   useEffect(() => {
     setLoading(true);
-    apiGet(`/novels/${id}`)
-      .then(setNovel)
+    Promise.all([apiGet(`/novels/${id}`), apiGet(`/novels/${id}/reviews`)])
+      .then(([n, r]) => { setNovel(n); setReviews(r); })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const myReview = user ? reviews.find(r => r.user?.id === user.id) : null;
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
@@ -77,7 +180,7 @@ function NovelDetail() {
 
         {!loading && novel && (
           <>
-            <div className="flex gap-5 mb-6">
+            <div className="flex gap-5 mb-4">
               <div className="w-28 h-36 shrink-0 bg-violet-500/10 border border-violet-500/20 rounded-2xl flex items-center justify-center text-violet-400 overflow-hidden">
                 {novel.coverUrl ? (
                   <img src={novel.coverUrl} alt={novel.title} className="w-full h-full object-cover" />
@@ -95,15 +198,24 @@ function NovelDetail() {
                   </span>
                 </div>
                 <h2 className="text-xl font-bold text-white mb-1">{novel.title}</h2>
-                <p className="text-xs text-white/30 mb-3 flex items-center gap-1.5">
-                {novel.author?.writerAvatarUrl ? (
-                  <img src={novel.author.writerAvatarUrl} alt={novel.author.penName} className="w-4 h-4 rounded-full object-cover" />
-                ) : (
-                  <FontAwesomeIcon icon={faUser} className="text-white/20" />
-                )}
-                  <FontAwesomeIcon icon={faUser} className="mr-1" />
-                {novel.author?.penName}
+                <p className="text-xs text-white/30 mb-2 flex items-center gap-1.5">
+                  {novel.author?.writerAvatarUrl ? (
+                    <img src={novel.author.writerAvatarUrl} alt="" className="w-4 h-4 rounded-full object-cover" />
+                  ) : (
+                    <FontAwesomeIcon icon={faUser} />
+                  )}
+                  {novel.author?.penName}
                 </p>
+                {novel.reviewCount > 0 ? (
+                  <div className="flex items-center gap-2 mb-2">
+                    <StarDisplay rating={Math.round(novel.averageRating)} />
+                    <span className="text-xs text-white/30">
+                      {novel.averageRating.toFixed(1)} ({novel.reviewCount} review{novel.reviewCount === 1 ? "" : "s"})
+                    </span>
+                  </div>
+                ) : (
+                  <p className="text-xs text-white/20 mb-2">No ratings yet</p>
+                )}
                 <p className="text-sm text-white/50 leading-relaxed">{novel.synopsis}</p>
               </div>
             </div>
@@ -113,12 +225,12 @@ function NovelDetail() {
             </p>
 
             {novel.episodes?.length === 0 && (
-              <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-8 text-center text-white/30 text-sm">
+              <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-8 text-center text-white/30 text-sm mb-6">
                 No episodes released yet.
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="space-y-2 mb-8">
               {novel.episodes?.map((ep) => (
                 <Link
                   key={ep.id}
@@ -133,6 +245,46 @@ function NovelDetail() {
                   </div>
                   <FontAwesomeIcon icon={faCircleCheck} className="text-white/10 group-hover:text-violet-400 transition shrink-0 ml-3" />
                 </Link>
+              ))}
+            </div>
+
+            <p className="text-xs text-white/30 uppercase tracking-wide font-semibold mb-3">
+              Reviews ({reviews.length})
+            </p>
+
+            {user ? (
+              <ReviewForm
+                novelId={id}
+                existingReview={myReview}
+                onSubmitted={() => { loadNovel(); loadReviews(); }}
+              />
+            ) : (
+              <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 mb-5 text-center">
+                <p className="text-white/40 text-sm">
+                  <Link to="/" className="text-violet-400 hover:underline">Log in</Link> to rate and review this novel.
+                </p>
+              </div>
+            )}
+
+            {reviews.length === 0 && (
+              <p className="text-white/20 text-sm text-center py-6">No reviews yet — be the first!</p>
+            )}
+
+            <div className="space-y-3">
+              {reviews.map((r) => (
+                <div key={r.id} className="bg-white/[0.03] border border-white/10 rounded-2xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <img
+                      src={r.user?.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${r.user?.displayName}`}
+                      alt=""
+                      className="w-6 h-6 rounded-full object-cover"
+                    />
+                    <p className="text-sm font-medium text-white">{r.user?.displayName}</p>
+                    <StarDisplay rating={r.rating} size="text-xs" />
+                  </div>
+                  {r.comment && <p className="text-sm text-white/50 leading-relaxed">{r.comment}</p>}
+                  <p className="text-xs text-white/15 mt-2">{formatDate(r.createdAt)}</p>
+                </div>
               ))}
             </div>
           </>

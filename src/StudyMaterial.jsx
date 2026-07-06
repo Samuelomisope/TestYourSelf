@@ -53,8 +53,6 @@ const TAB_LINKS = [
   { href: "/marketplace",    label: "Market", icon: faStore },
 ];
 
-// Lets deeply-nested list components (FileRow/FileCard) show a "downloaded"
-// badge without threading the prop through every intermediate block.
 const OfflineContext = createContext({ downloadedIds: new Set() });
 
 // ─── Scientific Calculator ─────────────────────────────────────────

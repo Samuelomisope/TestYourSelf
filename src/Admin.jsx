@@ -572,6 +572,83 @@ function SellersTab() {
   );
 }
 
+
+// ── Novels Tab ───────────────────────────────────────────────
+function NovelsTab() {
+  const [novels, setNovels] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [confirm, setConfirm] = useState(null);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
+
+  const load = () => {
+    setLoading(true);
+    apiFetch("/admin/novels").then(setNovels).catch(console.error).finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const deleteNovel = async (id) => {
+    try { await apiFetch(`/admin/novels/${id}`, { method: "DELETE" }); setNovels(n => n.filter(x => x.id !== id)); }
+    catch (err) { console.error(err); }
+  };
+
+  const toggleHidden = async (id) => {
+    try {
+      const updated = await apiFetch(`/admin/novels/${id}/toggle-hidden`, { method: "PATCH" });
+      setNovels(n => n.map(x => x.id === id ? { ...x, isHidden: updated.isHidden } : x));
+    } catch (err) { console.error(err); }
+  };
+
+  const filtered = novels.filter(n =>
+    n.title?.toLowerCase().includes(search.toLowerCase()) ||
+    n.author?.penName?.toLowerCase().includes(search.toLowerCase()) ||
+    n.author?.displayName?.toLowerCase().includes(search.toLowerCase())
+  );
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  return (
+    <div>
+      <input type="text" placeholder="Search novels or authors..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className={`${inputCls} mb-4`} />
+      {loading ? <p className="text-white/20 text-sm text-center py-10">Loading...</p> : (
+        <>
+          <div className="overflow-x-auto rounded-2xl border border-white/10">
+            <table className="w-full">
+              <thead className="bg-white/[0.03]"><tr><th className={thCls}>Title</th><th className={thCls}>Pen Name</th><th className={thCls}>Real Name</th><th className={thCls}>Genre</th><th className={thCls}>Episodes</th><th className={thCls}>Reviews</th><th className={thCls}>Status</th><th className={thCls}>Action</th></tr></thead>
+              <tbody className="divide-y divide-white/5">
+                {paginated.map(n => (
+                  <tr key={n.id} className="hover:bg-white/[0.02] transition">
+                    <td className="px-4 py-3 font-medium text-white text-sm max-w-[180px] truncate">{n.title}</td>
+                    <td className={tdCls}>{n.author?.penName || "—"}</td>
+                    <td className={tdCls}>{n.author?.displayName || "—"}</td>
+                    <td className={tdCls}>{n.genre}</td>
+                    <td className={tdCls}>{n._count?.episodes ?? 0}</td>
+                    <td className={tdCls}>{n._count?.reviews ?? 0}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${n.isHidden ? "bg-white/5 text-white/30" : "bg-emerald-500/15 text-emerald-400"}`}>
+                        {n.isHidden ? "Hidden" : "Visible"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 flex items-center gap-3">
+                      <button onClick={() => toggleHidden(n.id)} className="text-violet-400 hover:text-violet-300 text-xs font-medium transition">
+                        {n.isHidden ? "Unhide" : "Hide"}
+                      </button>
+                      <button onClick={() => setConfirm({ id: n.id, name: n.title })} className="text-pink-400 hover:text-pink-300 text-xs font-medium transition">Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filtered.length === 0 && <p className="text-center text-white/20 py-8 text-sm">No novels found.</p>}
+          </div>
+          <Pagination page={page} totalPages={Math.ceil(filtered.length / PAGE_SIZE)} setPage={setPage} />
+        </>
+      )}
+      {confirm && <ConfirmModal message={`Delete "${confirm.name}"? This also deletes all its episodes and reviews. This cannot be undone.`} onConfirm={() => { deleteNovel(confirm.id); setConfirm(null); }} onCancel={() => setConfirm(null)} />}
+    </div>
+  );
+}
 // ── Reviews Tab ────────────────────────────────────────────────────
 function ReviewsTab() {
   const [reviews, setReviews] = useState([]);
@@ -708,6 +785,7 @@ function Admin() {
     { id: "materials",      label: "Materials",      icon: <FontAwesomeIcon icon={faBook} /> },
     { id: "products",       label: "Products",       icon: <FontAwesomeIcon icon={faShoppingBag} /> },
     { id: "sellers",        label: "Sellers",        icon: <FontAwesomeIcon icon={faStore} /> },
+    { id: "novels", label: "Novels", icon: <FontAwesomeIcon icon={faBookOpen} /> },
     { id: "reviews",        label: "Reviews",        icon: <FontAwesomeIcon icon={faStar} /> },
     { id: "universities",   label: "Universities",   icon: <FontAwesomeIcon icon={faGraduationCap} /> },
     { id: "reports",        label: "Reports",        icon: <FontAwesomeIcon icon={faFlag} /> },
@@ -827,6 +905,7 @@ function Admin() {
         {activeTab === "reviews"        && <ReviewsTab />}
         {activeTab === "feedback"       && <FeedbackTab />}
         {activeTab === "announcements"  && <AnnouncementsTab />}
+        {activeTab === "novels" && <NovelsTab />}
       </div>
     </div>
   );
