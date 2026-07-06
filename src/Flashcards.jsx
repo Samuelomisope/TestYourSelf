@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faChevronDown, faXmark, faPlus, faLayerGroup, faHouse, faBook, faRobot,
   faComments, faStore, faGlobe, faLock, faUser, faRotate, faCheck,
-  faTrash, faWandMagicSparkles, faBookOpen
+  faTrash, faWandMagicSparkles, faBookOpen,
 } from '@fortawesome/free-solid-svg-icons';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
@@ -40,12 +40,7 @@ async function authedFetch(path, options = {}) {
   return res.json();
 }
 
-// Separate helper for multipart/form-data requests (file uploads).
-// Do NOT set Content-Type manually here — the browser sets the correct
-// multipart boundary automatically. Setting it yourself breaks the upload.
 async function authedFetchForm(path, formData) {
-  const { auth } = await import("./firebase");
-  const { getIdToken } = await import("firebase/auth");
   const token = getAccessToken();
   const res = await fetch(`${API_URL}${path}`, {
     method: "POST",
