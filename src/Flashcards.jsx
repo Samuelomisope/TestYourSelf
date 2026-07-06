@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faChevronDown, faXmark, faPlus, faLayerGroup, faHouse, faBook, faRobot,
   faComments, faStore, faGlobe, faLock, faUser, faRotate, faCheck,
-  faTrash, faWandMagicSparkles,
+  faTrash, faWandMagicSparkles, faBookOpen
 } from '@fortawesome/free-solid-svg-icons';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";

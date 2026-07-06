@@ -5,7 +5,7 @@ import { auth } from "./firebase";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch, faPlus, faList, faStore, faFilter, faTag, faBoxOpen, faTimes, faStar,
-  faHouse, faBook, faRobot, faComments, faChevronLeft,
+  faHouse, faBook, faRobot, faComments, faChevronLeft, faBookOpen,
 } from "@fortawesome/free-solid-svg-icons";
 import { API } from "./config";
 
