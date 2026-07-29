@@ -53,32 +53,32 @@ function CreateListing() {
   setSubmitting(false);
 };
 
-  const inputCls = "w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/40 transition";
-  const selectCls = "w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white/70 outline-none focus:border-violet-500/40 transition";
+  const inputCls = "w-full bg-black/40 border border-ink/10 rounded-xl px-4 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/40 transition";
+  const selectCls = "w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/40 transition";
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="min-h-screen bg-bg text-ink">
       <div className="fixed inset-0 pointer-events-none"><div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" /></div>
 
-      <header className="bg-[#0a0a0f]/80 backdrop-blur-md border-b border-white/5 px-4 py-3 sticky top-0 z-40">
+      <header className="bg-bg/80 backdrop-blur-md border-b border-ink/5 px-4 py-3 sticky top-0 z-40">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <button onClick={() => navigate("/marketplace")} className="text-white/40 hover:text-violet-400 transition"><FontAwesomeIcon icon={faChevronLeft} /></button>
-          <h1 className="text-base font-bold text-white">Create Listing</h1>
+          <button onClick={() => navigate("/marketplace")} className="text-ink/40 hover:text-violet-400 transition"><FontAwesomeIcon icon={faChevronLeft} /></button>
+          <h1 className="text-base font-bold text-ink">Create Listing</h1>
         </div>
       </header>
 
       <div className="relative z-10 max-w-2xl mx-auto px-4 py-5 space-y-4">
         {/* Images */}
-        <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
-          <p className="text-sm font-semibold text-white/50 mb-3 flex items-center gap-2"><FontAwesomeIcon icon={faImage} className="text-violet-400" /> Images</p>
+        <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-5">
+          <p className="text-sm font-semibold text-ink/50 mb-3 flex items-center gap-2"><FontAwesomeIcon icon={faImage} className="text-violet-400" /> Images</p>
           <div className="flex flex-wrap gap-3">
             {form.images.map((url, i) => (
-              <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/10">
+              <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border border-ink/10">
                 <img src={url} alt="" className="w-full h-full object-cover" />
-                <button onClick={() => set("images", form.images.filter((_, j) => j !== i))} className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-500/80 transition"><FontAwesomeIcon icon={faTimes} /></button>
+                <button onClick={() => set("images", form.images.filter((_, j) => j !== i))} className="absolute top-1 right-1 bg-black/60 text-ink rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-500/80 transition"><FontAwesomeIcon icon={faTimes} /></button>
               </div>
             ))}
-            <label className={`w-20 h-20 rounded-xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center text-white/30 hover:border-violet-500/40 hover:text-violet-400 transition cursor-pointer ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
+            <label className={`w-20 h-20 rounded-xl border-2 border-dashed border-ink/10 flex flex-col items-center justify-center text-ink/30 hover:border-violet-500/40 hover:text-violet-400 transition cursor-pointer ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
               <FontAwesomeIcon icon={uploading ? faSpinner : faPlus} spin={uploading} />
               <span className="text-xs mt-1">{uploading ? "Uploading..." : "Add"}</span>
               <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
@@ -87,26 +87,26 @@ function CreateListing() {
         </div>
 
         {/* Basic Info */}
-        <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 space-y-3">
-          <p className="text-sm font-semibold text-white/50">Basic Info</p>
-          <div><label className="text-xs text-white/30 mb-1 block">Title *</label><input value={form.title} onChange={e => set("title", e.target.value)} placeholder="What are you selling?" className={inputCls} /></div>
-          <div><label className="text-xs text-white/30 mb-1 block">Description *</label><textarea value={form.description} onChange={e => set("description", e.target.value)} placeholder="Describe your item..." rows={4} className={`${inputCls} resize-none`} /></div>
-          <div><label className="text-xs text-white/30 mb-1 block">Price (₦) *</label><input type="number" value={form.price} onChange={e => set("price", e.target.value)} placeholder="0" className={inputCls} /></div>
+        <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-5 space-y-3">
+          <p className="text-sm font-semibold text-ink/50">Basic Info</p>
+          <div><label className="text-xs text-ink/30 mb-1 block">Title *</label><input value={form.title} onChange={e => set("title", e.target.value)} placeholder="What are you selling?" className={inputCls} /></div>
+          <div><label className="text-xs text-ink/30 mb-1 block">Description *</label><textarea value={form.description} onChange={e => set("description", e.target.value)} placeholder="Describe your item..." rows={4} className={`${inputCls} resize-none`} /></div>
+          <div><label className="text-xs text-ink/30 mb-1 block">Price (₦) *</label><input type="number" value={form.price} onChange={e => set("price", e.target.value)} placeholder="0" className={inputCls} /></div>
         </div>
 
         {/* Details */}
-        <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 space-y-3">
-          <p className="text-sm font-semibold text-white/50">Details</p>
+        <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-5 space-y-3">
+          <p className="text-sm font-semibold text-ink/50">Details</p>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-xs text-white/30 mb-1 block">Type</label><select value={form.type} onChange={e => set("type", e.target.value)} className={selectCls}>{TYPES.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
-            <div><label className="text-xs text-white/30 mb-1 block">Condition</label><select value={form.condition} onChange={e => set("condition", e.target.value)} className={selectCls}>{CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+            <div><label className="text-xs text-ink/30 mb-1 block">Type</label><select value={form.type} onChange={e => set("type", e.target.value)} className={selectCls}>{TYPES.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
+            <div><label className="text-xs text-ink/30 mb-1 block">Condition</label><select value={form.condition} onChange={e => set("condition", e.target.value)} className={selectCls}>{CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
           </div>
-          <div><label className="text-xs text-white/30 mb-1 block">Category</label><select value={form.category} onChange={e => set("category", e.target.value)} className={selectCls}><option value="">Select category</option>{CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+          <div><label className="text-xs text-ink/30 mb-1 block">Category</label><select value={form.category} onChange={e => set("category", e.target.value)} className={selectCls}><option value="">Select category</option>{CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
         </div>
 
         {/* Tags */}
-        <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5">
-          <p className="text-sm font-semibold text-white/50 mb-3 flex items-center gap-2"><FontAwesomeIcon icon={faTag} className="text-violet-400" /> Tags</p>
+        <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-5">
+          <p className="text-sm font-semibold text-ink/50 mb-3 flex items-center gap-2"><FontAwesomeIcon icon={faTag} className="text-violet-400" /> Tags</p>
           <div className="flex gap-2 mb-3">
             <input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && tagInput.trim() && !form.tags.includes(tagInput.trim())) { set("tags", [...form.tags, tagInput.trim()]); setTagInput(""); }}} placeholder="Add a tag..." className={inputCls} />
             <button onClick={() => { if (tagInput.trim() && !form.tags.includes(tagInput.trim())) { set("tags", [...form.tags, tagInput.trim()]); setTagInput(""); }}} className="px-3 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm transition"><FontAwesomeIcon icon={faPlus} /></button>
@@ -120,7 +120,7 @@ function CreateListing() {
           </div>
         </div>
 
-        <button onClick={submit} disabled={submitting || !form.title || !form.description || !form.price} className="w-full py-3 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white rounded-2xl font-semibold transition">
+        <button onClick={submit} disabled={submitting || !form.title || !form.description || !form.price} className="w-full py-3 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-2xl font-semibold transition">
           {submitting ? "Creating..." : "Create Listing"}
         </button>
       </div>

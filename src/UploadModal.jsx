@@ -317,12 +317,12 @@ const handleZipUpload = async () => {
   // ── Render ───────────────────────────────────────────────────────
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="bg-[#0d0d14] border border-white/10 rounded-3xl w-full max-w-md shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+      <div className="bg-bg-elevated border border-ink/10 rounded-3xl w-full max-w-md shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
 
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
-          <h2 className="font-bold text-white text-lg">Upload Files</h2>
-          <button onClick={onClose} className="text-white/30 hover:text-white transition">
+          <h2 className="font-bold text-ink text-lg">Upload Files</h2>
+          <button onClick={onClose} className="text-ink/30 hover:text-ink transition">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
@@ -333,7 +333,7 @@ const handleZipUpload = async () => {
   <button
     onClick={() => setMode("files")}
     className={`flex-1 py-1.5 rounded-xl text-sm font-medium transition ${
-      mode === "files" ? "bg-violet-500 text-white" : "text-white/40"
+      mode === "files" ? "bg-violet-500 text-white" : "text-ink/40"
     }`}
   >
     Files
@@ -341,7 +341,7 @@ const handleZipUpload = async () => {
   <button
     onClick={() => setMode("zip")}
     className={`flex-1 py-1.5 rounded-xl text-sm font-medium transition ${
-      mode === "zip" ? "bg-violet-500 text-white" : "text-white/40"
+      mode === "zip" ? "bg-violet-500 text-white" : "text-ink/40"
     }`}
   >
     Bulk zip
@@ -357,8 +357,8 @@ const handleZipUpload = async () => {
               className="border-2 border-dashed border-violet-500/30 rounded-2xl p-5 text-center cursor-pointer hover:border-violet-500/60 hover:bg-violet-500/5 transition mb-3"
             >
               <p className="text-3xl mb-1">☁️</p>
-              <p className="text-sm text-white/50">Tap or drag files here</p>
-              <p className="text-xs text-white/30 mt-1">PDF, Video, Word, PowerPoint — max 100 MB each</p>
+              <p className="text-sm text-ink/50">Tap or drag files here</p>
+              <p className="text-xs text-ink/30 mt-1">PDF, Video, Word, PowerPoint — max 100 MB each</p>
               <input
                 ref={fileRef}
                 type="file"
@@ -374,7 +374,7 @@ const handleZipUpload = async () => {
               type="button"
               onClick={openGooglePicker}
               disabled={driveLoading}
-              className="w-full py-2.5 mb-4 border border-white/10 rounded-2xl text-sm text-white/50 hover:border-violet-500/40 hover:text-violet-400 disabled:opacity-40 transition flex items-center justify-center gap-2"
+              className="w-full py-2.5 mb-4 border border-ink/10 rounded-2xl text-sm text-ink/50 hover:border-violet-500/40 hover:text-violet-400 disabled:opacity-40 transition flex items-center justify-center gap-2"
             >
               {driveLoading ? (
                 <span className="animate-spin w-4 h-4 border-2 border-violet-400 border-t-transparent rounded-full" />
@@ -395,7 +395,7 @@ const handleZipUpload = async () => {
             {files.length > 0 && (
               <div className="mb-4 space-y-2">
                 {files.map((item, i) => (
-                  <div key={i} className="border border-white/10 rounded-2xl overflow-hidden">
+                  <div key={i} className="border border-ink/10 rounded-2xl overflow-hidden">
                     <div
                       className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-white/5"
                       onClick={() => setExpandedIndex(expandedIndex === i ? null : i)}
@@ -405,7 +405,7 @@ const handleZipUpload = async () => {
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <p className="text-xs font-semibold text-white truncate">
+                          <p className="text-xs font-semibold text-ink truncate">
                             {item.title || item.file.name}
                           </p>
                           {item.source === "drive" && (
@@ -414,7 +414,7 @@ const handleZipUpload = async () => {
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-white/30">
+                        <p className="text-xs text-ink/30">
                           {(item.file.size / 1024 / 1024).toFixed(2)} MB
                         </p>
                         {progresses[item.file.name] !== undefined && (
@@ -437,26 +437,26 @@ const handleZipUpload = async () => {
                     </div>
 
                     {expandedIndex === i && (
-                      <div className="px-3 pb-3 pt-1 border-t border-white/5 bg-white/[0.02] space-y-2">
-                        <input type="text" placeholder="Title *" value={item.title} onChange={(e) => updateMeta(i, "title", e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
-                        <input type="text" placeholder="Course code e.g. CHM 101" value={item.course} onChange={(e) => updateMeta(i, "course", e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
-                        <input type="text" placeholder="Department e.g. MINING ENGINEERING" value={item.department} onChange={(e) => updateMeta(i, "department", e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
+                      <div className="px-3 pb-3 pt-1 border-t border-ink/5 bg-white/[0.02] space-y-2">
+                        <input type="text" placeholder="Title *" value={item.title} onChange={(e) => updateMeta(i, "title", e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
+                        <input type="text" placeholder="Course code e.g. CHM 101" value={item.course} onChange={(e) => updateMeta(i, "course", e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
+                        <input type="text" placeholder="Department e.g. MINING ENGINEERING" value={item.department} onChange={(e) => updateMeta(i, "department", e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
                         <div className="flex gap-2">
-                          <select value={item.level} onChange={(e) => updateMeta(i, "level", e.target.value)} className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white/70 outline-none focus:border-violet-500/60 transition">
+                          <select value={item.level} onChange={(e) => updateMeta(i, "level", e.target.value)} className="flex-1 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
                             <option value="">Level</option>
                             {LEVELS.map(l => <option key={l} value={l}>{l} Level</option>)}
                           </select>
-                          <select value={item.semester} onChange={(e) => updateMeta(i, "semester", e.target.value)} className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white/70 outline-none focus:border-violet-500/60 transition">
+                          <select value={item.semester} onChange={(e) => updateMeta(i, "semester", e.target.value)} className="flex-1 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
                             <option value="">Semester</option>
                             <option value="first">1st Semester</option>
                             <option value="second">2nd Semester</option>
                           </select>
                         </div>
-                        <select value={item.university} onChange={(e) => updateMeta(i, "university", e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white/70 outline-none focus:border-violet-500/60 transition">
+                        <select value={item.university} onChange={(e) => updateMeta(i, "university", e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
                           <option value="">Select University</option>
                           {universitiesList.map((u) => <option key={u.id} value={u.shortName || u.name}>{u.name}</option>)}
                         </select>
-                        <textarea placeholder="Description (optional)" value={item.description} onChange={(e) => updateMeta(i, "description", e.target.value)} rows={2} className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition" />
+                        <textarea placeholder="Description (optional)" value={item.description} onChange={(e) => updateMeta(i, "description", e.target.value)} rows={2} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition" />
                       </div>
                     )}
                   </div>
@@ -475,24 +475,24 @@ const handleZipUpload = async () => {
               className="border-2 border-dashed border-violet-500/30 rounded-2xl p-5 text-center cursor-pointer hover:border-violet-500/60 hover:bg-violet-500/5 transition mb-3"
             >
               {zipFile ? (
-                <p className="text-sm text-white">{zipFile.name} ({(zipFile.size / 1024 / 1024).toFixed(2)} MB)</p>
+                <p className="text-sm text-ink">{zipFile.name} ({(zipFile.size / 1024 / 1024).toFixed(2)} MB)</p>
               ) : (
                 <>
-                  <p className="text-sm text-white/50">Tap or drag a .zip here</p>
-                  <p className="text-xs text-white/30 mt-1">Each top-level folder becomes a course code</p>
+                  <p className="text-sm text-ink/50">Tap or drag a .zip here</p>
+                  <p className="text-xs text-ink/30 mt-1">Each top-level folder becomes a course code</p>
                 </>
               )}
               <input ref={zipRef} type="file" className="hidden" accept=".zip" onChange={(e) => setZipFile(e.target.files[0] || null)} />
             </div>
 
-            <input type="text" placeholder="Department e.g. MINING ENGINEERING" value={zipMeta.department} onChange={(e) => setZipMeta((m) => ({ ...m, department: e.target.value }))} className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition mb-2" />
+            <input type="text" placeholder="Department e.g. MINING ENGINEERING" value={zipMeta.department} onChange={(e) => setZipMeta((m) => ({ ...m, department: e.target.value }))} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition mb-2" />
 
             <div className="flex gap-2 mb-2">
-              <select value={zipMeta.level} onChange={(e) => setZipMeta((m) => ({ ...m, level: e.target.value }))} className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white/70 outline-none focus:border-violet-500/60 transition">
+              <select value={zipMeta.level} onChange={(e) => setZipMeta((m) => ({ ...m, level: e.target.value }))} className="flex-1 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
                 <option value="">Level</option>
                 {LEVELS.map((l) => <option key={l} value={l}>{l} Level</option>)}
               </select>
-              <select value={zipMeta.semester} onChange={(e) => setZipMeta((m) => ({ ...m, semester: e.target.value }))} className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white/70 outline-none focus:border-violet-500/60 transition">
+              <select value={zipMeta.semester} onChange={(e) => setZipMeta((m) => ({ ...m, semester: e.target.value }))} className="flex-1 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
                 <option value="">Semester</option>
                 <option value="first">1st Semester</option>
                 <option value="second">2nd Semester</option>
@@ -506,7 +506,7 @@ const handleZipUpload = async () => {
             )}
 
             {zipSummary && (
-              <div className="text-xs text-white/50 mt-2 space-y-1">
+              <div className="text-xs text-ink/50 mt-2 space-y-1">
                 <p>{zipSummary.uploaded.length} file(s) uploaded across {zipSummary.courses.length} course(s): {zipSummary.courses.join(", ")}</p>
                 {zipSummary.skipped.length > 0 && (
                   <p className="text-pink-400">{zipSummary.skipped.length} skipped — {zipSummary.skipped.map(s => s.file).join(", ")}</p>
@@ -522,7 +522,7 @@ const handleZipUpload = async () => {
             type="button"
             onClick={() => setIsPublic(false)}
             className={`flex-1 py-2 rounded-xl text-sm font-medium border transition ${
-              !isPublic ? "bg-violet-500 text-white border-violet-500" : "text-white/40 border-white/10"
+              !isPublic ? "bg-violet-500 text-white border-violet-500" : "text-ink/40 border-ink/10"
             }`}
           >
             <FontAwesomeIcon icon={faLock} className="mr-1" /> Private
@@ -531,7 +531,7 @@ const handleZipUpload = async () => {
             type="button"
             onClick={() => setIsPublic(true)}
             className={`flex-1 py-2 rounded-xl text-sm font-medium border transition ${
-              isPublic ? "bg-violet-500 text-white border-violet-500" : "text-white/40 border-white/10"
+              isPublic ? "bg-violet-500 text-white border-violet-500" : "text-ink/40 border-ink/10"
             }`}
           >
             <FontAwesomeIcon icon={faGlobe} className="mr-1" /> Public
@@ -542,7 +542,7 @@ const handleZipUpload = async () => {
         <button
   onClick={mode === "zip" ? handleZipUpload : handleUpload}
   disabled={uploading || (mode === "files" ? files.length === 0 : !zipFile)}
-  className="w-full py-3 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white rounded-2xl font-medium transition"
+  className="w-full py-3 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-2xl font-medium transition"
 >
   {uploading
     ? mode === "zip" ? `Uploading zip… ${zipProgress}%` : `Uploading ${files.length} file(s)…`

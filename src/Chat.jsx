@@ -91,7 +91,7 @@ const TAB_LINKS = [
 function ReadReceipt({ isRead, isOwn }) {
   if (!isOwn) return null;
   return (
-    <span className={`text-xs ml-1 ${isRead ? "text-violet-400" : "text-white/30"}`}>
+    <span className={`text-xs ml-1 ${isRead ? "text-violet-400" : "text-ink/30"}`}>
       <FontAwesomeIcon icon={isRead ? faCheckDouble : faCheck} />
     </span>
   );
@@ -103,7 +103,7 @@ function VoiceNoteButton({ onStart, onStop, recording, recordingSeconds }) {
     <button
       onClick={recording ? onStop : onStart}
       className={`w-10 h-10 rounded-full flex items-center justify-center transition relative select-none ${
-        recording ? "bg-red-500 text-white" : "bg-white/5 border border-white/10 text-white/40 hover:text-violet-400 hover:border-violet-500/40"
+        recording ? "bg-red-500 text-white" : "bg-white/5 border border-ink/10 text-ink/40 hover:text-violet-400 hover:border-violet-500/40"
       }`}
       title={recording ? "Stop recording" : "Record voice note"}
     >
@@ -112,7 +112,7 @@ function VoiceNoteButton({ onStart, onStop, recording, recordingSeconds }) {
       )}
       <FontAwesomeIcon icon={recording ? faStop : faMicrophone} className="relative z-10" />
       {recording && (
-        <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-xs text-red-400 font-mono whitespace-nowrap bg-[#0d0d14] px-2 py-0.5 rounded-full border border-red-500/20">
+        <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-xs text-red-400 font-mono whitespace-nowrap bg-bg-elevated px-2 py-0.5 rounded-full border border-red-500/20">
           {String(Math.floor(recordingSeconds / 60)).padStart(2, "0")}:
           {String(recordingSeconds % 60).padStart(2, "0")}
         </span>
@@ -139,7 +139,7 @@ function MessageBubble({ message, isOwn, onReply, onReact }) {
       {!isOwn && (
         <img
           src={safeAvatar(message.sender?.photoURL, message.sender?.displayName)}
-          className="w-7 h-7 rounded-full object-cover shrink-0 mt-1 border border-white/10"
+          className="w-7 h-7 rounded-full object-cover shrink-0 mt-1 border border-ink/10"
           alt=""
           onError={(e) => avatarError(e, message.sender?.displayName)}
         />
@@ -151,7 +151,7 @@ function MessageBubble({ message, isOwn, onReply, onReact }) {
         )}
 
         {message.replyTo && (
-          <div className="px-3 py-1.5 rounded-xl mb-1 text-xs border-l-2 border-violet-500 bg-white/5 text-white/40 max-w-full truncate">
+          <div className="px-3 py-1.5 rounded-xl mb-1 text-xs border-l-2 border-violet-500 bg-white/5 text-ink/40 max-w-full truncate">
             <p className="font-medium text-violet-400">{message.replyTo.sender?.displayName}</p>
             <p className="truncate">{message.replyTo.text ? decryptMessage(message.replyTo.text) : "Media"}</p>
           </div>
@@ -161,7 +161,7 @@ function MessageBubble({ message, isOwn, onReply, onReact }) {
           <div className={`px-4 py-2.5 rounded-2xl text-sm ${
             isOwn
               ? "bg-violet-500 text-white rounded-tr-sm"
-              : "bg-white/[0.07] border border-white/10 text-white/90 rounded-tl-sm"
+              : "bg-white/[0.07] border border-ink/10 text-ink/90 rounded-tl-sm"
           }`}>
             {message.type === "image" && message.mediaUrl && (
               <img
@@ -188,7 +188,7 @@ function MessageBubble({ message, isOwn, onReply, onReact }) {
             )}
             {message.type === "file" && message.mediaUrl && (
               <a href={message.mediaUrl} target="_blank" rel="noreferrer"
-                className={`flex items-center gap-2 ${isOwn ? "text-white" : "text-violet-400"}`}>
+                className={`flex items-center gap-2 ${isOwn ? "text-ink" : "text-violet-400"}`}>
                 <FontAwesomeIcon icon={faFile} />
                 <span className="text-xs underline">View File</span>
               </a>
@@ -199,17 +199,17 @@ function MessageBubble({ message, isOwn, onReply, onReact }) {
           {/* Hover actions */}
           <div className={`absolute top-0 ${isOwn ? "left-0 -translate-x-full" : "right-0 translate-x-full"} hidden group-hover:flex items-center gap-1 px-1`}>
             <button onClick={() => onReply(message)}
-              className="w-6 h-6 bg-white/10 rounded-full flex items-center justify-center text-white/40 hover:text-violet-400 transition">
+              className="w-6 h-6 bg-white/10 rounded-full flex items-center justify-center text-ink/40 hover:text-violet-400 transition">
               <FontAwesomeIcon icon={faReply} className="text-xs" />
             </button>
             <button onClick={() => setShowEmoji(!showEmoji)}
-              className="w-6 h-6 bg-white/10 rounded-full flex items-center justify-center text-white/40 hover:text-violet-400 transition">
+              className="w-6 h-6 bg-white/10 rounded-full flex items-center justify-center text-ink/40 hover:text-violet-400 transition">
               <FontAwesomeIcon icon={faSmile} className="text-xs" />
             </button>
           </div>
 
           {showEmoji && (
-            <div className={`absolute z-10 bottom-full mb-1 ${isOwn ? "right-0" : "left-0"} bg-[#0d0d14] border border-white/10 rounded-full shadow-xl flex gap-1 px-2 py-1`}>
+            <div className={`absolute z-10 bottom-full mb-1 ${isOwn ? "right-0" : "left-0"} bg-bg-elevated border border-ink/10 rounded-full shadow-xl flex gap-1 px-2 py-1`}>
               {EMOJIS.map(emoji => (
                 <button key={emoji}
                   onClick={() => { onReact(message.id, emoji); setShowEmoji(false); }}
@@ -224,7 +224,7 @@ function MessageBubble({ message, isOwn, onReply, onReact }) {
         {groupedReactions && Object.keys(groupedReactions).length > 0 && (
           <div className="flex gap-1 mt-1 flex-wrap">
             {Object.entries(groupedReactions).map(([emoji, count]) => (
-              <span key={emoji} className="bg-white/5 border border-white/10 rounded-full px-2 py-0.5 text-xs">
+              <span key={emoji} className="bg-white/5 border border-ink/10 rounded-full px-2 py-0.5 text-xs">
                 {emoji} {count}
               </span>
             ))}
@@ -232,7 +232,7 @@ function MessageBubble({ message, isOwn, onReply, onReact }) {
         )}
 
         <div className="flex items-center gap-1 mt-1 mx-1">
-          <p className="text-xs text-white/20">
+          <p className="text-xs text-ink/20">
             {new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
           </p>
           <ReadReceipt isRead={message.isRead} isOwn={isOwn} />
@@ -293,14 +293,14 @@ function CreateGroupModal({ onClose, onCreated }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end justify-center" onClick={onClose}>
-      <div className="bg-[#0d0d14] border border-white/10 w-full max-w-lg rounded-t-3xl overflow-hidden"
+      <div className="bg-bg-elevated border border-ink/10 w-full max-w-lg rounded-t-3xl overflow-hidden"
         style={{ maxHeight: "85vh" }} onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-ink/5">
           <div className="flex items-center gap-2">
             <FontAwesomeIcon icon={faUserGroup} className="text-violet-400" />
-            <h2 className="text-base font-bold text-white">New Group</h2>
+            <h2 className="text-base font-bold text-ink">New Group</h2>
           </div>
-          <button onClick={onClose} className="text-white/30 hover:text-white transition">
+          <button onClick={onClose} className="text-ink/30 hover:text-ink transition">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
@@ -309,7 +309,7 @@ function CreateGroupModal({ onClose, onCreated }) {
           <div className="px-5 pt-4 pb-2">
             <input value={name} onChange={e => setName(e.target.value)}
               placeholder="Group name..."
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 mb-4"
+              className="w-full bg-white/5 border border-ink/10 rounded-xl px-4 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 mb-4"
               maxLength={50} />
 
             {selected.length > 0 && (
@@ -328,10 +328,10 @@ function CreateGroupModal({ onClose, onCreated }) {
             )}
 
             <div className="relative mb-2">
-              <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 text-xs" />
+              <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/20 text-xs" />
               <input value={search} onChange={handleSearchChange} placeholder="Search members..."
-                className="w-full pl-8 pr-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
-              {searching && <FontAwesomeIcon icon={faSpinner} spin className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 text-xs" />}
+                className="w-full pl-8 pr-3 py-2 bg-white/5 border border-ink/10 rounded-xl text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
+              {searching && <FontAwesomeIcon icon={faSpinner} spin className="absolute right-3 top-1/2 -translate-y-1/2 text-ink/30 text-xs" />}
             </div>
           </div>
 
@@ -343,15 +343,15 @@ function CreateGroupModal({ onClose, onCreated }) {
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-left mb-1 ${
                     isSelected ? "bg-violet-500/15 border border-violet-500/20" : "hover:bg-white/5"
                   }`}>
-                  <img src={safeAvatar(u.photoURL, u.displayName)} className="w-9 h-9 rounded-full object-cover border border-white/10" alt=""
+                  <img src={safeAvatar(u.photoURL, u.displayName)} className="w-9 h-9 rounded-full object-cover border border-ink/10" alt=""
                     onError={e => avatarError(e, u.displayName)} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{u.displayName}</p>
-                    {u.chatSnapUsername && <p className="text-xs text-white/30">@{u.chatSnapUsername}</p>}
+                    <p className="text-sm font-medium text-ink truncate">{u.displayName}</p>
+                    {u.chatSnapUsername && <p className="text-xs text-ink/30">@{u.chatSnapUsername}</p>}
                   </div>
                   {isSelected && (
                     <div className="w-5 h-5 bg-violet-500 rounded-full flex items-center justify-center shrink-0">
-                      <FontAwesomeIcon icon={faCheck} className="text-white text-xs" />
+                      <FontAwesomeIcon icon={faCheck} className="text-ink text-xs" />
                     </div>
                   )}
                 </button>
@@ -360,7 +360,7 @@ function CreateGroupModal({ onClose, onCreated }) {
           </div>
         </div>
 
-        <div className="px-5 py-4 border-t border-white/5">
+        <div className="px-5 py-4 border-t border-ink/5">
           {error && <p className="text-pink-400 text-xs mb-2 text-center">{error}</p>}
           <button onClick={handleCreate}
             disabled={creating || !name.trim() || selected.length < 1}
@@ -400,34 +400,34 @@ function SearchMessagesPanel({ roomId, onClose, onJumpTo }) {
   };
 
   return (
-    <div className="absolute inset-0 bg-[#0a0a0f] z-20 flex flex-col">
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-white/5 shrink-0">
-        <button onClick={onClose} className="text-white/40 hover:text-violet-400 transition">
+    <div className="absolute inset-0 bg-bg z-20 flex flex-col">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-ink/5 shrink-0">
+        <button onClick={onClose} className="text-ink/40 hover:text-violet-400 transition">
           <FontAwesomeIcon icon={faChevronLeft} />
         </button>
         <div className="relative flex-1">
-          <FontAwesomeIcon icon={faMagnifyingGlass} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 text-xs" />
+          <FontAwesomeIcon icon={faMagnifyingGlass} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/20 text-xs" />
           <input autoFocus value={query} onChange={handleChange} placeholder="Search messages..."
-            className="w-full pl-8 pr-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
+            className="w-full pl-8 pr-3 py-2 bg-white/5 border border-ink/10 rounded-xl text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
         </div>
         {loading && <FontAwesomeIcon icon={faSpinner} spin className="text-violet-400 text-sm shrink-0" />}
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {results.length === 0 && query.trim() && !loading && (
-          <p className="text-center text-white/30 text-sm py-10">No messages found for "{query}"</p>
+          <p className="text-center text-ink/30 text-sm py-10">No messages found for "{query}"</p>
         )}
         {!query.trim() && (
-          <p className="text-center text-white/20 text-sm py-10">Type to search messages in this chat</p>
+          <p className="text-center text-ink/20 text-sm py-10">Type to search messages in this chat</p>
         )}
         {results.map(msg => (
           <button key={msg.id} onClick={() => onJumpTo(msg.id)}
-            className="w-full text-left px-4 py-3 rounded-xl bg-white/[0.03] hover:bg-violet-500/10 border border-white/5 hover:border-violet-500/20 transition">
+            className="w-full text-left px-4 py-3 rounded-xl bg-white/[0.03] hover:bg-violet-500/10 border border-ink/5 hover:border-violet-500/20 transition">
             <div className="flex items-center justify-between mb-1">
               <p className="text-xs font-semibold text-violet-400">{msg.sender?.displayName}</p>
-              <p className="text-xs text-white/20">{timeAgo(msg.createdAt)}</p>
+              <p className="text-xs text-ink/20">{timeAgo(msg.createdAt)}</p>
             </div>
-            <p className="text-sm text-white/60 truncate">
+            <p className="text-sm text-ink/60 truncate">
               {msg.text ? decryptMessage(msg.text) : "Media"}
             </p>
           </button>
@@ -464,24 +464,24 @@ function MediaGalleryPanel({ roomId, onClose }) {
   const active = TABS.find(t => t.id === activeTab);
 
   return (
-    <div className="absolute inset-0 bg-[#0a0a0f] z-20 flex flex-col">
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-white/5 shrink-0">
-        <button onClick={onClose} className="text-white/40 hover:text-violet-400 transition">
+    <div className="absolute inset-0 bg-bg z-20 flex flex-col">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-ink/5 shrink-0">
+        <button onClick={onClose} className="text-ink/40 hover:text-violet-400 transition">
           <FontAwesomeIcon icon={faChevronLeft} />
         </button>
-        <h2 className="font-semibold text-white text-sm flex-1">Media & Files</h2>
+        <h2 className="font-semibold text-ink text-sm flex-1">Media & Files</h2>
         <FontAwesomeIcon icon={faPhotoFilm} className="text-violet-400" />
       </div>
 
-      <div className="flex border-b border-white/5 shrink-0">
+      <div className="flex border-b border-ink/5 shrink-0">
         {TABS.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className={`flex-1 py-2.5 text-xs font-semibold flex flex-col items-center gap-0.5 transition border-b-2 ${
-              activeTab === tab.id ? "border-violet-500 text-violet-400" : "border-transparent text-white/30 hover:text-white/60"
+              activeTab === tab.id ? "border-violet-500 text-violet-400" : "border-transparent text-ink/30 hover:text-ink/60"
             }`}>
             <FontAwesomeIcon icon={tab.icon} />
             <span>{tab.label}</span>
-            <span className="text-xs text-white/20 font-normal">({tab.data.length})</span>
+            <span className="text-xs text-ink/20 font-normal">({tab.data.length})</span>
           </button>
         ))}
       </div>
@@ -493,8 +493,8 @@ function MediaGalleryPanel({ roomId, onClose }) {
           </div>
         ) : active.data.length === 0 ? (
           <div className="text-center py-10">
-            <FontAwesomeIcon icon={active.icon} className="text-4xl text-white/10 mb-2" />
-            <p className="text-white/30 text-sm">No {active.label.toLowerCase()} yet</p>
+            <FontAwesomeIcon icon={active.icon} className="text-4xl text-ink/10 mb-2" />
+            <p className="text-ink/30 text-sm">No {active.label.toLowerCase()} yet</p>
           </div>
         ) : activeTab === "images" ? (
           <div className="grid grid-cols-3 gap-1.5">
@@ -517,12 +517,12 @@ function MediaGalleryPanel({ roomId, onClose }) {
         ) : activeTab === "audio" ? (
           <div className="space-y-2">
             {audio.map(item => (
-              <div key={item.id} className="flex items-center gap-3 bg-white/[0.03] border border-white/10 rounded-xl px-3 py-2.5">
+              <div key={item.id} className="flex items-center gap-3 bg-white/[0.03] border border-ink/10 rounded-xl px-3 py-2.5">
                 <div className="w-8 h-8 bg-violet-500/15 rounded-full flex items-center justify-center shrink-0">
                   <FontAwesomeIcon icon={faFileAudio} className="text-violet-400 text-xs" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-white/30 truncate mb-1">
+                  <p className="text-xs text-ink/30 truncate mb-1">
                     {item.sender?.displayName} · {new Date(item.createdAt).toLocaleDateString()}
                   </p>
                   <audio controls preload="metadata" className="w-full h-7" style={{ accentColor: "#8b5cf6" }}>
@@ -539,15 +539,15 @@ function MediaGalleryPanel({ roomId, onClose }) {
           <div className="space-y-2">
             {files.map(item => (
               <a key={item.id} href={item.mediaUrl} target="_blank" rel="noreferrer"
-                className="flex items-center gap-3 bg-white/[0.03] border border-white/10 rounded-xl px-3 py-3 hover:border-violet-500/30 hover:bg-violet-500/5 transition">
+                className="flex items-center gap-3 bg-white/[0.03] border border-ink/10 rounded-xl px-3 py-3 hover:border-violet-500/30 hover:bg-violet-500/5 transition">
                 <div className="w-9 h-9 bg-violet-500/15 rounded-xl flex items-center justify-center shrink-0">
                   <FontAwesomeIcon icon={faFile} className="text-violet-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white font-medium truncate">File</p>
-                  <p className="text-xs text-white/30">{item.sender?.displayName} · {new Date(item.createdAt).toLocaleDateString()}</p>
+                  <p className="text-sm text-ink font-medium truncate">File</p>
+                  <p className="text-xs text-ink/30">{item.sender?.displayName} · {new Date(item.createdAt).toLocaleDateString()}</p>
                 </div>
-                <FontAwesomeIcon icon={faChevronRight} className="text-white/20 text-xs shrink-0" />
+                <FontAwesomeIcon icon={faChevronRight} className="text-ink/20 text-xs shrink-0" />
               </a>
             ))}
           </div>
@@ -567,7 +567,7 @@ function StatusCircle({ status, onClick, isOwn }) {
           className="w-full h-full rounded-full object-cover border-2 border-[#0a0a0f]"
           alt="" onError={(e) => avatarError(e, status.user?.displayName)} />
       </div>
-      <p className="text-xs text-white/40 truncate w-14 text-center">
+      <p className="text-xs text-ink/40 truncate w-14 text-center">
         {isOwn ? "My Status" : status.user?.displayName}
       </p>
     </button>
@@ -600,7 +600,7 @@ function RoomItem({ room, currentUserId, onClick, active }) {
           </div>
         ) : (
           <img src={safeAvatar(avatar, name)}
-            className="w-12 h-12 rounded-full object-cover border border-white/10"
+            className="w-12 h-12 rounded-full object-cover border border-ink/10"
             onError={(e) => avatarError(e, name)} alt="" />
         )}
         {/* Online dot — can be driven by real presence later */}
@@ -608,15 +608,15 @@ function RoomItem({ room, currentUserId, onClick, active }) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">
-          <p className="font-semibold text-white text-sm truncate">{name}</p>
+          <p className="font-semibold text-ink text-sm truncate">{name}</p>
           {lastMessage && (
-            <p className="text-xs text-white/20 shrink-0 ml-2">
+            <p className="text-xs text-ink/20 shrink-0 ml-2">
               {timeAgo(lastMessage.createdAt)}
             </p>
           )}
         </div>
         {lastMessage && (
-          <p className="text-xs text-white/30 truncate mt-0.5">
+          <p className="text-xs text-ink/30 truncate mt-0.5">
             {lastMessage.sender?.displayName}: {lastMessage.text ? decryptMessage(lastMessage.text) : "Media"}
           </p>
         )}
@@ -852,13 +852,13 @@ function ChatRoom({ room, dbUserId, onBack, onOpenWallpaper }) {
   }, [messages]);
 
   return (
-    <div className="flex flex-col h-full relative bg-[#0a0a0f]">
+    <div className="flex flex-col h-full relative bg-bg">
       {showSearch && <SearchMessagesPanel roomId={room.id} onClose={() => setShowSearch(false)} onJumpTo={handleJumpTo} />}
       {showMedia && <MediaGalleryPanel roomId={room.id} onClose={() => setShowMedia(false)} />}
 
       {/* Header */}
-      <div className="bg-[#0d0d14] border-b border-white/5 px-4 py-3 flex items-center gap-3 shrink-0">
-        <button onClick={onBack} className="text-white/40 hover:text-violet-400 transition md:hidden">
+      <div className="bg-bg-elevated border-b border-ink/5 px-4 py-3 flex items-center gap-3 shrink-0">
+        <button onClick={onBack} className="text-ink/40 hover:text-violet-400 transition md:hidden">
           <FontAwesomeIcon icon={faChevronLeft} />
         </button>
         {room.isGroup ? (
@@ -868,29 +868,29 @@ function ChatRoom({ room, dbUserId, onBack, onOpenWallpaper }) {
         ) : (
           <div className="relative">
             <img src={safeAvatar(otherMember?.user?.photoURL, roomName)}
-              className="w-10 h-10 rounded-full object-cover border border-white/10" alt=""
+              className="w-10 h-10 rounded-full object-cover border border-ink/10" alt=""
               onError={(e) => avatarError(e, roomName)} />
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-[#0d0d14] rounded-full" />
           </div>
         )}
         <div className="flex-1">
-          <p className="font-semibold text-white text-sm">{roomName}</p>
+          <p className="font-semibold text-ink text-sm">{roomName}</p>
           {typingUser
             ? <p className="text-xs text-violet-400 animate-pulse">typing...</p>
-            : <p className="text-xs text-white/30">{room.isGroup ? `${room.members?.length || 0} members` : "Online"}</p>
+            : <p className="text-xs text-ink/30">{room.isGroup ? `${room.members?.length || 0} members` : "Online"}</p>
           }
         </div>
         <div className="flex items-center gap-1">
           <button onClick={() => setShowSearch(true)}
-            className="w-8 h-8 rounded-full bg-white/5 border border-white/[0.06] flex items-center justify-center text-white/40 hover:text-violet-400 hover:border-violet-500/30 transition">
+            className="w-8 h-8 rounded-full bg-white/5 border border-white/[0.06] flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/30 transition">
             <FontAwesomeIcon icon={faMagnifyingGlass} className="text-sm" />
           </button>
           <button onClick={() => setShowMedia(true)}
-            className="w-8 h-8 rounded-full bg-white/5 border border-white/[0.06] flex items-center justify-center text-white/40 hover:text-violet-400 hover:border-violet-500/30 transition">
+            className="w-8 h-8 rounded-full bg-white/5 border border-white/[0.06] flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/30 transition">
             <FontAwesomeIcon icon={faPhotoFilm} className="text-sm" />
           </button>
           <button onClick={onOpenWallpaper}
-            className="w-8 h-8 rounded-full bg-white/5 border border-white/[0.06] flex items-center justify-center text-white/40 hover:text-violet-400 hover:border-violet-500/30 transition">
+            className="w-8 h-8 rounded-full bg-white/5 border border-white/[0.06] flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/30 transition">
             <FontAwesomeIcon icon={faPalette} className="text-sm" />
           </button>
         </div>
@@ -902,7 +902,7 @@ function ChatRoom({ room, dbUserId, onBack, onOpenWallpaper }) {
           <div className="text-center py-10 text-violet-400"><FontAwesomeIcon icon={faSpinner} spin /></div>
         ) : error ? (
           <div className="text-center py-10">
-            <div className="bg-white/5 border border-white/10 rounded-2xl px-6 py-4 inline-block">
+            <div className="bg-white/5 border border-ink/10 rounded-2xl px-6 py-4 inline-block">
               <p className="text-pink-400 text-sm">{error}</p>
             </div>
           </div>
@@ -911,15 +911,15 @@ function ChatRoom({ room, dbUserId, onBack, onOpenWallpaper }) {
             <div className="w-16 h-16 bg-violet-500/10 border border-violet-500/20 rounded-full flex items-center justify-center">
               <FontAwesomeIcon icon={faComments} className="text-violet-400 text-2xl" />
             </div>
-            <p className="text-white/40 text-sm">No messages yet</p>
-            <p className="text-white/20 text-xs">Say hello to {roomName}!</p>
+            <p className="text-ink/40 text-sm">No messages yet</p>
+            <p className="text-ink/20 text-xs">Say hello to {roomName}!</p>
           </div>
         ) : (
           groupedMessages.map((item, i) =>
             item.type === "date" ? (
               <div key={`date-${i}`} className="flex items-center gap-3 my-2">
                 <div className="flex-1 h-px bg-white/5" />
-                <span className="text-xs text-white/20 px-2">{item.label}</span>
+                <span className="text-xs text-ink/20 px-2">{item.label}</span>
                 <div className="flex-1 h-px bg-white/5" />
               </div>
             ) : (
@@ -954,25 +954,25 @@ function ChatRoom({ room, dbUserId, onBack, onOpenWallpaper }) {
             <FontAwesomeIcon icon={faReply} className="text-violet-400 text-xs" />
             <div>
               <p className="text-xs text-violet-400 font-medium">{replyTo.sender?.displayName}</p>
-              <p className="text-xs text-white/30 truncate max-w-[200px]">
+              <p className="text-xs text-ink/30 truncate max-w-[200px]">
                 {replyTo.text ? decryptMessage(replyTo.text) : "Media"}
               </p>
             </div>
           </div>
-          <button onClick={() => setReplyTo(null)} className="text-white/30 hover:text-white/60">
+          <button onClick={() => setReplyTo(null)} className="text-ink/30 hover:text-ink/60">
             <FontAwesomeIcon icon={faTimes} className="text-xs" />
           </button>
         </div>
       )}
 
       {/* Input */}
-      <div className="bg-[#0d0d14] border-t border-white/5 px-3 py-3 flex items-end gap-2 shrink-0">
+      <div className="bg-bg-elevated border-t border-ink/5 px-3 py-3 flex items-end gap-2 shrink-0">
         <div className="flex gap-1">
-          <label className="w-9 h-9 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-white/40 hover:text-violet-400 hover:border-violet-500/40 transition cursor-pointer">
+          <label className="w-9 h-9 bg-white/5 border border-ink/10 rounded-full flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/40 transition cursor-pointer">
             <FontAwesomeIcon icon={faImage} />
             <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
           </label>
-          <label className="w-9 h-9 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-white/40 hover:text-violet-400 hover:border-violet-500/40 transition cursor-pointer">
+          <label className="w-9 h-9 bg-white/5 border border-ink/10 rounded-full flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/40 transition cursor-pointer">
             <FontAwesomeIcon icon={faFile} />
             <input type="file" className="hidden" onChange={handleFileUpload} />
           </label>
@@ -982,7 +982,7 @@ function ChatRoom({ room, dbUserId, onBack, onOpenWallpaper }) {
           onChange={handleTyping}
           onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendMessage()}
           placeholder="Type a message..."
-          className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/40 transition"
+          className="flex-1 bg-white/5 border border-ink/10 rounded-2xl px-4 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/40 transition"
         />
         {uploading ? (
           <div className="w-10 h-10 flex items-center justify-center text-violet-400">
@@ -1048,18 +1048,18 @@ function StatusCreator({ onClose, onPosted }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end justify-center" onClick={onClose}>
-      <div className="bg-[#0d0d14] border border-white/10 w-full max-w-lg rounded-t-3xl overflow-hidden" onClick={e => e.stopPropagation()}>
+      <div className="bg-bg-elevated border border-ink/10 w-full max-w-lg rounded-t-3xl overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="relative w-full h-56 flex items-center justify-center rounded-t-3xl overflow-hidden"
           style={{ backgroundColor: mode === "text" ? bgColor : "#0d0d14" }}>
           {mode === "text" && (
             <textarea value={text} onChange={e => setText(e.target.value)}
               placeholder="What's on your mind?"
-              className="bg-transparent text-white text-center text-xl font-semibold placeholder-white/40 outline-none resize-none w-full px-6 text-center"
+              className="bg-transparent text-ink text-center text-xl font-semibold placeholder-white/40 outline-none resize-none w-full px-6 text-center"
               rows={3} style={{ caretColor: "white" }} />
           )}
           {mode === "image" && mediaPreview && <img src={mediaPreview} className="h-full w-full object-cover" alt="preview" />}
           {mode === "video" && mediaPreview && <video src={mediaPreview} className="h-full w-full object-cover" autoPlay muted loop />}
-          <button onClick={onClose} className="absolute top-3 right-3 text-white/60 hover:text-white">
+          <button onClick={onClose} className="absolute top-3 right-3 text-ink/60 hover:text-ink">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
@@ -1077,7 +1077,7 @@ function StatusCreator({ onClose, onPosted }) {
                   else setMode("text");
                 }}
                 className={`flex-1 py-2 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition ${
-                  mode === m.id ? "bg-violet-500 text-white" : "bg-white/5 border border-white/10 text-white/40 hover:text-violet-400"
+                  mode === m.id ? "bg-violet-500 text-white" : "bg-white/5 border border-ink/10 text-ink/40 hover:text-violet-400"
                 }`}>
                 <FontAwesomeIcon icon={m.icon} /> {m.label}
               </button>
@@ -1085,7 +1085,7 @@ function StatusCreator({ onClose, onPosted }) {
           </div>
           {mode === "text" && (
             <div className="mb-4">
-              <p className="text-xs text-white/30 font-medium mb-2">BACKGROUND COLOR</p>
+              <p className="text-xs text-ink/30 font-medium mb-2">BACKGROUND COLOR</p>
               <div className="flex gap-2 flex-wrap">
                 {STATUS_BG_COLORS.map(color => (
                   <button key={color.id} onClick={() => setBgColor(color.value)}
@@ -1098,7 +1098,7 @@ function StatusCreator({ onClose, onPosted }) {
           {(mode === "image" || mode === "video") && (
             <input value={text} onChange={e => setText(e.target.value)}
               placeholder="Add a caption (optional)..."
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 mb-4" />
+              className="w-full bg-white/5 border border-ink/10 rounded-xl px-4 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 mb-4" />
           )}
           {error && <p className="text-pink-400 text-xs text-center mb-3">{error}</p>}
           <button onClick={handlePost}
@@ -1122,15 +1122,15 @@ function StatusViewer({ status, onClose, onView }) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={bgStyle}>
       <div className="flex items-center gap-3 px-4 py-4">
-        <button onClick={onClose} className="text-white"><FontAwesomeIcon icon={faChevronLeft} /></button>
+        <button onClick={onClose} className="text-ink"><FontAwesomeIcon icon={faChevronLeft} /></button>
         <img src={safeAvatar(status.user?.photoURL, status.user?.displayName)}
-          className="w-8 h-8 rounded-full object-cover border border-white/20" alt=""
+          className="w-8 h-8 rounded-full object-cover border border-ink/20" alt=""
           onError={(e) => avatarError(e, status.user?.displayName)} />
         <div className="flex-1">
-          <p className="text-white text-sm font-medium">{status.user?.displayName}</p>
-          <p className="text-white/40 text-xs">{new Date(status.createdAt).toLocaleTimeString()}</p>
+          <p className="text-ink text-sm font-medium">{status.user?.displayName}</p>
+          <p className="text-ink/40 text-xs">{new Date(status.createdAt).toLocaleTimeString()}</p>
         </div>
-        <p className="text-xs text-white/30">
+        <p className="text-xs text-ink/30">
           Expires {new Date(new Date(status.createdAt).getTime() + 24 * 60 * 60 * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </p>
       </div>
@@ -1139,13 +1139,13 @@ function StatusViewer({ status, onClose, onView }) {
           ? <video src={status.mediaUrl} controls autoPlay className="max-h-full max-w-full rounded-2xl" />
           : status.type === "image" && status.mediaUrl
           ? <img src={status.mediaUrl} alt="status" className="max-h-full max-w-full rounded-2xl" />
-          : <p className="text-white text-2xl font-semibold text-center">{status.text}</p>
+          : <p className="text-ink text-2xl font-semibold text-center">{status.text}</p>
         }
       </div>
       {status.text && (status.type === "image" || status.type === "video") && (
-        <p className="text-white/70 text-sm text-center px-6 pb-2">{status.text}</p>
+        <p className="text-ink/70 text-sm text-center px-6 pb-2">{status.text}</p>
       )}
-      <p className="text-white/30 text-xs text-center pb-6">{status.views?.length || 0} views</p>
+      <p className="text-ink/30 text-xs text-center pb-6">{status.views?.length || 0} views</p>
     </div>
   );
 }
@@ -1163,8 +1163,8 @@ function EmptyState({ onCreateGroup }) {
         <span className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-400 rounded-full border-2 border-[#0a0a0f]" />
       </div>
       <div>
-        <p className="text-white font-semibold text-base">Your conversations</p>
-        <p className="text-white/30 text-sm mt-1">Select a chat to start messaging or create a new group</p>
+        <p className="text-ink font-semibold text-base">Your conversations</p>
+        <p className="text-ink/30 text-sm mt-1">Select a chat to start messaging or create a new group</p>
       </div>
       <div className="flex flex-col gap-2 w-full max-w-xs">
         <button onClick={onCreateGroup}
@@ -1180,8 +1180,8 @@ function EmptyState({ onCreateGroup }) {
         ].map(f => (
           <div key={f.label} className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-3 flex flex-col items-center gap-1">
             <FontAwesomeIcon icon={f.icon} className="text-violet-400 text-sm" />
-            <p className="text-white/60 text-xs font-medium">{f.label}</p>
-            <p className="text-white/20 text-[10px]">{f.sub}</p>
+            <p className="text-ink/60 text-xs font-medium">{f.label}</p>
+            <p className="text-ink/20 text-[10px]">{f.sub}</p>
           </div>
         ))}
       </div>
@@ -1278,7 +1278,7 @@ function Chat() {
   const otherStatuses = useMemo(() => liveStatuses.filter(s => s.user?.id !== dbUser?.id), [liveStatuses, dbUser]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white flex flex-col">
+    <div className="min-h-screen bg-bg text-ink flex flex-col">
 
       {/* Ambient orbs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
@@ -1299,11 +1299,11 @@ function Chat() {
       )}
 
       {/* HEADER */}
-      <header className="fixed top-0 left-0 w-full z-40 bg-[#0a0a0f]/80 backdrop-blur-md border-b border-white/5">
+      <header className="fixed top-0 left-0 w-full z-40 bg-bg/80 backdrop-blur-md border-b border-ink/5">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between px-4 py-2.5">
             <div className="flex items-center gap-3">
-              <Link to="/home" className="text-white/40 hover:text-violet-400 transition">
+              <Link to="/home" className="text-ink/40 hover:text-violet-400 transition">
                 <FontAwesomeIcon icon={faChevronDown} className="rotate-90" />
               </Link>
               <h1 className="text-lg font-black tracking-tight">
@@ -1321,13 +1321,13 @@ function Chat() {
           </div>
 
           {/* Nav tabs */}
-          <div className="flex items-center justify-around border-t border-white/5 px-2">
+          <div className="flex items-center justify-around border-t border-ink/5 px-2">
             {TAB_LINKS.map(tab => {
               const isActive = location.pathname === tab.href;
               return (
                 <Link key={tab.href} to={tab.href}
                   className={`flex flex-col items-center py-2 px-4 border-b-2 transition text-xs gap-0.5 ${
-                    isActive ? "border-violet-500 text-violet-400" : "border-transparent text-white/30 hover:text-white/60"
+                    isActive ? "border-violet-500 text-violet-400" : "border-transparent text-ink/30 hover:text-ink/60"
                   }`}>
                   <FontAwesomeIcon icon={tab.icon} className="w-4 h-4" />
                   <span>{tab.label}</span>
@@ -1342,14 +1342,14 @@ function Chat() {
       <div className="relative z-10 flex-1 max-w-6xl w-full mx-auto flex pt-[97px]" style={{ height: "100vh" }}>
 
         {/* Sidebar */}
-        <div className={`w-full md:w-80 border-r border-white/5 bg-[#0a0a0f] flex flex-col shrink-0 ${activeRoom ? "hidden md:flex" : "flex"}`}>
+        <div className={`w-full md:w-80 border-r border-ink/5 bg-bg flex flex-col shrink-0 ${activeRoom ? "hidden md:flex" : "flex"}`}>
 
           {/* Sidebar tabs */}
-          <div className="flex border-b border-white/5 shrink-0">
+          <div className="flex border-b border-ink/5 shrink-0">
             {["chats", "status"].map(t => (
               <button key={t} onClick={() => setTab(t)}
                 className={`flex-1 py-3 text-sm font-semibold capitalize transition border-b-2 ${
-                  tab === t ? "border-violet-500 text-violet-400" : "border-transparent text-white/30 hover:text-white/60"
+                  tab === t ? "border-violet-500 text-violet-400" : "border-transparent text-ink/30 hover:text-ink/60"
                 }`}>
                 {t}
               </button>
@@ -1361,14 +1361,14 @@ function Chat() {
               {/* Search */}
               <div className="px-3 py-2 border-b border-white/[0.04] shrink-0">
                 <div className="relative">
-                  <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 text-xs" />
+                  <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/20 text-xs" />
                   <input value={userSearch} onChange={handleSearchChange}
                     placeholder="Search by name or @username..."
-                    className="w-full pl-8 pr-3 py-2 bg-white/[0.03] border border-white/[0.06] rounded-xl text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/40 transition" />
-                  {searching && <FontAwesomeIcon icon={faSpinner} spin className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 text-xs" />}
+                    className="w-full pl-8 pr-3 py-2 bg-white/[0.03] border border-white/[0.06] rounded-xl text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/40 transition" />
+                  {searching && <FontAwesomeIcon icon={faSpinner} spin className="absolute right-3 top-1/2 -translate-y-1/2 text-ink/30 text-xs" />}
                 </div>
                 {searchResults.length > 0 && (
-                  <div className="mt-2 bg-[#0d0d14] border border-white/10 rounded-xl overflow-hidden shadow-xl">
+                  <div className="mt-2 bg-bg-elevated border border-ink/10 rounded-xl overflow-hidden shadow-xl">
                     {searchResults.map(u => (
                       <button key={u.id}
                         onClick={async () => {
@@ -1383,11 +1383,11 @@ function Chat() {
                         }}
                         className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/5 transition text-left">
                         <img src={safeAvatar(u.photoURL, u.displayName)}
-                          className="w-8 h-8 rounded-full object-cover border border-white/10" alt=""
+                          className="w-8 h-8 rounded-full object-cover border border-ink/10" alt=""
                           onError={(e) => avatarError(e, u.displayName)} />
                         <div>
-                          <p className="text-sm font-medium text-white">{u.displayName}</p>
-                          {u.chatSnapUsername && <p className="text-xs text-white/30">@{u.chatSnapUsername}</p>}
+                          <p className="text-sm font-medium text-ink">{u.displayName}</p>
+                          {u.chatSnapUsername && <p className="text-xs text-ink/30">@{u.chatSnapUsername}</p>}
                         </div>
                       </button>
                     ))}
@@ -1404,8 +1404,8 @@ function Chat() {
                   <div className="w-14 h-14 bg-violet-500/10 border border-violet-500/20 rounded-2xl flex items-center justify-center mb-3">
                     <FontAwesomeIcon icon={faComments} className="text-violet-400 text-xl" />
                   </div>
-                  <p className="text-white/50 font-medium text-sm">No conversations yet</p>
-                  <p className="text-white/20 text-xs mt-1">Start by searching for someone or creating a group</p>
+                  <p className="text-ink/50 font-medium text-sm">No conversations yet</p>
+                  <p className="text-ink/20 text-xs mt-1">Start by searching for someone or creating a group</p>
                   <button onClick={() => setShowCreateGroup(true)}
                     className="mt-4 flex items-center gap-1.5 px-4 py-2 bg-violet-500 text-white rounded-full text-xs font-medium hover:bg-violet-400 transition">
                     <FontAwesomeIcon icon={faUserGroup} /> Create a Group
@@ -1426,20 +1426,20 @@ function Chat() {
             <div className="flex-1 overflow-y-auto">
               {/* My status */}
               <div className="px-4 py-4 border-b border-white/[0.04]">
-                <p className="text-xs text-white/30 font-semibold tracking-widest mb-3">MY STATUS</p>
+                <p className="text-xs text-ink/30 font-semibold tracking-widest mb-3">MY STATUS</p>
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     <img src={safeAvatar(user?.photoURL, user?.displayName)}
-                      className="w-12 h-12 rounded-full object-cover border border-white/10" alt=""
+                      className="w-12 h-12 rounded-full object-cover border border-ink/10" alt=""
                       onError={(e) => avatarError(e, user?.displayName)} />
                     <button onClick={() => setShowStatusCreate(true)}
-                      className="absolute -bottom-1 -right-1 w-5 h-5 bg-violet-500 rounded-full flex items-center justify-center text-white border-2 border-[#0a0a0f]">
+                      className="absolute -bottom-1 -right-1 w-5 h-5 bg-violet-500 rounded-full flex items-center justify-center text-ink border-2 border-[#0a0a0f]">
                       <FontAwesomeIcon icon={faPlus} className="text-xs" />
                     </button>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-white">My Status</p>
-                    <p className="text-xs text-white/30">
+                    <p className="text-sm font-medium text-ink">My Status</p>
+                    <p className="text-xs text-ink/30">
                       {myStatuses.length > 0
                         ? `${myStatuses.length} update${myStatuses.length > 1 ? "s" : ""} · expires in 24h`
                         : "Tap + to add status"}
@@ -1451,7 +1451,7 @@ function Chat() {
               {/* Others' statuses */}
               {otherStatuses.length > 0 && (
                 <div className="px-4 py-4">
-                  <p className="text-xs text-white/30 font-semibold tracking-widest mb-3">RECENT UPDATES</p>
+                  <p className="text-xs text-ink/30 font-semibold tracking-widest mb-3">RECENT UPDATES</p>
                   <div className="flex gap-4 overflow-x-auto pb-2">
                     {otherStatuses.map(status => (
                       <StatusCircle key={status.id} status={status} isOwn={false} onClick={() => setViewingStatus(status)} />
@@ -1462,8 +1462,8 @@ function Chat() {
 
               {otherStatuses.length === 0 && (
                 <div className="text-center py-10">
-                  <FontAwesomeIcon icon={faCircle} className="text-3xl text-white/5 mb-2" />
-                  <p className="text-white/20 text-sm">No status updates yet</p>
+                  <FontAwesomeIcon icon={faCircle} className="text-3xl text-ink/5 mb-2" />
+                  <p className="text-ink/20 text-sm">No status updates yet</p>
                 </div>
               )}
             </div>
@@ -1496,17 +1496,17 @@ function Chat() {
       )}
       {showWallpaperPicker && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end justify-center" onClick={() => setShowWallpaperPicker(false)}>
-          <div className="bg-[#0d0d14] border border-white/10 w-full max-w-lg rounded-t-3xl p-6 pb-10" onClick={e => e.stopPropagation()}>
+          <div className="bg-bg-elevated border border-ink/10 w-full max-w-lg rounded-t-3xl p-6 pb-10" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-bold text-white">
+              <h2 className="text-base font-bold text-ink">
                 <FontAwesomeIcon icon={faPalette} className="mr-2 text-violet-400" />
                 Chat Wallpaper
               </h2>
-              <button onClick={() => setShowWallpaperPicker(false)} className="text-white/30 hover:text-white transition">
+              <button onClick={() => setShowWallpaperPicker(false)} className="text-ink/30 hover:text-ink transition">
                 <FontAwesomeIcon icon={faXmark} />
               </button>
             </div>
-            <p className="text-xs text-white/30 font-semibold tracking-widest mb-3">PRESETS</p>
+            <p className="text-xs text-ink/30 font-semibold tracking-widest mb-3">PRESETS</p>
             <div className="grid grid-cols-4 gap-3 mb-5">
               {[
                 { id: "default",  label: "Default",  bg: "#0a0a0f" },
@@ -1520,10 +1520,10 @@ function Chat() {
               ].map(preset => (
                 <button key={preset.id} onClick={() => handleWallpaperSelect({ id: preset.id, bg: preset.bg, type: "color" })}
                   className={`h-14 rounded-2xl border-2 transition flex items-end justify-center pb-1.5 ${
-                    wallpaper?.id === preset.id ? "border-violet-400 scale-105" : "border-white/10"
+                    wallpaper?.id === preset.id ? "border-violet-400 scale-105" : "border-ink/10"
                   }`}
                   style={{ background: preset.bg }}>
-                  <span className="text-xs text-white/50">{preset.label}</span>
+                  <span className="text-xs text-ink/50">{preset.label}</span>
                 </button>
               ))}
             </div>

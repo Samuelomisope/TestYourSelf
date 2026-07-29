@@ -35,18 +35,18 @@ function EpisodeReader() {
     : null;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="min-h-screen bg-bg text-ink">
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
         <div className="absolute bottom-0 right-0 w-72 h-72 bg-emerald-500 rounded-full opacity-[0.06] blur-[100px]" />
       </div>
 
-      <header className="fixed top-0 left-0 w-full z-40 bg-[#0a0a0f]/80 backdrop-blur-md border-b border-white/5">
+      <header className="fixed top-0 left-0 w-full z-40 bg-bg/80 backdrop-blur-md border-b border-ink/5">
         <div className="max-w-2xl mx-auto flex items-center gap-3 px-4 py-3">
-          <Link to={episode ? `/novels/${episode.novel.id}` : "/novels"} className="text-white/40 hover:text-violet-400 transition">
+          <Link to={episode ? `/novels/${episode.novel.id}` : "/novels"} className="text-ink/40 hover:text-violet-400 transition">
             <FontAwesomeIcon icon={faChevronDown} className="rotate-90" />
           </Link>
-          <h1 className="text-sm font-semibold text-white/60 truncate">
+          <h1 className="text-sm font-semibold text-ink/60 truncate">
             {episode?.novel?.title}
           </h1>
         </div>
@@ -64,8 +64,8 @@ function EpisodeReader() {
 
         {!loading && error && (
           <div className="text-center py-20">
-            <p className="text-5xl mb-4 text-white/10"><FontAwesomeIcon icon={faBookOpen} /></p>
-            <p className="text-white/40 font-medium">Couldn't load this episode</p>
+            <p className="text-5xl mb-4 text-ink/10"><FontAwesomeIcon icon={faBookOpen} /></p>
+            <p className="text-ink/40 font-medium">Couldn't load this episode</p>
             <Link to="/novels" className="mt-4 inline-block px-6 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm transition">
               Back to Browse
             </Link>
@@ -77,9 +77,9 @@ function EpisodeReader() {
             <p className="text-xs text-violet-400 uppercase tracking-wide font-semibold mb-1">
               Episode {episode.episodeNumber}
             </p>
-            <h2 className="text-2xl font-bold text-white mb-6">{episode.title}</h2>
+            <h2 className="text-2xl font-bold text-ink mb-6">{episode.title}</h2>
 
-            <div className="text-white/70 text-[15px] leading-loose whitespace-pre-wrap">
+            <div className="text-ink/70 text-[15px] leading-loose whitespace-pre-wrap">
               {episode.content}
             </div>
           </>
@@ -87,12 +87,12 @@ function EpisodeReader() {
       </main>
 
       {!loading && episode && (
-        <div className="fixed bottom-0 left-0 w-full bg-[#0a0a0f]/90 backdrop-blur-md border-t border-white/5 z-40">
+        <div className="fixed bottom-0 left-0 w-full bg-bg/90 backdrop-blur-md border-t border-ink/5 z-40">
           <div className="max-w-2xl mx-auto flex items-center justify-between px-4 py-3 gap-3">
             <button
               onClick={() => prevEpisode && navigate(`/episodes/${prevEpisode.id}`)}
               disabled={!prevEpisode}
-              className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 disabled:opacity-30 hover:border-violet-500/40 text-white/70 hover:text-violet-400 rounded-xl text-sm transition"
+              className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-ink/10 disabled:opacity-30 hover:border-violet-500/40 text-ink/70 hover:text-violet-400 rounded-xl text-sm transition"
             >
               <FontAwesomeIcon icon={faChevronLeft} />
               Prev

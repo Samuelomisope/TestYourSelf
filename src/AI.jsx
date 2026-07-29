@@ -173,10 +173,10 @@ function CameraModal({ onCapture, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-[#0d0d14] border border-white/10 rounded-3xl overflow-hidden w-full max-w-md">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-white/5">
-          <span className="text-sm font-semibold text-white">Take a Snap</span>
-          <button onClick={onClose} className="text-white/40 hover:text-white transition">
+      <div className="bg-bg-elevated border border-ink/10 rounded-3xl overflow-hidden w-full max-w-md">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-ink/5">
+          <span className="text-sm font-semibold text-ink">Take a Snap</span>
+          <button onClick={onClose} className="text-ink/40 hover:text-ink transition">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
@@ -193,14 +193,14 @@ function CameraModal({ onCapture, onClose }) {
         <div className="flex gap-3 px-5 py-4">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-2xl border border-white/10 text-white/50 text-sm hover:border-white/20 transition"
+            className="flex-1 py-2.5 rounded-2xl border border-ink/10 text-ink/50 text-sm hover:border-ink/20 transition"
           >
             Cancel
           </button>
           <button
             onClick={capture}
             disabled={!streaming}
-            className="flex-1 py-2.5 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white rounded-2xl text-sm font-bold transition flex items-center justify-center gap-2"
+            className="flex-1 py-2.5 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-2xl text-sm font-bold transition flex items-center justify-center gap-2"
           >
             <FontAwesomeIcon icon={faCamera} />
             Capture
@@ -346,7 +346,7 @@ function QuizTab() {
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition border ${
                 mode === m.id
                   ? "bg-violet-600 text-white border-violet-500"
-                  : "bg-white/5 text-white/50 border-white/10 hover:border-violet-500/40 hover:text-white/80"
+                  : "bg-white/5 text-ink/50 border-ink/10 hover:border-violet-500/40 hover:text-ink/80"
               }`}
             >
               {m.label}
@@ -366,7 +366,7 @@ function QuizTab() {
             placeholder="e.g. The mitochondria is the powerhouse of the cell…"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
+            className="w-full bg-black/40 border border-ink/10 rounded-2xl px-4 py-3 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
           />
         </div>
       )}
@@ -378,7 +378,7 @@ function QuizTab() {
           <span className="truncate">{file.name}</span>
           <button
             onClick={() => { setFile(null); setMode("text"); }}
-            className="ml-auto text-white/30 hover:text-white transition"
+            className="ml-auto text-ink/30 hover:text-ink transition"
           >
             <FontAwesomeIcon icon={faXmark} />
           </button>
@@ -394,7 +394,7 @@ function QuizTab() {
           {materialsLoading ? (
             <Spinner label="Loading materials…" />
           ) : materials.length === 0 ? (
-            <p className="text-sm text-white/30">No PDF materials found in your library.</p>
+            <p className="text-sm text-ink/30">No PDF materials found in your library.</p>
           ) : (
             <select
               value={selectedMaterial?.id || ""}
@@ -402,7 +402,7 @@ function QuizTab() {
                 const mat = materials.find((m) => m.id === e.target.value);
                 setSelectedMaterial(mat || null);
               }}
-              className="w-full bg-black/40 border border-white/10 rounded-2xl px-3 py-2.5 text-sm text-white/70 outline-none focus:border-violet-500/60 transition"
+              className="w-full bg-black/40 border border-ink/10 rounded-2xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
             >
               <option value="">Select a material…</option>
               {materials.map((m) => (
@@ -420,7 +420,7 @@ function QuizTab() {
         <select
           value={count}
           onChange={(e) => setCount(e.target.value)}
-          className="flex-1 bg-black/40 border border-white/10 rounded-2xl px-3 py-2.5 text-sm text-white/70 outline-none focus:border-violet-500/60 transition"
+          className="flex-1 bg-black/40 border border-ink/10 rounded-2xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
         >
           <option value="3">3 questions</option>
           <option value="5">5 questions</option>
@@ -429,7 +429,7 @@ function QuizTab() {
         <select
           value={difficulty}
           onChange={(e) => setDifficulty(e.target.value)}
-          className="flex-1 bg-black/40 border border-white/10 rounded-2xl px-3 py-2.5 text-sm text-white/70 outline-none focus:border-violet-500/60 transition"
+          className="flex-1 bg-black/40 border border-ink/10 rounded-2xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
         >
           <option>Easy</option>
           <option>Medium</option>
@@ -438,7 +438,7 @@ function QuizTab() {
         <button
           onClick={generate}
           disabled={loading}
-          className="px-5 py-2.5 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white rounded-2xl text-sm font-bold transition whitespace-nowrap"
+          className="px-5 py-2.5 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-2xl text-sm font-bold transition whitespace-nowrap"
         >
           Generate
         </button>
@@ -455,7 +455,7 @@ function QuizTab() {
       {/* Questions */}
       {questions.map((q, qi) => (
         <div key={qi} className="bg-violet-500/10 border border-violet-500/20 rounded-2xl p-4">
-          <p className="text-sm font-semibold text-white mb-3">
+          <p className="text-sm font-semibold text-ink mb-3">
             {qi + 1}. {q.question}
           </p>
           <div className="space-y-2">
@@ -473,7 +473,7 @@ function QuizTab() {
                       ? "border-emerald-400 bg-emerald-400/10 text-emerald-400"
                       : chosen && !correct
                       ? "border-pink-400 bg-pink-400/10 text-pink-400"
-                      : "border-white/10 text-white/60 hover:border-violet-400/50 hover:text-violet-300 bg-black/20"
+                      : "border-ink/10 text-ink/60 hover:border-violet-400/50 hover:text-violet-300 bg-black/20"
                     }`}
                 >
                   {opt}
@@ -491,9 +491,9 @@ function QuizTab() {
       ))}
 
       {allDone && (
-        <div className="rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 text-white text-center py-5 font-bold text-lg shadow-lg shadow-violet-500/20">
+        <div className="rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 text-ink text-center py-5 font-bold text-lg shadow-lg shadow-violet-500/20">
           Score: {score} / {questions.length}
-          <p className="text-sm font-normal mt-1 text-white/80">
+          <p className="text-sm font-normal mt-1 text-ink/80">
             {score === questions.length
               ? "Perfect! You nailed it!"
               : score >= questions.length / 2
@@ -680,7 +680,7 @@ function AskTab({ preloadedFile }) {
 
       {/* TTS toggle */}
       <div className="flex items-center justify-end gap-2">
-        <span className="text-xs text-white/30">Voice replies</span>
+        <span className="text-xs text-ink/30">Voice replies</span>
         <button
           onClick={() => {
             setTtsEnabled((v) => !v);
@@ -689,7 +689,7 @@ function AskTab({ preloadedFile }) {
           className={`text-xs px-3 py-1 rounded-full border transition font-medium ${
             ttsEnabled
               ? "border-violet-500/50 text-violet-400 bg-violet-500/10"
-              : "border-white/10 text-white/30"
+              : "border-ink/10 text-ink/30"
           }`}
         >
           <FontAwesomeIcon icon={ttsEnabled ? faVolumeHigh : faVolumeMute} className="mr-1.5" />
@@ -702,7 +702,7 @@ function AskTab({ preloadedFile }) {
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             {m.role === "ai" && (
-              <div className="w-7 h-7 rounded-full bg-violet-500 flex items-center justify-center text-xs font-bold text-white mr-2 mt-1 shrink-0">
+              <div className="w-7 h-7 rounded-full bg-violet-500 flex items-center justify-center text-xs font-bold text-ink mr-2 mt-1 shrink-0">
                 <FontAwesomeIcon icon={faRobot} className="text-[10px]" />
               </div>
             )}
@@ -712,7 +712,7 @@ function AskTab({ preloadedFile }) {
                 <div
                   className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                     m.role === "ai"
-                      ? "bg-white/5 border border-white/10 text-white/85 rounded-tl-sm"
+                      ? "bg-white/5 border border-ink/10 text-ink/85 rounded-tl-sm"
                       : "bg-violet-500 text-white rounded-tr-sm"
                   }`}
                 >
@@ -723,7 +723,7 @@ function AskTab({ preloadedFile }) {
                 <div className="flex items-center gap-2 px-1">
                   <button
                     onClick={() => copyMessage(m.text, i)}
-                    className="text-white/20 hover:text-violet-400 transition text-xs"
+                    className="text-ink/20 hover:text-violet-400 transition text-xs"
                     title="Copy"
                   >
                     <FontAwesomeIcon icon={copiedIndex === i ? faCheck : faCopy} />
@@ -731,7 +731,7 @@ function AskTab({ preloadedFile }) {
                   <button
                     onClick={() => toggleSpeak(m.text, i)}
                     className={`transition text-xs ${
-                      speakingIndex === i ? "text-violet-400" : "text-white/20 hover:text-violet-400"
+                      speakingIndex === i ? "text-violet-400" : "text-ink/20 hover:text-violet-400"
                     }`}
                     title={speakingIndex === i ? "Stop" : "Read aloud"}
                   >
@@ -744,10 +744,10 @@ function AskTab({ preloadedFile }) {
         ))}
         {loading && (
           <div className="flex justify-start items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-violet-500 flex items-center justify-center text-xs font-bold text-white shrink-0">
+            <div className="w-7 h-7 rounded-full bg-violet-500 flex items-center justify-center text-xs font-bold text-ink shrink-0">
               <FontAwesomeIcon icon={faRobot} className="text-[10px]" />
             </div>
-            <div className="bg-white/5 border border-white/10 px-4 py-3 rounded-2xl rounded-tl-sm flex gap-1">
+            <div className="bg-white/5 border border-ink/10 px-4 py-3 rounded-2xl rounded-tl-sm flex gap-1">
               {[0, 1, 2].map((i) => (
                 <span
                   key={i}
@@ -769,18 +769,18 @@ function AskTab({ preloadedFile }) {
       )}
 
       {/* Input bar */}
-      <div className="flex flex-col gap-2 pt-2 border-t border-white/5">
+      <div className="flex flex-col gap-2 pt-2 border-t border-ink/5">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowCamera(true)}
-            className="w-9 h-9 rounded-xl border border-white/10 text-white/40 hover:text-violet-400 hover:border-violet-500/40 flex items-center justify-center transition shrink-0"
+            className="w-9 h-9 rounded-xl border border-ink/10 text-ink/40 hover:text-violet-400 hover:border-violet-500/40 flex items-center justify-center transition shrink-0"
             title="Take a snap"
           >
             <FontAwesomeIcon icon={faCamera} />
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="w-9 h-9 rounded-xl border border-white/10 text-white/40 hover:text-violet-400 hover:border-violet-500/40 flex items-center justify-center transition shrink-0"
+            className="w-9 h-9 rounded-xl border border-ink/10 text-ink/40 hover:text-violet-400 hover:border-violet-500/40 flex items-center justify-center transition shrink-0"
             title="Attach file"
           >
             <FontAwesomeIcon icon={faPaperclip} />
@@ -799,14 +799,14 @@ function AskTab({ preloadedFile }) {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && send()}
             disabled={loading}
-            className="flex-1 bg-black/40 border border-white/10 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+            className="flex-1 bg-black/40 border border-ink/10 rounded-2xl px-4 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
           />
           <button
             onClick={toggleRecording}
             className={`w-9 h-9 rounded-xl border flex items-center justify-center transition shrink-0 ${
               recording
                 ? "border-pink-500/60 text-pink-400 bg-pink-500/10 animate-pulse"
-                : "border-white/10 text-white/40 hover:text-violet-400 hover:border-violet-500/40"
+                : "border-ink/10 text-ink/40 hover:text-violet-400 hover:border-violet-500/40"
             }`}
             title={recording ? "Stop recording" : "Voice input"}
           >
@@ -815,12 +815,12 @@ function AskTab({ preloadedFile }) {
           <button
             onClick={send}
             disabled={loading || (!input.trim() && !attachedFile)}
-            className="w-9 h-9 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white rounded-xl flex items-center justify-center transition shrink-0"
+            className="w-9 h-9 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-xl flex items-center justify-center transition shrink-0"
           >
             <FontAwesomeIcon icon={faPaperPlane} />
           </button>
         </div>
-        <p className="text-xs text-white/20 text-center">
+        <p className="text-xs text-ink/20 text-center">
           Snap a photo, attach a PDF/Word/PPT, or use voice — AI will explain it all.
         </p>
       </div>
@@ -880,20 +880,20 @@ function SummarizeTab() {
           placeholder="Paste your notes or any text to summarize…"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
+          className="w-full bg-black/40 border border-ink/10 rounded-2xl px-4 py-3 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
         />
       </div>
       <div className="flex items-center gap-2">
         <button
           onClick={() => setShowCamera(true)}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 text-white/40 hover:text-violet-400 hover:border-violet-500/40 text-xs transition"
+          className="flex items-center gap-2 px-3 py-2 rounded-xl border border-ink/10 text-ink/40 hover:text-violet-400 hover:border-violet-500/40 text-xs transition"
         >
           <FontAwesomeIcon icon={faCamera} />
           Snap
         </button>
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 text-white/40 hover:text-violet-400 hover:border-violet-500/40 text-xs transition"
+          className="flex items-center gap-2 px-3 py-2 rounded-xl border border-ink/10 text-ink/40 hover:text-violet-400 hover:border-violet-500/40 text-xs transition"
         >
           <FontAwesomeIcon icon={faPaperclip} />
           Attach
@@ -911,7 +911,7 @@ function SummarizeTab() {
         <select
           value={style}
           onChange={(e) => setStyle(e.target.value)}
-          className="flex-1 bg-black/40 border border-white/10 rounded-2xl px-3 py-2.5 text-sm text-white/70 outline-none focus:border-violet-500/60 transition"
+          className="flex-1 bg-black/40 border border-ink/10 rounded-2xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
         >
           <option>Bullet points</option>
           <option>Short paragraph</option>
@@ -920,7 +920,7 @@ function SummarizeTab() {
         <button
           onClick={summarize}
           disabled={loading || (!text.trim() && !attachedFile)}
-          className="px-5 py-2.5 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white rounded-2xl text-sm font-bold transition whitespace-nowrap"
+          className="px-5 py-2.5 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-2xl text-sm font-bold transition whitespace-nowrap"
         >
           Summarize
         </button>
@@ -946,7 +946,7 @@ function SummarizeTab() {
               {copied ? "Copied!" : "Copy"}
             </button>
           </div>
-          <div className="p-4 text-sm leading-7 text-white/80 whitespace-pre-line bg-black/20">
+          <div className="p-4 text-sm leading-7 text-ink/80 whitespace-pre-line bg-black/20">
             {summary}
           </div>
         </div>
@@ -969,13 +969,13 @@ function HistoryPanel({ onClose, onSelectChat }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-[#0d0d14] border border-white/10 rounded-3xl w-full max-w-md max-h-[70vh] flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 shrink-0">
-          <div className="flex items-center gap-2 text-white font-semibold text-sm">
+      <div className="bg-bg-elevated border border-ink/10 rounded-3xl w-full max-w-md max-h-[70vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-ink/5 shrink-0">
+          <div className="flex items-center gap-2 text-ink font-semibold text-sm">
             <FontAwesomeIcon icon={faClockRotateLeft} className="text-violet-400" />
             Previous Chats
           </div>
-          <button onClick={onClose} className="text-white/40 hover:text-white transition">
+          <button onClick={onClose} className="text-ink/40 hover:text-ink transition">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
@@ -986,18 +986,18 @@ function HistoryPanel({ onClose, onSelectChat }) {
               Loading…
             </div>
           ) : history.length === 0 ? (
-            <p className="text-center text-white/30 text-sm py-10">No previous AI chats found.</p>
+            <p className="text-center text-ink/30 text-sm py-10">No previous AI chats found.</p>
           ) : (
             history.map((item) => (
               <button
                 key={item.id}
                 onClick={() => { onSelectChat(item); onClose(); }}
-                className="w-full text-left px-4 py-3 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-violet-500/30 hover:bg-violet-500/5 transition group"
+                className="w-full text-left px-4 py-3 rounded-2xl bg-white/[0.03] border border-ink/5 hover:border-violet-500/30 hover:bg-violet-500/5 transition group"
               >
-                <p className="text-sm text-white/80 group-hover:text-white transition truncate">
+                <p className="text-sm text-ink/80 group-hover:text-ink transition truncate">
                   {item.description || "AI conversation"}
                 </p>
-                <p className="text-xs text-white/30 mt-1">{timeAgo(item.createdAt)}</p>
+                <p className="text-xs text-ink/30 mt-1">{timeAgo(item.createdAt)}</p>
               </button>
             ))
           )}
@@ -1026,7 +1026,7 @@ function AI() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="min-h-screen bg-bg text-ink">
       {showHistory && (
         <HistoryPanel
           onClose={() => setShowHistory(false)}
@@ -1040,11 +1040,11 @@ function AI() {
         <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-pink-500 rounded-full opacity-8 blur-[100px]" />
       </div>
 
-      <header className="fixed top-0 left-0 w-full z-40 bg-[#0a0a0f]/80 backdrop-blur-md border-b border-white/5">
+      <header className="fixed top-0 left-0 w-full z-40 bg-bg/80 backdrop-blur-md border-b border-ink/5">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between px-4 py-2.5">
             <div className="flex items-center gap-3">
-              <Link to="/home" className="text-white/40 hover:text-violet-400 transition">
+              <Link to="/home" className="text-ink/40 hover:text-violet-400 transition">
                 <FontAwesomeIcon icon={faChevronDown} className="rotate-90" />
               </Link>
               <h1 className="text-lg font-black tracking-tight">
@@ -1057,7 +1057,7 @@ function AI() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowHistory(true)}
-                className="flex items-center gap-1.5 text-xs text-white/40 hover:text-violet-400 transition border border-white/10 hover:border-violet-500/40 rounded-full px-3 py-1.5"
+                className="flex items-center gap-1.5 text-xs text-ink/40 hover:text-violet-400 transition border border-ink/10 hover:border-violet-500/40 rounded-full px-3 py-1.5"
                 title="Previous chats"
               >
                 <FontAwesomeIcon icon={faClockRotateLeft} />
@@ -1069,7 +1069,7 @@ function AI() {
               </span>
             </div>
           </div>
-          <div className="flex items-center justify-around border-t border-white/5 px-2">
+          <div className="flex items-center justify-around border-t border-ink/5 px-2">
             {TAB_LINKS.map((tab) => {
               const isActive = location.pathname === tab.href;
               return (
@@ -1079,7 +1079,7 @@ function AI() {
                   className={`flex flex-col items-center py-2 px-4 border-b-2 transition text-xs gap-0.5
                     ${isActive
                       ? "border-violet-500 text-violet-400"
-                      : "border-transparent text-white/30 hover:text-white/60"
+                      : "border-transparent text-ink/30 hover:text-ink/60"
                     }`}
                 >
                   <FontAwesomeIcon icon={tab.icon} className="w-4 h-4" />
@@ -1100,12 +1100,12 @@ function AI() {
           <h2 className="text-3xl font-black tracking-tight mb-2">
             Your <span className="text-violet-400">AI Study</span> Companion
           </h2>
-          <p className="text-white/40 text-sm">
+          <p className="text-ink/40 text-sm">
             Generate quizzes, get instant answers, and summarize any material in seconds.
           </p>
         </div>
 
-        <div className="flex gap-1.5 bg-white/5 border border-white/10 rounded-2xl p-1.5 mb-6">
+        <div className="flex gap-1.5 bg-white/5 border border-ink/10 rounded-2xl p-1.5 mb-6">
           {TABS.map((tab) => (
             <button
               key={tab.id}
@@ -1113,7 +1113,7 @@ function AI() {
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition
                 ${activeTab === tab.id
                   ? "bg-violet-500 text-white shadow-lg shadow-violet-500/25"
-                  : "text-white/40 hover:text-white/70"
+                  : "text-ink/40 hover:text-ink/70"
                 }`}
             >
               <span>{tab.label}</span>
@@ -1121,7 +1121,7 @@ function AI() {
           ))}
         </div>
 
-        <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-6 backdrop-blur-sm">
+        <div className="bg-white/[0.03] border border-ink/10 rounded-3xl p-6 backdrop-blur-sm">
           {activeTab === "quiz" && <QuizTab />}
          {activeTab === "ask" && <AskTab preloadedFile={preloadedFile} />}
           {activeTab === "summarize" && <SummarizeTab />}

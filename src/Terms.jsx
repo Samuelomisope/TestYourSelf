@@ -9,14 +9,14 @@ const APP_URL = "https://testyourself-nu.vercel.app";
 
 const Section = ({ title, children }) => (
   <section className="mb-10">
-    <h2 className="text-lg font-bold text-white mb-3 pb-2 border-b border-white/5">{title}</h2>
-    <div className="text-white/50 text-sm leading-relaxed space-y-3">{children}</div>
+    <h2 className="text-lg font-bold text-ink mb-3 pb-2 border-b border-ink/5">{title}</h2>
+    <div className="text-ink/50 text-sm leading-relaxed space-y-3">{children}</div>
   </section>
 );
 
 function Terms() {
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="min-h-screen bg-bg text-ink">
 
       {/* Ambient orbs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
@@ -25,9 +25,9 @@ function Terms() {
       </div>
 
       {/* Header */}
-      <header className="fixed top-0 left-0 w-full z-40 bg-[#0a0a0f]/80 backdrop-blur-md border-b border-white/5">
+      <header className="fixed top-0 left-0 w-full z-40 bg-bg/80 backdrop-blur-md border-b border-ink/5">
         <div className="max-w-3xl mx-auto flex items-center gap-3 px-4 py-3">
-          <Link to="/home" className="text-white/40 hover:text-violet-400 transition">
+          <Link to="/home" className="text-ink/40 hover:text-violet-400 transition">
             <FontAwesomeIcon icon={faChevronDown} className="rotate-90" />
           </Link>
           <h1 className="text-lg font-black tracking-tight">
@@ -41,8 +41,8 @@ function Terms() {
 
         {/* Hero */}
         <div className="mb-10 mt-4">
-          <h1 className="text-3xl font-black text-white mb-2">Terms of Service</h1>
-          <p className="text-white/30 text-sm">Last updated: {LAST_UPDATED}</p>
+          <h1 className="text-3xl font-black text-ink mb-2">Terms of Service</h1>
+          <p className="text-ink/30 text-sm">Last updated: {LAST_UPDATED}</p>
         </div>
 
         <div className="bg-violet-500/5 border border-violet-500/20 rounded-2xl px-5 py-4 mb-10 text-sm text-violet-300">

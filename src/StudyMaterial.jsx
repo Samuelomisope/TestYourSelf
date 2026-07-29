@@ -96,24 +96,24 @@ function Calculator({ onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#0d0d14] border border-white/10 rounded-3xl w-80 shadow-2xl overflow-hidden">
+      <div className="bg-bg-elevated border border-ink/10 rounded-3xl w-80 shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-5 pt-4 pb-2">
-          <span className="text-white font-semibold text-sm">Scientific Calculator</span>
-          <button onClick={onClose} className="text-white/30 hover:text-white transition"><FontAwesomeIcon icon={faXmark} /></button>
+          <span className="text-ink font-semibold text-sm">Scientific Calculator</span>
+          <button onClick={onClose} className="text-ink/30 hover:text-ink transition"><FontAwesomeIcon icon={faXmark} /></button>
         </div>
         <div className="px-5 pb-2 text-right">
-          <p className="text-white/30 text-xs h-4">{equation}</p>
-          <p className="text-white text-4xl font-light truncate">{display}</p>
+          <p className="text-ink/30 text-xs h-4">{equation}</p>
+          <p className="text-ink text-4xl font-light truncate">{display}</p>
         </div>
         <div className="grid grid-cols-4 gap-1 p-3">
           {buttons.flat().map((btn, i) => (
             <button key={i} onClick={() => handleButton(btn)}
               className={`rounded-2xl py-3 text-sm font-medium transition active:scale-95 ${
                 btn === "=" ? "bg-violet-500 text-white" :
-                btn === "0" ? "bg-white/5 text-white col-span-4 text-left pl-6" :
+                btn === "0" ? "bg-white/5 text-ink col-span-4 text-left pl-6" :
                 isOperator(btn) ? "bg-violet-500/30 text-violet-300" :
-                ["sin","cos","tan","√","π","^","log","ln","(",")"].includes(btn) ? "bg-white/5 text-white/60 text-xs" :
-                "bg-white/5 text-white"
+                ["sin","cos","tan","√","π","^","log","ln","(",")"].includes(btn) ? "bg-white/5 text-ink/60 text-xs" :
+                "bg-white/5 text-ink"
               }`}>{btn}</button>
           ))}
         </div>
@@ -174,10 +174,6 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
     description: file.description || "",
   });
 
-  // Resolve the URL to actually use for viewing/opening/downloading.
-  // Prefer the live signed URL when online; fall back to the cached blob
-  // when offline or when this entry has no signed URL (i.e. it came from
-  // the offline-only file list rather than a fresh API fetch).
   const [resolvedUrl, setResolvedUrl] = useState(file.signedUrl || null);
   const [resolvingUrl, setResolvingUrl] = useState(!file.signedUrl);
 
@@ -201,8 +197,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
         createdBlobUrl = blobUrl;
         setResolvedUrl(blobUrl);
       } else if (file.signedUrl) {
-        // Offline but not actually cached — try the signed URL anyway, it'll
-        // just fail to load, which is expected.
+    
         setResolvedUrl(file.signedUrl);
       }
       setResolvingUrl(false);
@@ -257,18 +252,18 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="bg-[#0d0d14] border border-white/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
+      <div className="bg-bg-elevated border border-ink/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-          <h2 className="font-bold text-white truncate pr-4">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-ink/5">
+          <h2 className="font-bold text-ink truncate pr-4">
             {editMode ? "Edit File Info" : file.title}
           </h2>
           <div className="flex items-center gap-2 shrink-0">
             {isOwner && !editMode && (
               <button
                 onClick={() => setEditMode(true)}
-                className="px-3 py-1.5 text-xs font-medium bg-white/5 border border-white/10 text-white/50 hover:text-violet-400 hover:border-violet-500/40 rounded-xl transition"
+                className="px-3 py-1.5 text-xs font-medium bg-white/5 border border-ink/10 text-ink/50 hover:text-violet-400 hover:border-violet-500/40 rounded-xl transition"
               >
                 Edit
               </button>
@@ -276,12 +271,12 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
             {editMode && (
               <button
                 onClick={() => { setEditMode(false); setSaveError(""); }}
-                className="px-3 py-1.5 text-xs font-medium bg-white/5 border border-white/10 text-white/50 hover:text-white/80 rounded-xl transition"
+                className="px-3 py-1.5 text-xs font-medium bg-white/5 border border-ink/10 text-ink/50 hover:text-ink/80 rounded-xl transition"
               >
                 Cancel
               </button>
             )}
-            <button onClick={onClose} className="text-white/30 hover:text-white transition">
+            <button onClick={onClose} className="text-ink/30 hover:text-ink transition">
               <FontAwesomeIcon icon={faXmark} />
             </button>
           </div>
@@ -298,7 +293,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
                   {file.faculty && <span className="px-3 py-1 bg-violet-500/15 text-violet-400 border border-violet-500/20 rounded-full text-xs">{file.faculty}</span>}
                   {file.level && <span className="px-3 py-1 bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 rounded-full text-xs">{file.level}L</span>}
                   {file.semester && <span className="px-3 py-1 bg-blue-500/15 text-blue-400 border border-blue-500/20 rounded-full text-xs">{SEMESTER_LABELS[file.semester] || file.semester}</span>}
-                  {file.university?.name && <span className="px-3 py-1 bg-white/5 text-white/50 border border-white/10 rounded-full text-xs">{file.university.shortName || file.university.name}</span>}
+                  {file.university?.name && <span className="px-3 py-1 bg-white/5 text-ink/50 border border-ink/10 rounded-full text-xs">{file.university.shortName || file.university.name}</span>}
                   {downloaded && (
                     <span className="px-3 py-1 bg-sky-500/15 text-sky-400 border border-sky-500/20 rounded-full text-xs">
                       <FontAwesomeIcon icon={faCheck} className="mr-1" />Downloaded
@@ -306,9 +301,9 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
                   )}
                 </div>
               </div>
-              <div className="space-y-2 mb-5 text-sm text-white/50">
-                {file.department && <p className="text-white/40"><span className="text-white/20 mr-1">Dept:</span>{file.department}</p>}
-                {file.description && <p className="text-white/40">{file.description}</p>}
+              <div className="space-y-2 mb-5 text-sm text-ink/50">
+                {file.department && <p className="text-ink/40"><span className="text-ink/20 mr-1">Dept:</span>{file.department}</p>}
+                {file.description && <p className="text-ink/40">{file.description}</p>}
                 {file.createdAt && <p><FontAwesomeIcon icon={faFile} className="mr-1" /> Uploaded: {formatDate(file.createdAt)}</p>}
                 {file.user?.displayName && <p><FontAwesomeIcon icon={faUser} className="mr-1" /> By: {file.user?.displayName}</p>}
                 {file.isPublic != null && (
@@ -318,11 +313,11 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
               </div>
 
               {resolvingUrl && (
-                <div className="mb-4 py-8 text-center text-white/30 text-sm">Loading file…</div>
+                <div className="mb-4 py-8 text-center text-ink/30 text-sm">Loading file…</div>
               )}
 
               {!resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "pdf" && (
-                <div className="mb-4 rounded-xl overflow-hidden border border-white/10" style={{ height: 300 }}>
+                <div className="mb-4 rounded-xl overflow-hidden border border-ink/10" style={{ height: 300 }}>
                   <iframe src={resolvedUrl} className="w-full h-full" title={file.title} />
                 </div>
               )}
@@ -347,8 +342,8 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
               {downloadError && <p className="text-pink-400 text-xs mb-2">{downloadError}</p>}
 
               {downloading ? (
-                <div className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3">
-                  <div className="flex items-center justify-between text-xs text-white/40 mb-1.5">
+                <div className="w-full bg-white/5 border border-ink/10 rounded-xl px-4 py-3">
+                  <div className="flex items-center justify-between text-xs text-ink/40 mb-1.5">
                     <span>Saving for offline…</span>
                     <span>{progress}%</span>
                   </div>
@@ -384,44 +379,44 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
               {saveError && <p className="text-pink-400 text-sm">{saveError}</p>}
 
               <div>
-                <label className="text-xs text-white/30 mb-1 block">Title</label>
+                <label className="text-xs text-ink/30 mb-1 block">Title</label>
                 <input
                   type="text"
                   value={form.title}
                   onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+                  className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
                 />
               </div>
 
               <div>
-                <label className="text-xs text-white/30 mb-1 block">Course code</label>
+                <label className="text-xs text-ink/30 mb-1 block">Course code</label>
                 <input
                   type="text"
                   placeholder="e.g. CHM 101"
                   value={form.faculty}
                   onChange={e => setForm(f => ({ ...f, faculty: e.target.value }))}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+                  className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
                 />
               </div>
 
               <div>
-                <label className="text-xs text-white/30 mb-1 block">Department</label>
+                <label className="text-xs text-ink/30 mb-1 block">Department</label>
                 <input
                   type="text"
                   placeholder="e.g. MINING ENGINEERING"
                   value={form.department}
                   onChange={e => setForm(f => ({ ...f, department: e.target.value }))}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+                  className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
                 />
               </div>
 
               <div className="flex gap-2">
                 <div className="flex-1">
-                  <label className="text-xs text-white/30 mb-1 block">Level</label>
+                  <label className="text-xs text-ink/30 mb-1 block">Level</label>
                   <select
                     value={form.level}
                     onChange={e => setForm(f => ({ ...f, level: e.target.value }))}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white/70 outline-none focus:border-violet-500/60 transition"
+                    className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
                   >
                     <option value="">— Level —</option>
                     {["100","200","300","400","500"].map(l => (
@@ -430,11 +425,11 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
                   </select>
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs text-white/30 mb-1 block">Semester</label>
+                  <label className="text-xs text-ink/30 mb-1 block">Semester</label>
                   <select
                     value={form.semester}
                     onChange={e => setForm(f => ({ ...f, semester: e.target.value }))}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white/70 outline-none focus:border-violet-500/60 transition"
+                    className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
                   >
                     <option value="">— Semester —</option>
                     <option value="first">1st Semester</option>
@@ -444,20 +439,20 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
               </div>
 
               <div>
-                <label className="text-xs text-white/30 mb-1 block">Description</label>
+                <label className="text-xs text-ink/30 mb-1 block">Description</label>
                 <textarea
                   placeholder="Optional description..."
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   rows={3}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
+                  className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
                 />
               </div>
 
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="w-full py-3 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white rounded-xl text-sm font-medium transition mt-2"
+                className="w-full py-3 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-xl text-sm font-medium transition mt-2"
               >
                 {saving ? "Saving…" : "Save Changes"}
               </button>
@@ -484,8 +479,8 @@ function FileRow({ file, user, onSelect, onDelete }) {
         {FILE_ICONS[fileType]}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white truncate">{file.title}</p>
-        <p className="text-xs text-white/30">{formatDate(file.createdAt)} · {file.user?.displayName}</p>
+        <p className="text-sm font-medium text-ink truncate">{file.title}</p>
+        <p className="text-xs text-ink/30">{formatDate(file.createdAt)} · {file.user?.displayName}</p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         {isDownloaded && (
@@ -496,7 +491,7 @@ function FileRow({ file, user, onSelect, onDelete }) {
         <span className={`text-xs px-2 py-0.5 rounded-full ${
           fileType === "pdf" ? "bg-red-500/10 text-red-400" :
           fileType === "video" ? "bg-blue-500/10 text-blue-400" :
-          "bg-white/5 text-white/40"
+          "bg-white/5 text-ink/40"
         }`}>
           {fileType === "pdf" ? "PDF" : fileType === "video" ? "Video" : "Note"}
         </span>
@@ -540,11 +535,11 @@ function CourseSection({ courseName, files, user, onSelect, onDelete }) {
           icon={open ? faFolderOpen : faFolder}
           className="text-amber-400 text-sm shrink-0"
         />
-        <span className="flex-1 text-sm font-semibold text-white/80 uppercase tracking-wide">{courseName}</span>
-        <span className="text-xs text-white/30 mr-2">{files.length} {files.length === 1 ? "file" : "files"}</span>
+        <span className="flex-1 text-sm font-semibold text-ink/80 uppercase tracking-wide">{courseName}</span>
+        <span className="text-xs text-ink/30 mr-2">{files.length} {files.length === 1 ? "file" : "files"}</span>
         <FontAwesomeIcon
           icon={faChevronRight}
-          className={`text-white/20 text-xs transition-transform ${open ? "rotate-90" : ""}`}
+          className={`text-ink/20 text-xs transition-transform ${open ? "rotate-90" : ""}`}
         />
       </button>
       {open && (
@@ -572,12 +567,12 @@ function SemesterBlock({ semesterKey, courses, user, onSelect, onDelete }) {
       >
         <FontAwesomeIcon
           icon={faChevronRight}
-          className={`text-white/20 text-xs transition-transform ${open ? "rotate-90" : ""}`}
+          className={`text-ink/20 text-xs transition-transform ${open ? "rotate-90" : ""}`}
         />
         <span className="text-xs font-bold text-violet-400/80 uppercase tracking-widest">
           {SEMESTER_LABELS[semesterKey] || semesterKey}
         </span>
-        <span className="text-xs text-white/20 ml-auto">{totalFiles} files</span>
+        <span className="text-xs text-ink/20 ml-auto">{totalFiles} files</span>
       </button>
       {open && (
         <div className="flex flex-col gap-2 mt-1 mb-3">
@@ -617,11 +612,11 @@ const orderedSemesters = [
         <div className="w-8 h-8 bg-violet-500/15 rounded-xl flex items-center justify-center shrink-0">
           <span className="text-violet-400 text-xs font-black">{levelKey}L</span>
         </div>
-        <span className="flex-1 text-sm font-bold text-white">{levelKey} Level</span>
-        <span className="text-xs text-white/30 mr-2">{totalFiles} files</span>
+        <span className="flex-1 text-sm font-bold text-ink">{levelKey} Level</span>
+        <span className="text-xs text-ink/30 mr-2">{totalFiles} files</span>
         <FontAwesomeIcon
           icon={faChevronRight}
-          className={`text-white/30 text-xs transition-transform ${open ? "rotate-90" : ""}`}
+          className={`text-ink/30 text-xs transition-transform ${open ? "rotate-90" : ""}`}
         />
       </button>
       {open && (
@@ -666,12 +661,12 @@ function DepartmentBlock({ deptName, levels, user, onSelect, onDelete }) {
           <FontAwesomeIcon icon={faBookOpen} className="text-violet-400 text-sm" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-black text-white uppercase tracking-wide truncate">{deptName}</p>
-          <p className="text-xs text-white/30 mt-0.5">{orderedLevels.length} levels · {totalFiles} files</p>
+          <p className="text-sm font-black text-ink uppercase tracking-wide truncate">{deptName}</p>
+          <p className="text-xs text-ink/30 mt-0.5">{orderedLevels.length} levels · {totalFiles} files</p>
         </div>
         <FontAwesomeIcon
           icon={faChevronDown}
-          className={`text-white/30 text-sm transition-transform ${open ? "rotate-180" : ""}`}
+          className={`text-ink/30 text-sm transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
 
@@ -700,7 +695,7 @@ function FileCard({ file, user, onSelect, onDelete }) {
   const isDownloaded = downloadedIds.has(file.id);
 
   return (
-    <div onClick={() => onSelect(file)} className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 hover:border-violet-500/30 hover:bg-violet-500/5 transition cursor-pointer group relative">
+    <div onClick={() => onSelect(file)} className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4 hover:border-violet-500/30 hover:bg-violet-500/5 transition cursor-pointer group relative">
       {file.user?.displayName === user?.displayName && (
         <button
           onClick={async (e) => {
@@ -728,13 +723,13 @@ function FileCard({ file, user, onSelect, onDelete }) {
       <div className="w-12 h-12 bg-violet-500/10 rounded-xl flex items-center justify-center text-2xl text-violet-400 mb-3 group-hover:bg-violet-500/20 transition">
         {FILE_ICONS[getMimeFileType(file.fileType)]}
       </div>
-      <p className="text-sm font-semibold text-white truncate mb-1">{file.title}</p>
+      <p className="text-sm font-semibold text-ink truncate mb-1">{file.title}</p>
       <div className="flex flex-wrap gap-1 mb-2">
         {file.faculty && <span className="px-2 py-0.5 bg-violet-500/15 text-violet-400 rounded-full text-xs">{file.faculty}</span>}
         {file.level && <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-400 rounded-full text-xs">{file.level}L</span>}
-        {file.university?.shortName && <span className="px-2 py-0.5 bg-white/5 text-white/40 rounded-full text-xs">{file.university.shortName}</span>}
+        {file.university?.shortName && <span className="px-2 py-0.5 bg-white/5 text-ink/40 rounded-full text-xs">{file.university.shortName}</span>}
       </div>
-      <p className="text-xs text-white/30">{formatDate(file.createdAt)}</p>
+      <p className="text-xs text-ink/30">{formatDate(file.createdAt)}</p>
     </div>
   );
 }
@@ -869,7 +864,7 @@ function StudyMaterial() {
 
   return (
     <OfflineContext.Provider value={{ downloadedIds }}>
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="min-h-screen bg-bg text-ink">
 
       {/* Ambient orbs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
@@ -885,11 +880,11 @@ function StudyMaterial() {
       )}
 
       {/* HEADER */}
-      <header className="fixed top-0 left-0 w-full z-40 bg-[#0a0a0f]/80 backdrop-blur-md border-b border-white/5">
+      <header className="fixed top-0 left-0 w-full z-40 bg-bg/80 backdrop-blur-md border-b border-ink/5">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between px-4 py-2.5">
             <div className="flex items-center gap-3">
-              <Link to="/home" className="text-white/40 hover:text-violet-400 transition">
+              <Link to="/home" className="text-ink/40 hover:text-violet-400 transition">
                 <FontAwesomeIcon icon={faChevronDown} className="rotate-90" />
               </Link>
               <h1 className="text-lg font-black tracking-tight">
@@ -903,7 +898,7 @@ function StudyMaterial() {
                 className={`relative w-9 h-9 rounded-xl flex items-center justify-center transition border ${
                   showDownloadedOnly
                     ? "bg-sky-500/20 border-sky-500/40 text-sky-400"
-                    : "bg-white/5 border-white/10 text-white/40 hover:text-sky-400 hover:border-sky-500/40"
+                    : "bg-white/5 border-ink/10 text-ink/40 hover:text-sky-400 hover:border-sky-500/40"
                 }`}
                 title="Show downloaded files only"
               >
@@ -916,14 +911,14 @@ function StudyMaterial() {
               </button>
               <button
                 onClick={() => setShowCalculator(true)}
-                className="w-9 h-9 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-white/40 hover:text-violet-400 hover:border-violet-500/40 transition"
+                className="w-9 h-9 bg-white/5 border border-ink/10 rounded-xl flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/40 transition"
                 title="Calculator"
               >
                 <FontAwesomeIcon icon={faCalculator} />
               </button>
               <button
                 onClick={() => setViewMode(v => v === "hierarchy" ? "grid" : "hierarchy")}
-                className="w-9 h-9 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-white/40 hover:text-violet-400 hover:border-violet-500/40 transition"
+                className="w-9 h-9 bg-white/5 border border-ink/10 rounded-xl flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/40 transition"
                 title={viewMode === "hierarchy" ? "Grid view" : "Hierarchy view"}
               >
                 <FontAwesomeIcon icon={viewMode === "hierarchy" ? faGrip : faLayerGroup} />
@@ -931,7 +926,7 @@ function StudyMaterial() {
               <button
                 onClick={() => setShowUpload(true)}
                 disabled={!isOnline}
-                className="flex items-center gap-2 bg-violet-500 hover:bg-violet-400 disabled:opacity-30 disabled:cursor-not-allowed text-white px-4 py-2 rounded-full text-sm font-medium transition"
+                className="flex items-center gap-2 bg-violet-500 hover:bg-violet-400 disabled:opacity-30 disabled:cursor-not-allowed text-ink px-4 py-2 rounded-full text-sm font-medium transition"
               >
                 <FontAwesomeIcon icon={faUpload} />
                 Upload
@@ -940,13 +935,13 @@ function StudyMaterial() {
           </div>
 
           {/* Nav tabs */}
-          <div className="flex items-center justify-around border-t border-white/5 px-2">
+          <div className="flex items-center justify-around border-t border-ink/5 px-2">
             {TAB_LINKS.map((tab) => {
               const isActive = location.pathname === tab.href;
               return (
                 <Link key={tab.href} to={tab.href}
                   className={`flex flex-col items-center py-2 px-4 border-b-2 transition text-xs gap-0.5 ${
-                    isActive ? "border-violet-500 text-violet-400" : "border-transparent text-white/30 hover:text-white/60"
+                    isActive ? "border-violet-500 text-violet-400" : "border-transparent text-ink/30 hover:text-ink/60"
                   }`}>
                   <FontAwesomeIcon icon={tab.icon} className="w-4 h-4" />
                   <span>{tab.label}</span>
@@ -970,8 +965,8 @@ function StudyMaterial() {
         )}
 
         {/* Search Bar */}
-        <div className="flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-full px-4 py-2.5 mt-4 mb-4 focus-within:border-violet-500/40 transition">
-          <svg className="w-4 h-4 text-white/30 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <div className="flex items-center gap-2 bg-white/[0.03] border border-ink/10 rounded-full px-4 py-2.5 mt-4 mb-4 focus-within:border-violet-500/40 transition">
+          <svg className="w-4 h-4 text-ink/30 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" strokeLinecap="round" />
           </svg>
           <input
@@ -979,10 +974,10 @@ function StudyMaterial() {
             placeholder="Search by title, course or keyword..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 bg-transparent text-sm outline-none text-white placeholder-white/20"
+            className="flex-1 bg-transparent text-sm outline-none text-ink placeholder-white/20"
           />
           {search && (
-            <button onClick={() => setSearch("")} className="text-white/30 hover:text-white/60 transition">
+            <button onClick={() => setSearch("")} className="text-ink/30 hover:text-ink/60 transition">
               <FontAwesomeIcon icon={faXmark} className="text-xs" />
             </button>
           )}
@@ -995,7 +990,7 @@ function StudyMaterial() {
               className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition border ${
                 universityFilter === u
                   ? "bg-violet-500 text-white border-violet-500"
-                  : "bg-white/[0.03] border-white/10 text-white/50 hover:border-violet-500/30 hover:text-violet-400"
+                  : "bg-white/[0.03] border-ink/10 text-ink/50 hover:border-violet-500/30 hover:text-violet-400"
               }`}>
               {u}
             </button>
@@ -1004,13 +999,13 @@ function StudyMaterial() {
 
         {/* Stats bar */}
         <div className="flex items-center justify-between mb-5">
-          <p className="text-xs text-white/30">
+          <p className="text-xs text-ink/30">
             {filtered.length} {filtered.length === 1 ? "file" : "files"}
             {isSearching ? ` matching "${debouncedSearch}"` : ""}
             {showDownloadedOnly ? " · downloaded only" : ""}
           </p>
           {!isSearching && (
-            <p className="text-xs text-white/20">{sortedDepts.length} {sortedDepts.length === 1 ? "department" : "departments"}</p>
+            <p className="text-xs text-ink/20">{sortedDepts.length} {sortedDepts.length === 1 ? "department" : "departments"}</p>
           )}
         </div>
 
@@ -1018,7 +1013,7 @@ function StudyMaterial() {
         {loading && (
           <div className="flex flex-col gap-3">
             {[1,2,3].map(i => (
-              <div key={i} className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 animate-pulse">
+              <div key={i} className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4 animate-pulse">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 bg-white/10 rounded-2xl" />
                   <div className="flex-1">
@@ -1034,11 +1029,11 @@ function StudyMaterial() {
         {/* Empty State */}
         {!loading && filtered.length === 0 && (
           <div className="text-center py-20">
-            <p className="text-5xl mb-4 text-white/10"><FontAwesomeIcon icon={faFile} /></p>
-            <p className="text-white/40 font-medium">
+            <p className="text-5xl mb-4 text-ink/10"><FontAwesomeIcon icon={faFile} /></p>
+            <p className="text-ink/40 font-medium">
               {showDownloadedOnly ? "No downloaded files yet" : "No files found"}
             </p>
-            <p className="text-white/20 text-sm mt-1">
+            <p className="text-ink/20 text-sm mt-1">
               {showDownloadedOnly
                 ? "Open a file and tap \"Save for offline\" to keep it here."
                 : search ? "Try a different search term" : "Upload your first file to get started"}
@@ -1074,7 +1069,7 @@ function StudyMaterial() {
         {!loading && filtered.length > 0 && (viewMode === "grid" || isSearching) && (
           <>
             {isSearching && viewMode !== "grid" && (
-              <p className="text-xs text-white/30 mb-3">Showing flat results for search. Switch to grid or clear search to return to hierarchy.</p>
+              <p className="text-xs text-ink/30 mb-3">Showing flat results for search. Switch to grid or clear search to return to hierarchy.</p>
             )}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {filtered.map(file => (

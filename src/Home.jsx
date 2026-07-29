@@ -16,6 +16,7 @@ import {
   faLayerGroup,
 } from '@fortawesome/free-solid-svg-icons';
 import AppTour from "./components/AppTour/AppTour";
+import ThemeToggle from "./components/ThemeToggle";
 
 // ─── Shared Nav Links ──────────────────────────────────────────────
 const TAB_LINKS = [
@@ -29,15 +30,15 @@ const TAB_LINKS = [
 
 function Toast({ message, onClose }) {
   return (
-    <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-[#0d0d14] border border-white/10 inline-flex space-x-3 p-3 text-sm rounded-2xl shadow-lg whitespace-nowrap">
+    <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-bg-elevated border border-ink/10 inline-flex space-x-3 p-3 text-sm rounded-2xl shadow-lg whitespace-nowrap">
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
         <path d="M16.5 8.31V9a7.5 7.5 0 1 1-4.447-6.855M16.5 3 9 10.508l-2.25-2.25" stroke="#a78bfa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       <div>
-        <h3 className="text-white font-medium">Login Successful!</h3>
-        <p className="text-white/50">Welcome back, {message}</p>
+        <h3 className="text-ink font-medium">Login Successful!</h3>
+        <p className="text-ink/50">Welcome back, {message}</p>
       </div>
-      <button onClick={onClose} className="cursor-pointer mb-auto text-white/30 hover:text-white/60 transition">
+      <button onClick={onClose} className="cursor-pointer mb-auto text-ink/30 hover:text-ink/60 transition">
         <FontAwesomeIcon icon={faXmark} />
       </button>
     </div>
@@ -62,7 +63,7 @@ function AnimatedNumber({ target }) {
 
 function SkeletonCard() {
   return (
-    <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 animate-pulse">
+    <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-5 animate-pulse">
       <div className="h-4 bg-white/10 rounded w-1/3 mb-3" />
       <div className="h-3 bg-white/10 rounded w-2/3 mb-2" />
       <div className="h-3 bg-white/10 rounded w-1/2" />
@@ -83,7 +84,7 @@ function StudyTimer() {
   const s = seconds % 60;
   const progress = Math.min((seconds / 7200) * 100, 100);
   return (
-    <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 flex items-center gap-4">
+    <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4 flex items-center gap-4">
       <div className="relative w-14 h-14">
         <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
           <circle cx="28" cy="28" r="24" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="4" />
@@ -97,8 +98,8 @@ function StudyTimer() {
         </span>
       </div>
       <div className="flex-1">
-        <p className="text-xs text-white/30 mb-1">Study timer</p>
-        <p className="text-lg font-bold text-white">
+        <p className="text-xs text-ink/30 mb-1">Study timer</p>
+        <p className="text-lg font-bold text-ink">
           {String(h).padStart(2, "0")}:{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}
         </p>
       </div>
@@ -119,7 +120,7 @@ function LiveClock() {
     return () => clearInterval(t);
   }, []);
   return (
-    <p className="text-xs text-white/30">
+    <p className="text-xs text-ink/30">
       {now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })} — {now.toLocaleTimeString()}
     </p>
   );
@@ -274,7 +275,7 @@ useEffect(() => {
   ];
  
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="min-h-screen bg-bg text-ink">
 
       {/* Ambient orbs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
@@ -284,17 +285,17 @@ useEffect(() => {
       </div>
 
       {/* HEADER */}
-      <header className="fixed top-0 left-0 w-full z-40 bg-[#0a0a0f]/80 backdrop-blur-md border-b border-white/5">
+      <header className="fixed top-0 left-0 w-full z-40 bg-bg/80 backdrop-blur-md border-b border-ink/5">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between px-4 py-2.5">
 
             {/* Logo + menu — tour target: sidebar */}
             <div data-tour="sidebar" className="flex items-center gap-3">
-              <button onClick={() => setMenuOpen(true)} className="text-white/40 hover:text-violet-400 transition">
+              <button onClick={() => setMenuOpen(true)} className="text-ink/40 hover:text-violet-400 transition">
                 <FontAwesomeIcon icon={faBars} className="w-5 h-5" />
               </button>
               <h1 className="text-lg font-black tracking-tight">
-                TEST<span className="text-violet-400">YOURSELF</span>
+                UNI<span className="text-violet-400">LIB</span>
               </h1>
             </div>
 
@@ -304,13 +305,13 @@ useEffect(() => {
               <Link
                 data-tour="global-search"
                 to="/search"
-                className="w-9 h-9 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-white/40 hover:text-violet-400 hover:border-violet-500/40 transition"
+                className="w-9 h-9 bg-white/5 border border-ink/10 rounded-xl flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/40 transition"
               >
                 <FontAwesomeIcon icon={faSearch} className="w-4 h-4" />
               </Link>
 
               <div className="relative">
-                <button onClick={() => setShowNotifications(!showNotifications)} className="w-9 h-9 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-white/40 hover:text-violet-400 hover:border-violet-500/40 transition">
+                <button onClick={() => setShowNotifications(!showNotifications)} className="w-9 h-9 bg-white/5 border border-ink/10 rounded-xl flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/40 transition">
                   <FontAwesomeIcon icon={faBell} className="w-4 h-4" />
                   {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 bg-violet-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">{unreadCount}</span>
@@ -322,15 +323,15 @@ useEffect(() => {
               {/* Avatar — tour target: user-avatar */}
               <Link data-tour="user-avatar" to="/profile">
                 {user?.photoURL
-                  ? <img src={user.photoURL} alt="Profile" className="w-9 h-9 rounded-xl object-cover border border-white/10" />
-                  : <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.displayName || user?.email || "?")}`} alt="Profile" className="w-9 h-9 rounded-xl border border-white/10" />
+                  ? <img src={user.photoURL} alt="Profile" className="w-9 h-9 rounded-xl object-cover border border-ink/10" />
+                  : <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.displayName || user?.email || "?")}`} alt="Profile" className="w-9 h-9 rounded-xl border border-ink/10" />
                 }
               </Link>
             </div>
           </div>
 
           {/* Nav tabs */}
-          <div className="flex items-center justify-around border-t border-white/5 px-2">
+          <div className="flex items-center justify-around border-t border-ink/5 px-2">
             {TAB_LINKS.map((tab) => {
               const isActive = location.pathname === tab.href;
               return (
@@ -338,7 +339,7 @@ useEffect(() => {
                   key={tab.href}
                   to={tab.href}
                   data-tour={tab.tour || undefined}
-                  className={`flex flex-col items-center py-2 px-4 border-b-2 transition text-xs gap-0.5 ${isActive ? "border-violet-500 text-violet-400" : "border-transparent text-white/30 hover:text-white/60"}`}
+                  className={`flex flex-col items-center py-2 px-4 border-b-2 transition text-xs gap-0.5 ${isActive ? "border-violet-500 text-violet-400" : "border-transparent text-ink/30 hover:text-ink/60"}`}
                 >
                   <FontAwesomeIcon icon={tab.icon} className="w-4 h-4" />
                   <span>{tab.label}</span>
@@ -355,13 +356,13 @@ useEffect(() => {
       {menuOpen && <div className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />}
 
       {/* SIDEBAR DRAWER */}
-      <aside className={`fixed top-0 left-0 h-full w-72 z-50 bg-[#0d0d14] border-r border-white/5 shadow-2xl transform transition-transform duration-300 ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+      <aside className={`fixed top-0 left-0 h-full w-72 z-50 bg-bg-elevated border-r border-ink/5 shadow-2xl transform transition-transform duration-300 ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-ink/5">
           <div className="flex items-center gap-3">
             <label className="relative cursor-pointer group">
               {user?.photoURL
-                ? <img src={user.photoURL} alt="Profile" className="w-10 h-10 rounded-xl object-cover border border-white/10" />
-                : <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.displayName || user?.email || "?")}`} alt="Profile" className="w-10 h-10 rounded-xl border border-white/10" />
+                ? <img src={user.photoURL} alt="Profile" className="w-10 h-10 rounded-xl object-cover border border-ink/10" />
+                : <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.displayName || user?.email || "?")}`} alt="Profile" className="w-10 h-10 rounded-xl border border-ink/10" />
               }
               <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
                 <FontAwesomeIcon icon={faCamera} className="text-white text-xs" />
@@ -369,31 +370,36 @@ useEffect(() => {
               <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
             </label>
             <div>
-              <p className="text-sm font-semibold text-white">{user?.displayName || "User"}</p>
-              <p className="text-xs text-white/30">{user?.email}</p>
+              <p className="text-sm font-semibold text-ink">{user?.displayName || "User"}</p>
+              <p className="text-xs text-ink/30">{user?.email}</p>
             </div>
           </div>
-          <button onClick={() => setMenuOpen(false)} className="text-white/30 hover:text-white transition">
+          <button onClick={() => setMenuOpen(false)} className="text-ink/30 hover:text-ink transition">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
         <nav className="flex flex-col px-4 py-4 gap-1">
           {sidebarLinks.map((link) => (
             <Link key={link.name} to={link.href} onClick={() => setMenuOpen(false)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${location.pathname === link.href ? "bg-violet-500/15 text-violet-400 border border-violet-500/20" : "text-white/50 hover:bg-white/5 hover:text-white"}`}>
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${location.pathname === link.href ? "bg-violet-500/15 text-violet-400 border border-violet-500/20" : "text-ink/50 hover:bg-white/5 hover:text-ink"}`}>
               <FontAwesomeIcon icon={link.icon} className="w-4 h-4" />
               {link.name}
             </Link>
           ))}
           {user?.email === "omisope34@gmail.com" && (
             <Link to="/admin" onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/50 hover:bg-white/5 hover:text-white transition">
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-ink/50 hover:bg-white/5 hover:text-ink transition">
               ⚙️ Admin Dashboard
             </Link>
           )}
         </nav>
+
+        <div className="px-6 mt-2">
+  <p className="text-xs text-ink/30 uppercase tracking-widest mb-2">Appearance</p>
+  <ThemeToggle />
+</div>
         <div className="absolute bottom-6 left-0 w-full px-6">
-          <button onClick={handleLogout} className="w-full py-2.5 rounded-2xl bg-white/5 border border-white/10 text-white/50 text-sm hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 transition">
+          <button onClick={handleLogout} className="w-full py-2.5 rounded-2xl bg-white/5 border border-ink/10 text-ink/50 text-sm hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 transition">
             Logout
           </button>
         </div>
@@ -408,7 +414,7 @@ useEffect(() => {
             <span>🔥</span>
             <span>Welcome back, {user?.displayName || user?.email}</span>
           </div>
-          <p className="text-sm italic text-white/30 mb-1">Study smarter. Learn together. Test yourself daily.</p>
+          <p className="text-sm italic text-ink/30 mb-1">Study smarter. Learn together. Test yourself daily.</p>
           <LiveClock />
         </div>
 
@@ -419,14 +425,14 @@ useEffect(() => {
 
             {/* Streak + Leaderboard */}
             <div className="flex gap-3">
-              <div className="flex-1 bg-white/[0.03] border border-white/10 rounded-2xl p-3 text-center">
+              <div className="flex-1 bg-white/[0.03] border border-ink/10 rounded-2xl p-3 text-center">
                 <p className="text-2xl font-bold text-violet-400">🔥 {streak}</p>
-                <p className="text-xs text-white/30 mt-1">Day streak</p>
+                <p className="text-xs text-ink/30 mt-1">Day streak</p>
               </div>
               {leaderboardRank && (
-                <div className="flex-1 bg-white/[0.03] border border-white/10 rounded-2xl p-3 text-center">
+                <div className="flex-1 bg-white/[0.03] border border-ink/10 rounded-2xl p-3 text-center">
                   <p className="text-2xl font-bold text-violet-400">#{leaderboardRank}</p>
-                  <p className="text-xs text-white/30 mt-1">Leaderboard rank</p>
+                  <p className="text-xs text-ink/30 mt-1">Leaderboard rank</p>
                 </div>
               )}
             </div>
@@ -440,17 +446,17 @@ useEffect(() => {
                 { label: "Messages sent", value: stats.messages, icon: faMessage },
               ].map((stat, i) => (
                 loading ? <SkeletonCard key={i} /> : (
-                  <div key={i} className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 text-center">
+                  <div key={i} className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4 text-center">
                     <p className="text-xl mb-1 text-violet-400"><FontAwesomeIcon icon={stat.icon} /></p>
-                    <p className="text-2xl font-bold text-white"><AnimatedNumber target={stat.value} /></p>
-                    <p className="text-xs text-white/30 mt-1">{stat.label}</p>
+                    <p className="text-2xl font-bold text-ink"><AnimatedNumber target={stat.value} /></p>
+                    <p className="text-xs text-ink/30 mt-1">{stat.label}</p>
                   </div>
                 )
               ))}
             </div>
 <div>
   <div className="flex items-center justify-between mb-3">
-    <h2 className="text-xs font-semibold text-white/30 tracking-widest uppercase">Recent Activity</h2>
+    <h2 className="text-xs font-semibold text-ink/30 tracking-widest uppercase">Recent Activity</h2>
     <div className="flex gap-1">
       {[3, 7, 30].map((d) => (
         <button
@@ -459,7 +465,7 @@ useEffect(() => {
           className={`px-2.5 py-1 rounded-full text-xs transition ${
             activityDays === d
               ? "bg-violet-500/20 text-violet-400 border border-violet-500/30"
-              : "text-white/30 hover:text-white/60"
+              : "text-ink/30 hover:text-ink/60"
           }`}
         >
           {d}d
@@ -469,15 +475,15 @@ useEffect(() => {
   </div>
   {activityLoading ? [1, 2, 3].map(i => <SkeletonCard key={i} />) :
     recentActivity.length === 0 ? (
-      <p className="text-sm text-white/20 text-center py-4">No recent activity yet.</p>
+      <p className="text-sm text-ink/20 text-center py-4">No recent activity yet.</p>
     ) : (
       recentActivity.map((item) => (
         <Link key={item.id} to={item.href || "#"}
-          className="flex items-start gap-3 bg-white/[0.03] border border-white/5 rounded-xl px-4 py-3 mb-2 hover:border-violet-500/30 hover:bg-violet-500/5 transition">
+          className="flex items-start gap-3 bg-white/[0.03] border border-ink/5 rounded-xl px-4 py-3 mb-2 hover:border-violet-500/30 hover:bg-violet-500/5 transition">
           <span className="text-violet-400 mt-0.5">{activityIcon(item.type)}</span>
           <div>
-            <p className="text-sm text-white/70">{item.description}</p>
-            <p className="text-xs text-white/30 mt-0.5">{timeAgo(item.createdAt)}</p>
+            <p className="text-sm text-ink/70">{item.description}</p>
+            <p className="text-xs text-ink/30 mt-0.5">{timeAgo(item.createdAt)}</p>
           </div>
         </Link>
       ))
@@ -487,17 +493,17 @@ useEffect(() => {
 
             {/* Module Cards */}
             <div>
-              <h2 className="text-xs font-semibold text-white/30 tracking-widest uppercase mb-3">Your Modules</h2>
+              <h2 className="text-xs font-semibold text-ink/30 tracking-widest uppercase mb-3">Your Modules</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {cards.map((card, index) => (
                   loading ? <SkeletonCard key={index} /> : (
                     <Link key={index} to={card.href}
-                      className="block bg-white/[0.03] border border-white/10 rounded-2xl p-5 hover:border-violet-500/30 hover:bg-violet-500/5 transition-all duration-300 hover:scale-[1.02]">
+                      className="block bg-white/[0.03] border border-ink/10 rounded-2xl p-5 hover:border-violet-500/30 hover:bg-violet-500/5 transition-all duration-300 hover:scale-[1.02]">
                       <div className="flex items-center gap-2 mb-3">
                         <span>{card.icon}</span>
-                        <h3 className="text-white font-bold text-sm">{card.title}</h3>
+                        <h3 className="text-ink font-bold text-sm">{card.title}</h3>
                       </div>
-                      <p className="text-white/40 text-sm whitespace-pre-line">{card.content}</p>
+                      <p className="text-ink/40 text-sm whitespace-pre-line">{card.content}</p>
                     </Link>
                   )
                 ))}
@@ -510,15 +516,15 @@ useEffect(() => {
             <StudyTimer />
 
             {/* Quote */}
-            <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4">
-              <p className="text-xs font-semibold text-white/30 tracking-widest uppercase mb-2">Quote of the day</p>
-              <p className="text-sm text-white/60 italic">"{quote.text}"</p>
-              <p className="text-xs text-white/30 mt-1 text-right">— {quote.author}</p>
+            <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4">
+              <p className="text-xs font-semibold text-ink/30 tracking-widest uppercase mb-2">Quote of the day</p>
+              <p className="text-sm text-ink/60 italic">"{quote.text}"</p>
+              <p className="text-xs text-ink/30 mt-1 text-right">— {quote.author}</p>
             </div>
 
             {/* Shortcuts */}
-            <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4">
-              <p className="text-xs font-semibold text-white/30 tracking-widest uppercase mb-3">Quick shortcuts</p>
+            <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4">
+              <p className="text-xs font-semibold text-ink/30 tracking-widest uppercase mb-3">Quick shortcuts</p>
               <div className="flex flex-col gap-2">
                 <Link to="/study-material" className="text-sm text-violet-400 hover:text-violet-300 transition flex items-center gap-2"><FontAwesomeIcon icon={faBookmark} />Go to Study Material</Link>
                 <Link to="/ai" className="text-sm text-violet-400 hover:text-violet-300 transition flex items-center gap-2"><FontAwesomeIcon icon={faRobot} />Resume AI conversation</Link>
@@ -531,16 +537,16 @@ useEffect(() => {
       </main>
 
       {/* FOOTER */}
-      <footer className="relative z-10 border-t border-white/5 px-4 py-10 max-w-6xl mx-auto">
+      <footer className="relative z-10 border-t border-ink/5 px-4 py-10 max-w-6xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-6 gap-8">
           <div className="lg:col-span-3 space-y-4">
-            <h2 className="text-lg font-black tracking-tight">TEST<span className="text-violet-400">YOURSELF</span></h2>
-            <p className="text-sm text-white/30 max-w-80">A smart educational platform designed to help students store, organise, and interact with learning materials.</p>
+            <h2 className="text-lg font-black tracking-tight">UNI<span className="text-violet-400">LIB</span></h2>
+            <p className="text-sm text-ink/30 max-w-80">A smart educational platform designed to help students store, organise, and interact with learning materials.</p>
           </div>
           <div className="lg:col-span-3 grid grid-cols-2 gap-8">
             <div>
-              <h3 className="font-bold text-xs text-white/30 uppercase tracking-widest mb-4">Resources</h3>
-              <ul className="space-y-2 text-sm text-white/50">
+              <h3 className="font-bold text-xs text-ink/30 uppercase tracking-widest mb-4">Resources</h3>
+              <ul className="space-y-2 text-sm text-ink/50">
                 <li><Link to="/study-material" className="hover:text-violet-400 transition">Study Material</Link></li>
                 <li><Link to="/ai" className="hover:text-violet-400 transition">AI</Link></li>
                 <li><Link to="/marketplace" className="hover:text-violet-400 transition">Marketplace</Link></li>
@@ -548,8 +554,8 @@ useEffect(() => {
               </ul>
             </div>
             <div>
-              <h3 className="font-bold text-xs text-white/30 uppercase tracking-widest mb-4">Company</h3>
-              <ul className="space-y-2 text-sm text-white/50">
+              <h3 className="font-bold text-xs text-ink/30 uppercase tracking-widest mb-4">Company</h3>
+              <ul className="space-y-2 text-sm text-ink/50">
                 <li><a href="#" className="hover:text-violet-400 transition">About</a></li>
                 <li><a href="#" className="hover:text-violet-400 transition">Vision</a></li>
                 <li><a href="#" className="hover:text-violet-400 transition">Privacy Policy</a></li>
@@ -558,12 +564,12 @@ useEffect(() => {
             </div>
           </div>
         </div>
-        <div className="mt-10 pt-4 border-t border-white/5 flex justify-between items-center">
-          <p className="text-white/20 text-sm">© 2026 TestYourSelf</p>
-          <p className="text-sm text-white/20">All rights reserved.</p>
+        <div className="mt-10 pt-4 border-t border-ink/5 flex justify-between items-center">
+          <p className="text-ink/20 text-sm">© 2026 UNILIB</p>
+          <p className="text-sm text-ink/20">All rights reserved.</p>
         </div>
         <h1 className="text-center font-extrabold leading-[0.7] text-transparent text-[clamp(3rem,15vw,15rem)] [-webkit-text-stroke:1px_rgba(255,255,255,0.05)] mt-6 select-none">
-          TestYourSelf
+          UNILIB
         </h1>
       </footer>
 

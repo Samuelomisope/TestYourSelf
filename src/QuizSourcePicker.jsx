@@ -75,8 +75,8 @@ export default function QuizSourcePicker({ libraryMaterials = [], onGenerate }) 
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 space-y-5">
-      <h2 className="text-lg font-semibold text-white">Generate a quiz</h2>
+    <div className="rounded-2xl border border-ink/10 bg-white/5 backdrop-blur-xl p-6 space-y-5">
+      <h2 className="text-lg font-semibold text-ink">Generate a quiz</h2>
 
       {/* Source toggle */}
       <div className="flex gap-2 flex-wrap">
@@ -107,7 +107,7 @@ export default function QuizSourcePicker({ libraryMaterials = [], onGenerate }) 
         <select
           value={selectedMaterialId}
           onChange={(e) => setSelectedMaterialId(e.target.value)}
-          className="w-full rounded-lg bg-black/40 border border-white/10 text-white px-3 py-2 outline-none focus:border-violet-500"
+          className="w-full rounded-lg bg-black/40 border border-ink/10 text-ink px-3 py-2 outline-none focus:border-violet-500"
         >
           <option value="">Select a material…</option>
           {libraryMaterials.map((m) => (
@@ -119,7 +119,7 @@ export default function QuizSourcePicker({ libraryMaterials = [], onGenerate }) 
       )}
 
       {(mode === "upload" || mode === "scan") && file && (
-        <div className="text-sm text-white/70 truncate">
+        <div className="text-sm text-ink/70 truncate">
           Selected: <span className="text-violet-300">{file.name}</span>
         </div>
       )}
@@ -129,7 +129,7 @@ export default function QuizSourcePicker({ libraryMaterials = [], onGenerate }) 
       <button
         onClick={handleSubmit}
         disabled={isSubmitting}
-        className="w-full rounded-lg bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-medium py-2.5 transition-colors"
+        className="w-full rounded-lg bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-ink font-medium py-2.5 transition-colors"
       >
         {isSubmitting ? "Generating…" : "Generate Quiz"}
       </button>
@@ -144,7 +144,7 @@ function SourceTab({ label, active, onClick }) {
       className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
         active
           ? "bg-violet-600 text-white"
-          : "bg-white/5 text-white/60 hover:bg-white/10"
+          : "bg-white/5 text-ink/60 hover:bg-white/10"
       }`}
     >
       {label}

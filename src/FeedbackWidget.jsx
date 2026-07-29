@@ -81,7 +81,7 @@ function FeedbackWidget() {
       {/* Floating Button */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-50 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full shadow-lg px-4 py-2.5 text-sm font-medium transition flex items-center gap-2"
+        className="fixed bottom-6 right-6 z-50 bg-indigo-500 hover:bg-indigo-600 text-ink rounded-full shadow-lg px-4 py-2.5 text-sm font-medium transition flex items-center gap-2"
       >
         <span className="text-base">💬</span> Feedback
       </button>
@@ -126,7 +126,7 @@ function FeedbackWidget() {
                         onClick={() => setCategory(cat)}
                         className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
                           category === cat
-                            ? "bg-indigo-500 text-white border-indigo-500"
+                            ? "bg-indigo-500 text-ink border-indigo-500"
                             : "border-gray-200 text-gray-500 hover:border-indigo-300"
                         }`}
                       >
@@ -153,7 +153,7 @@ function FeedbackWidget() {
                 <button
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="w-full h-12 rounded-full bg-indigo-500 hover:bg-indigo-600 text-white font-medium text-sm transition disabled:opacity-50"
+                  className="w-full h-12 rounded-full bg-indigo-500 hover:bg-indigo-600 text-ink font-medium text-sm transition disabled:opacity-50"
                 >
                   {submitting ? "Submitting..." : "Submit Feedback"}
                 </button>

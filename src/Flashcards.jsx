@@ -123,10 +123,10 @@ function CreateDeckModal({ onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="bg-[#0d0d14] border border-white/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
-          <h2 className="font-bold text-white">New Flashcard Deck</h2>
-          <button onClick={() => onClose(false)} className="text-white/30 hover:text-white transition">
+      <div className="bg-bg-elevated border border-ink/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-ink/5 shrink-0">
+          <h2 className="font-bold text-ink">New Flashcard Deck</h2>
+          <button onClick={() => onClose(false)} className="text-ink/30 hover:text-ink transition">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
@@ -135,24 +135,24 @@ function CreateDeckModal({ onClose }) {
           {error && <p className="text-pink-400 text-sm mb-3">{error}</p>}
 
           <div className="mb-3">
-            <label className="text-xs text-white/30 mb-1 block">Title</label>
+            <label className="text-xs text-ink/30 mb-1 block">Title</label>
             <input
               type="text"
               placeholder="e.g. Organic Chemistry — Reactions"
               value={title}
               onChange={e => setTitle(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+              className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
             />
           </div>
 
           <div className="mb-4">
-            <label className="text-xs text-white/30 mb-1 block">Description (optional)</label>
+            <label className="text-xs text-ink/30 mb-1 block">Description (optional)</label>
             <textarea
               placeholder="What's this deck about?"
               value={description}
               onChange={e => setDescription(e.target.value)}
               rows={2}
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
+              className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
             />
           </div>
 
@@ -160,7 +160,7 @@ function CreateDeckModal({ onClose }) {
             <button
               onClick={() => setIsPublic(true)}
               className={`flex-1 py-2 rounded-xl text-xs font-medium border transition flex items-center justify-center gap-1.5 ${
-                isPublic ? "bg-violet-500/15 border-violet-500/40 text-violet-400" : "bg-white/5 border-white/10 text-white/40"
+                isPublic ? "bg-violet-500/15 border-violet-500/40 text-violet-400" : "bg-white/5 border-ink/10 text-ink/40"
               }`}
             >
               <FontAwesomeIcon icon={faGlobe} /> Shared with university
@@ -168,7 +168,7 @@ function CreateDeckModal({ onClose }) {
             <button
               onClick={() => setIsPublic(false)}
               className={`flex-1 py-2 rounded-xl text-xs font-medium border transition flex items-center justify-center gap-1.5 ${
-                !isPublic ? "bg-violet-500/15 border-violet-500/40 text-violet-400" : "bg-white/5 border-white/10 text-white/40"
+                !isPublic ? "bg-violet-500/15 border-violet-500/40 text-violet-400" : "bg-white/5 border-ink/10 text-ink/40"
               }`}
             >
               <FontAwesomeIcon icon={faLock} /> Private
@@ -180,7 +180,7 @@ function CreateDeckModal({ onClose }) {
             <button
               onClick={() => setMode("manual")}
               className={`flex-1 py-2 rounded-xl text-xs font-medium border transition ${
-                mode === "manual" ? "bg-violet-500/15 border-violet-500/40 text-violet-400" : "bg-white/5 border-white/10 text-white/40"
+                mode === "manual" ? "bg-violet-500/15 border-violet-500/40 text-violet-400" : "bg-white/5 border-ink/10 text-ink/40"
               }`}
             >
               Write manually
@@ -188,7 +188,7 @@ function CreateDeckModal({ onClose }) {
             <button
               onClick={() => setMode("ai")}
               className={`flex-1 py-2 rounded-xl text-xs font-medium border transition flex items-center justify-center gap-1.5 ${
-                mode === "ai" ? "bg-violet-500/15 border-violet-500/40 text-violet-400" : "bg-white/5 border-white/10 text-white/40"
+                mode === "ai" ? "bg-violet-500/15 border-violet-500/40 text-violet-400" : "bg-white/5 border-ink/10 text-ink/40"
               }`}
             >
               <FontAwesomeIcon icon={faWandMagicSparkles} className="text-xs" /> Generate with AI
@@ -196,37 +196,37 @@ function CreateDeckModal({ onClose }) {
           </div>
 
           {mode === "ai" && (
-            <div className="mb-5 bg-white/[0.03] border border-white/10 rounded-xl p-4">
-              <label className="text-xs text-white/30 mb-1 block">Paste your notes</label>
+            <div className="mb-5 bg-white/[0.03] border border-ink/10 rounded-xl p-4">
+              <label className="text-xs text-ink/30 mb-1 block">Paste your notes</label>
               <textarea
                 placeholder="Paste text to generate flashcards from…"
                 value={aiText}
                 onChange={e => setAiText(e.target.value)}
                 rows={4}
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition mb-3"
+                className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition mb-3"
               />
-              <label className="text-xs text-white/30 mb-1 block">Or upload a file (image, PDF, video)</label>
+              <label className="text-xs text-ink/30 mb-1 block">Or upload a file (image, PDF, video)</label>
               <input
                 type="file"
                 accept="image/*,application/pdf,video/*"
                 onChange={e => setAiFile(e.target.files?.[0] || null)}
-                className="text-xs text-white/40 mb-3 block w-full"
+                className="text-xs text-ink/40 mb-3 block w-full"
               />
               <div className="flex items-center gap-3 mb-3">
-                <label className="text-xs text-white/30">Number of cards</label>
+                <label className="text-xs text-ink/30">Number of cards</label>
                 <input
                   type="number"
                   min={1}
                   max={30}
                   value={aiCount}
                   onChange={e => setAiCount(parseInt(e.target.value) || 10)}
-                  className="w-16 bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-sm text-white outline-none"
+                  className="w-16 bg-black/40 border border-ink/10 rounded-lg px-2 py-1 text-sm text-ink outline-none"
                 />
               </div>
               <button
                 onClick={handleGenerate}
                 disabled={generating}
-                className="w-full py-2.5 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white rounded-xl text-sm font-medium transition flex items-center justify-center gap-2"
+                className="w-full py-2.5 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-xl text-sm font-medium transition flex items-center justify-center gap-2"
               >
                 <FontAwesomeIcon icon={faWandMagicSparkles} />
                 {generating ? "Generating…" : "Generate Cards"}
@@ -236,10 +236,10 @@ function CreateDeckModal({ onClose }) {
 
           {mode === "manual" && (
             <>
-              <p className="text-xs text-white/30 mb-2 uppercase tracking-wide font-semibold">Cards</p>
+              <p className="text-xs text-ink/30 mb-2 uppercase tracking-wide font-semibold">Cards</p>
               <div className="space-y-3">
                 {cards.map((card, i) => (
-                  <div key={i} className="bg-white/[0.03] border border-white/10 rounded-xl p-3 relative">
+                  <div key={i} className="bg-white/[0.03] border border-ink/10 rounded-xl p-3 relative">
                     {cards.length > 1 && (
                       <button
                         onClick={() => removeCard(i)}
@@ -253,14 +253,14 @@ function CreateDeckModal({ onClose }) {
                       placeholder="Front (question)"
                       value={card.front}
                       onChange={e => updateCard(i, "front", e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 mb-2 transition"
+                      className="w-full bg-black/40 border border-ink/10 rounded-lg px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 mb-2 transition"
                     />
                     <input
                       type="text"
                       placeholder="Back (answer)"
                       value={card.back}
                       onChange={e => updateCard(i, "back", e.target.value)}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+                      className="w-full bg-black/40 border border-ink/10 rounded-lg px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
                     />
                   </div>
                 ))}
@@ -268,7 +268,7 @@ function CreateDeckModal({ onClose }) {
 
               <button
                 onClick={addCard}
-                className="w-full mt-3 py-2.5 border border-dashed border-white/15 text-white/40 hover:text-violet-400 hover:border-violet-500/40 rounded-xl text-sm transition flex items-center justify-center gap-2"
+                className="w-full mt-3 py-2.5 border border-dashed border-ink/15 text-ink/40 hover:text-violet-400 hover:border-violet-500/40 rounded-xl text-sm transition flex items-center justify-center gap-2"
               >
                 <FontAwesomeIcon icon={faPlus} className="text-xs" /> Add another card
               </button>
@@ -276,11 +276,11 @@ function CreateDeckModal({ onClose }) {
           )}
         </div>
 
-        <div className="p-6 pt-3 border-t border-white/5 shrink-0">
+        <div className="p-6 pt-3 border-t border-ink/5 shrink-0">
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="w-full py-3 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white rounded-xl text-sm font-medium transition"
+            className="w-full py-3 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-xl text-sm font-medium transition"
           >
             {saving ? "Creating…" : "Create Deck"}
           </button>
@@ -336,25 +336,25 @@ function ReviewSession({ deckId, onClose }) {
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-between mb-4">
-          <p className="text-xs text-white/40">
+          <p className="text-xs text-ink/40">
             {dueCards ? `${Math.min(index + 1, dueCards.length)} of ${dueCards.length}` : "Loading…"}
           </p>
-          <button onClick={onClose} className="text-white/30 hover:text-white transition">
+          <button onClick={onClose} className="text-ink/30 hover:text-ink transition">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
 
         {dueCards === null && (
-          <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-10 text-center text-white/30 text-sm">
+          <div className="bg-white/[0.03] border border-ink/10 rounded-3xl p-10 text-center text-ink/30 text-sm">
             Loading due cards…
           </div>
         )}
 
         {dueCards && dueCards.length === 0 && (
-          <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-10 text-center">
+          <div className="bg-white/[0.03] border border-ink/10 rounded-3xl p-10 text-center">
             <p className="text-4xl mb-3 text-emerald-400"><FontAwesomeIcon icon={faCheck} /></p>
-            <p className="text-white font-semibold mb-1">All caught up!</p>
-            <p className="text-white/40 text-sm">No cards are due for review right now.</p>
+            <p className="text-ink font-semibold mb-1">All caught up!</p>
+            <p className="text-ink/40 text-sm">No cards are due for review right now.</p>
             <button onClick={onClose} className="mt-5 px-6 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm transition">
               Close
             </button>
@@ -362,10 +362,10 @@ function ReviewSession({ deckId, onClose }) {
         )}
 
         {dueCards && dueCards.length > 0 && sessionDone && (
-          <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-10 text-center">
+          <div className="bg-white/[0.03] border border-ink/10 rounded-3xl p-10 text-center">
             <p className="text-4xl mb-3 text-violet-400"><FontAwesomeIcon icon={faCheck} /></p>
-            <p className="text-white font-semibold mb-1">Session complete</p>
-            <p className="text-white/40 text-sm">You reviewed {reviewedCount} card{reviewedCount === 1 ? "" : "s"}.</p>
+            <p className="text-ink font-semibold mb-1">Session complete</p>
+            <p className="text-ink/40 text-sm">You reviewed {reviewedCount} card{reviewedCount === 1 ? "" : "s"}.</p>
             <button onClick={onClose} className="mt-5 px-6 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm transition">
               Done
             </button>
@@ -376,13 +376,13 @@ function ReviewSession({ deckId, onClose }) {
           <>
             <div
               onClick={() => setFlipped(f => !f)}
-              className="bg-white/[0.04] border border-white/10 rounded-3xl p-10 min-h-[220px] flex items-center justify-center text-center cursor-pointer hover:border-violet-500/30 transition"
+              className="bg-white/[0.04] border border-ink/10 rounded-3xl p-10 min-h-[220px] flex items-center justify-center text-center cursor-pointer hover:border-violet-500/30 transition"
             >
               <div>
-                <p className="text-xs text-white/20 uppercase tracking-widest mb-3">
+                <p className="text-xs text-ink/20 uppercase tracking-widest mb-3">
                   {flipped ? "Answer" : "Question"}
                 </p>
-                <p className="text-white text-lg font-medium leading-relaxed">
+                <p className="text-ink text-lg font-medium leading-relaxed">
                   {flipped ? currentCard.back : currentCard.front}
                 </p>
               </div>
@@ -391,7 +391,7 @@ function ReviewSession({ deckId, onClose }) {
             {!flipped && (
               <button
                 onClick={() => setFlipped(true)}
-                className="w-full mt-4 py-3 bg-white/5 border border-white/10 hover:border-violet-500/40 text-white/70 hover:text-violet-400 rounded-xl text-sm font-medium transition"
+                className="w-full mt-4 py-3 bg-white/5 border border-ink/10 hover:border-violet-500/40 text-ink/70 hover:text-violet-400 rounded-xl text-sm font-medium transition"
               >
                 Show answer
               </button>
@@ -421,7 +421,7 @@ function ReviewSession({ deckId, onClose }) {
 function DeckCard({ deck, user, onStudy, onDelete }) {
   const isOwner = deck.userId === user?.uid || deck.user?.displayName === user?.displayName;
   return (
-    <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 hover:border-violet-500/30 transition group relative">
+    <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4 hover:border-violet-500/30 transition group relative">
       {isOwner && (
         <button
           onClick={async (e) => {
@@ -440,22 +440,22 @@ function DeckCard({ deck, user, onStudy, onDelete }) {
       <div className="w-10 h-10 bg-violet-500/10 border border-violet-500/20 rounded-xl flex items-center justify-center text-violet-400 mb-3">
         <FontAwesomeIcon icon={faLayerGroup} />
       </div>
-      <p className="text-sm font-semibold text-white mb-1 truncate pr-6">{deck.title}</p>
-      {deck.description && <p className="text-xs text-white/30 mb-2 line-clamp-2">{deck.description}</p>}
+      <p className="text-sm font-semibold text-ink mb-1 truncate pr-6">{deck.title}</p>
+      {deck.description && <p className="text-xs text-ink/30 mb-2 line-clamp-2">{deck.description}</p>}
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-xs px-2 py-0.5 bg-white/5 text-white/40 rounded-full">{deck.cards?.length || 0} cards</span>
+        <span className="text-xs px-2 py-0.5 bg-white/5 text-ink/40 rounded-full">{deck.cards?.length || 0} cards</span>
         {deck.sourceType === "AI_GENERATED" && (
           <span className="text-xs px-2 py-0.5 bg-violet-500/15 text-violet-400 rounded-full flex items-center gap-1">
             <FontAwesomeIcon icon={faWandMagicSparkles} className="text-[10px]" /> AI
           </span>
         )}
         {deck.isPublic ? (
-          <FontAwesomeIcon icon={faGlobe} className="text-white/20 text-xs" />
+          <FontAwesomeIcon icon={faGlobe} className="text-ink/20 text-xs" />
         ) : (
-          <FontAwesomeIcon icon={faLock} className="text-white/20 text-xs" />
+          <FontAwesomeIcon icon={faLock} className="text-ink/20 text-xs" />
         )}
       </div>
-      <div className="flex items-center justify-between text-xs text-white/20 mb-3">
+      <div className="flex items-center justify-between text-xs text-ink/20 mb-3">
         <span><FontAwesomeIcon icon={faUser} className="mr-1" />{deck.user?.displayName}</span>
         <span>{formatDate(deck.createdAt)}</span>
       </div>
@@ -491,18 +491,18 @@ function Flashcards() {
   }, [user, tab, refreshKey]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="min-h-screen bg-bg text-ink">
 
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
         <div className="absolute bottom-0 right-0 w-72 h-72 bg-emerald-500 rounded-full opacity-[0.06] blur-[100px]" />
       </div>
 
-      <header className="fixed top-0 left-0 w-full z-40 bg-[#0a0a0f]/80 backdrop-blur-md border-b border-white/5">
+      <header className="fixed top-0 left-0 w-full z-40 bg-bg/80 backdrop-blur-md border-b border-ink/5">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between px-4 py-2.5">
             <div className="flex items-center gap-3">
-              <Link to="/home" className="text-white/40 hover:text-violet-400 transition">
+              <Link to="/home" className="text-ink/40 hover:text-violet-400 transition">
                 <FontAwesomeIcon icon={faChevronDown} className="rotate-90" />
               </Link>
               <h1 className="text-lg font-black tracking-tight">
@@ -519,13 +519,13 @@ function Flashcards() {
             </button>
           </div>
 
-          <div className="flex items-center justify-around border-t border-white/5 px-2">
+          <div className="flex items-center justify-around border-t border-ink/5 px-2">
             {TAB_LINKS.map((t) => {
               const isActive = location.pathname === t.href;
               return (
                 <Link key={t.href} to={t.href}
                   className={`flex flex-col items-center py-2 px-4 border-b-2 transition text-xs gap-0.5 ${
-                    isActive ? "border-violet-500 text-violet-400" : "border-transparent text-white/30 hover:text-white/60"
+                    isActive ? "border-violet-500 text-violet-400" : "border-transparent text-ink/30 hover:text-ink/60"
                   }`}>
                   <FontAwesomeIcon icon={t.icon} className="w-4 h-4" />
                   <span>{t.label}</span>
@@ -542,7 +542,7 @@ function Flashcards() {
           <button
             onClick={() => setTab("all")}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition border ${
-              tab === "all" ? "bg-violet-500 text-white border-violet-500" : "bg-white/[0.03] border-white/10 text-white/50"
+              tab === "all" ? "bg-violet-500 text-white border-violet-500" : "bg-white/[0.03] border-ink/10 text-ink/50"
             }`}
           >
             All Decks
@@ -550,7 +550,7 @@ function Flashcards() {
           <button
             onClick={() => setTab("mine")}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition border ${
-              tab === "mine" ? "bg-violet-500 text-white border-violet-500" : "bg-white/[0.03] border-white/10 text-white/50"
+              tab === "mine" ? "bg-violet-500 text-white border-violet-500" : "bg-white/[0.03] border-ink/10 text-ink/50"
             }`}
           >
             My Decks
@@ -560,16 +560,16 @@ function Flashcards() {
         {loading && (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {[1,2,3,4].map(i => (
-              <div key={i} className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 animate-pulse h-40" />
+              <div key={i} className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4 animate-pulse h-40" />
             ))}
           </div>
         )}
 
         {!loading && decks.length === 0 && (
           <div className="text-center py-20">
-            <p className="text-5xl mb-4 text-white/10"><FontAwesomeIcon icon={faLayerGroup} /></p>
-            <p className="text-white/40 font-medium">No flashcard decks yet</p>
-            <p className="text-white/20 text-sm mt-1">Create your first deck to start studying</p>
+            <p className="text-5xl mb-4 text-ink/10"><FontAwesomeIcon icon={faLayerGroup} /></p>
+            <p className="text-ink/40 font-medium">No flashcard decks yet</p>
+            <p className="text-ink/20 text-sm mt-1">Create your first deck to start studying</p>
             <button
               onClick={() => setShowCreate(true)}
               className="mt-4 px-6 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm transition"

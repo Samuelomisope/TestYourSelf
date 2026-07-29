@@ -48,10 +48,10 @@ function CreateNovelModal({ genres, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="bg-[#0d0d14] border border-white/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
-          <h2 className="font-bold text-white">New Novel</h2>
-          <button onClick={() => onClose(false)} className="text-white/30 hover:text-white transition">
+      <div className="bg-bg-elevated border border-ink/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-ink/5 shrink-0">
+          <h2 className="font-bold text-ink">New Novel</h2>
+          <button onClick={() => onClose(false)} className="text-ink/30 hover:text-ink transition">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
@@ -60,36 +60,36 @@ function CreateNovelModal({ genres, onClose }) {
           {error && <p className="text-pink-400 text-sm mb-3">{error}</p>}
 
           <div className="mb-3">
-            <label className="text-xs text-white/30 mb-1 block">Title</label>
+            <label className="text-xs text-ink/30 mb-1 block">Title</label>
             <input
               type="text"
               placeholder="e.g. The Last Harmattan"
               value={title}
               onChange={e => setTitle(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+              className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
             />
           </div>
 
           <div className="mb-3">
-            <label className="text-xs text-white/30 mb-1 block">Synopsis</label>
+            <label className="text-xs text-ink/30 mb-1 block">Synopsis</label>
             <textarea
               placeholder="What's your story about?"
               value={synopsis}
               onChange={e => setSynopsis(e.target.value)}
               rows={3}
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
+              className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
             />
           </div>
 
           <div className="mb-3">
-            <label className="text-xs text-white/30 mb-1 block">Genre</label>
+            <label className="text-xs text-ink/30 mb-1 block">Genre</label>
             <select
               value={genre}
               onChange={e => setGenre(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-violet-500/60 transition"
+              className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink outline-none focus:border-violet-500/60 transition"
             >
               {genres.map(g => (
-                <option key={g} value={g} className="bg-[#0d0d14]">
+                <option key={g} value={g} className="bg-bg-elevated">
                   {GENRE_LABELS[g] || g}
                 </option>
               ))}
@@ -97,22 +97,22 @@ function CreateNovelModal({ genres, onClose }) {
           </div>
 
           <div className="mb-2">
-            <label className="text-xs text-white/30 mb-1 block">Cover image URL (optional)</label>
+            <label className="text-xs text-ink/30 mb-1 block">Cover image URL (optional)</label>
             <input
               type="text"
               placeholder="https://…"
               value={coverUrl}
               onChange={e => setCoverUrl(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+              className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
             />
           </div>
         </div>
 
-        <div className="p-6 pt-3 border-t border-white/5 shrink-0">
+        <div className="p-6 pt-3 border-t border-ink/5 shrink-0">
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="w-full py-3 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white rounded-xl text-sm font-medium transition"
+            className="w-full py-3 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-xl text-sm font-medium transition"
           >
             {saving ? "Creating…" : "Create Novel"}
           </button>
@@ -154,10 +154,10 @@ function AddEpisodeModal({ novel, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="bg-[#0d0d14] border border-white/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
-          <h2 className="font-bold text-white">New Episode — {novel.title}</h2>
-          <button onClick={() => onClose(false)} className="text-white/30 hover:text-white transition">
+      <div className="bg-bg-elevated border border-ink/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-ink/5 shrink-0">
+          <h2 className="font-bold text-ink">New Episode — {novel.title}</h2>
+          <button onClick={() => onClose(false)} className="text-ink/30 hover:text-ink transition">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
@@ -166,24 +166,24 @@ function AddEpisodeModal({ novel, onClose }) {
           {error && <p className="text-pink-400 text-sm mb-3">{error}</p>}
 
           <div className="mb-3">
-            <label className="text-xs text-white/30 mb-1 block">Episode title</label>
+            <label className="text-xs text-ink/30 mb-1 block">Episode title</label>
             <input
               type="text"
               placeholder="e.g. Chapter 1: The Beginning"
               value={title}
               onChange={e => setTitle(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+              className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
             />
           </div>
 
           <div className="mb-4">
-            <label className="text-xs text-white/30 mb-1 block">Content</label>
+            <label className="text-xs text-ink/30 mb-1 block">Content</label>
             <textarea
               placeholder="Write your episode…"
               value={content}
               onChange={e => setContent(e.target.value)}
               rows={10}
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
+              className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
             />
           </div>
 
@@ -191,7 +191,7 @@ function AddEpisodeModal({ novel, onClose }) {
             <button
               onClick={() => setIsPublished(true)}
               className={`flex-1 py-2 rounded-xl text-xs font-medium border transition ${
-                isPublished ? "bg-violet-500/15 border-violet-500/40 text-violet-400" : "bg-white/5 border-white/10 text-white/40"
+                isPublished ? "bg-violet-500/15 border-violet-500/40 text-violet-400" : "bg-white/5 border-ink/10 text-ink/40"
               }`}
             >
               Publish now
@@ -199,7 +199,7 @@ function AddEpisodeModal({ novel, onClose }) {
             <button
               onClick={() => setIsPublished(false)}
               className={`flex-1 py-2 rounded-xl text-xs font-medium border transition ${
-                !isPublished ? "bg-violet-500/15 border-violet-500/40 text-violet-400" : "bg-white/5 border-white/10 text-white/40"
+                !isPublished ? "bg-violet-500/15 border-violet-500/40 text-violet-400" : "bg-white/5 border-ink/10 text-ink/40"
               }`}
             >
               Save as draft
@@ -207,11 +207,11 @@ function AddEpisodeModal({ novel, onClose }) {
           </div>
         </div>
 
-        <div className="p-6 pt-3 border-t border-white/5 shrink-0">
+        <div className="p-6 pt-3 border-t border-ink/5 shrink-0">
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="w-full py-3 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white rounded-xl text-sm font-medium transition"
+            className="w-full py-3 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-xl text-sm font-medium transition"
           >
             {saving ? "Saving…" : "Save Episode"}
           </button>
@@ -224,7 +224,7 @@ function AddEpisodeModal({ novel, onClose }) {
 // ─── Novel Row ────────────────────────────────────────────────
 function NovelRow({ novel, onAddEpisode }) {
   return (
-    <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 flex items-center gap-4">
+    <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4 flex items-center gap-4">
       <div className="w-12 h-16 bg-violet-500/10 border border-violet-500/20 rounded-lg flex items-center justify-center text-violet-400 overflow-hidden shrink-0">
         {novel.coverUrl ? (
           <img src={novel.coverUrl} alt={novel.title} className="w-full h-full object-cover" />
@@ -233,8 +233,8 @@ function NovelRow({ novel, onAddEpisode }) {
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-white truncate">{novel.title}</p>
-        <p className="text-xs text-white/30">
+        <p className="text-sm font-semibold text-ink truncate">{novel.title}</p>
+        <p className="text-xs text-ink/30">
           {GENRE_LABELS[novel.genre] || novel.genre} · {novel._count?.episodes ?? 0} episode{novel._count?.episodes === 1 ? "" : "s"}
         </p>
       </div>
@@ -270,16 +270,16 @@ function WriterDashboard() {
   }, [refreshKey]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="min-h-screen bg-bg text-ink">
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
         <div className="absolute bottom-0 right-0 w-72 h-72 bg-emerald-500 rounded-full opacity-[0.06] blur-[100px]" />
       </div>
 
-      <header className="fixed top-0 left-0 w-full z-40 bg-[#0a0a0f]/80 backdrop-blur-md border-b border-white/5">
+      <header className="fixed top-0 left-0 w-full z-40 bg-bg/80 backdrop-blur-md border-b border-ink/5">
         <div className="max-w-4xl mx-auto flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
-            <Link to="/novels" className="text-white/40 hover:text-violet-400 transition">
+            <Link to="/novels" className="text-ink/40 hover:text-violet-400 transition">
               <FontAwesomeIcon icon={faChevronDown} className="rotate-90" />
             </Link>
             <h1 className="text-lg font-black tracking-tight">
@@ -301,16 +301,16 @@ function WriterDashboard() {
         {loading && (
           <div className="space-y-3">
             {[1,2,3].map(i => (
-              <div key={i} className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 animate-pulse h-20" />
+              <div key={i} className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4 animate-pulse h-20" />
             ))}
           </div>
         )}
 
         {!loading && novels.length === 0 && (
           <div className="text-center py-20">
-            <p className="text-5xl mb-4 text-white/10"><FontAwesomeIcon icon={faBookOpen} /></p>
-            <p className="text-white/40 font-medium">No novels yet</p>
-            <p className="text-white/20 text-sm mt-1">Create your first novel to start publishing episodes</p>
+            <p className="text-5xl mb-4 text-ink/10"><FontAwesomeIcon icon={faBookOpen} /></p>
+            <p className="text-ink/40 font-medium">No novels yet</p>
+            <p className="text-ink/20 text-sm mt-1">Create your first novel to start publishing episodes</p>
             <button
               onClick={() => setShowCreate(true)}
               className="mt-4 px-6 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm transition"

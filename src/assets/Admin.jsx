@@ -337,7 +337,7 @@ function UniversitiesTab() {
         />
         <button
           onClick={addUniversity} disabled={adding}
-          className="bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-sm hover:bg-indigo-600 transition disabled:opacity-50"
+          className="bg-indigo-500 text-ink px-4 py-2.5 rounded-xl text-sm hover:bg-indigo-600 transition disabled:opacity-50"
         >Add</button>
       </div>
 
@@ -452,7 +452,7 @@ function Admin() {
           <p className="text-5xl mb-4">🚫</p>
           <p className="text-gray-700 font-semibold">Access Denied</p>
           <p className="text-gray-400 text-sm mt-1">You don't have permission to view this page.</p>
-          <button onClick={() => navigate("/home")} className="mt-4 px-5 py-2 bg-indigo-500 text-white rounded-full text-sm hover:bg-indigo-600 transition">
+          <button onClick={() => navigate("/home")} className="mt-4 px-5 py-2 bg-indigo-500 text-ink rounded-full text-sm hover:bg-indigo-600 transition">
             Go Home
           </button>
         </div>
@@ -509,7 +509,7 @@ function Admin() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${
                 activeTab === tab.id
-                  ? "bg-indigo-500 text-white shadow-sm"
+                  ? "bg-indigo-500 text-ink shadow-sm"
                   : "bg-white border border-gray-200 text-gray-600 hover:border-indigo-300"
               }`}
             >

@@ -42,20 +42,20 @@ function MyListings() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="min-h-screen bg-bg text-ink">
       {/* Ambient */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
       </div>
 
       {/* Header */}
-      <header className="bg-[#0a0a0f]/80 backdrop-blur-md border-b border-white/5 px-4 py-3 sticky top-0 z-40">
+      <header className="bg-bg/80 backdrop-blur-md border-b border-ink/5 px-4 py-3 sticky top-0 z-40">
         <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate("/marketplace")} className="text-white/40 hover:text-violet-400 transition">
+            <button onClick={() => navigate("/marketplace")} className="text-ink/40 hover:text-violet-400 transition">
               <FontAwesomeIcon icon={faChevronLeft} />
             </button>
-            <h1 className="text-base font-bold text-white flex items-center gap-2">
+            <h1 className="text-base font-bold text-ink flex items-center gap-2">
               <FontAwesomeIcon icon={faStore} className="text-violet-400" /> My Listings
             </h1>
           </div>
@@ -81,9 +81,9 @@ function MyListings() {
           <div className="text-center py-16 text-violet-400">Loading...</div>
         ) : listings.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-5xl mb-3 text-white/10"><FontAwesomeIcon icon={faBoxOpen} /></p>
-            <p className="text-white/40 font-medium">No listings yet</p>
-            <p className="text-white/20 text-sm mt-1">Start selling something!</p>
+            <p className="text-5xl mb-3 text-ink/10"><FontAwesomeIcon icon={faBoxOpen} /></p>
+            <p className="text-ink/40 font-medium">No listings yet</p>
+            <p className="text-ink/20 text-sm mt-1">Start selling something!</p>
             <button onClick={() => navigate("/marketplace/create")} className="mt-4 px-5 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm transition">
               Create Listing
             </button>
@@ -91,24 +91,24 @@ function MyListings() {
         ) : (
           <div className="flex flex-col gap-3">
             {listings.map(item => (
-              <div key={item.id} className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 flex gap-4 hover:border-violet-500/20 transition">
+              <div key={item.id} className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4 flex gap-4 hover:border-violet-500/20 transition">
                 {/* Image */}
                 <div className="w-20 h-20 rounded-xl overflow-hidden bg-white/5 shrink-0">
                   {item.images?.[0]
                     ? <img src={item.images[0]} alt={item.title} className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center justify-center text-white/10"><FontAwesomeIcon icon={faBoxOpen} className="text-2xl" /></div>
+                    : <div className="w-full h-full flex items-center justify-center text-ink/10"><FontAwesomeIcon icon={faBoxOpen} className="text-2xl" /></div>
                   }
                 </div>
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-semibold text-white truncate">{item.title}</p>
-                    <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${item.status === "ACTIVE" ? "bg-emerald-500/15 text-emerald-400" : item.status === "SOLD" ? "bg-pink-500/15 text-pink-400" : "bg-white/5 text-white/40"}`}>
+                    <p className="font-semibold text-ink truncate">{item.title}</p>
+                    <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${item.status === "ACTIVE" ? "bg-emerald-500/15 text-emerald-400" : item.status === "SOLD" ? "bg-pink-500/15 text-pink-400" : "bg-white/5 text-ink/40"}`}>
                       {item.status}
                     </span>
                   </div>
                   <p className="text-violet-400 font-bold text-sm mt-0.5">₦{item.price?.toLocaleString()}</p>
-                  <p className="text-xs text-white/20 mt-0.5">{new Date(item.createdAt).toLocaleDateString()}</p>
+                  <p className="text-xs text-ink/20 mt-0.5">{new Date(item.createdAt).toLocaleDateString()}</p>
                   <div className="flex items-center gap-3 mt-2">
                     {item.status === "ACTIVE" && (
                       <button onClick={() => markAsSold(item.id)} className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 font-medium transition">
@@ -132,10 +132,10 @@ function MyListings() {
       {/* Confirm Delete */}
       {confirm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0d0d14] border border-white/10 rounded-2xl p-6 max-w-sm w-full shadow-xl">
-            <p className="text-white/70 text-sm mb-5">Are you sure you want to delete this listing? This cannot be undone.</p>
+          <div className="bg-bg-elevated border border-ink/10 rounded-2xl p-6 max-w-sm w-full shadow-xl">
+            <p className="text-ink/70 text-sm mb-5">Are you sure you want to delete this listing? This cannot be undone.</p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirm(null)} className="flex-1 py-2 rounded-xl border border-white/10 text-sm text-white/50 hover:border-white/20 transition">Cancel</button>
+              <button onClick={() => setConfirm(null)} className="flex-1 py-2 rounded-xl border border-ink/10 text-sm text-ink/50 hover:border-ink/20 transition">Cancel</button>
               <button onClick={() => { deleteListing(confirm); setConfirm(null); }} className="flex-1 py-2 rounded-xl bg-pink-500/80 hover:bg-pink-500 text-white text-sm transition">Delete</button>
             </div>
           </div>

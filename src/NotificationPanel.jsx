@@ -12,23 +12,23 @@ function NotificationPanel({ onClose }) {
   };
 
   return (
-    <div className="absolute right-0 top-12 w-80 bg-[#0d0d14] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
-        <h3 className="font-semibold text-white text-sm">Notifications</h3>
-        <button onClick={onClose} className="text-white/30 hover:text-white transition text-sm">
+    <div className="absolute right-0 top-12 w-80 bg-bg-elevated border border-ink/10 rounded-2xl shadow-2xl z-50 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-ink/5">
+        <h3 className="font-semibold text-ink text-sm">Notifications</h3>
+        <button onClick={onClose} className="text-ink/30 hover:text-ink transition text-sm">
           <FontAwesomeIcon icon={faXmark} />
         </button>
       </div>
 
       <div className="max-h-96 overflow-y-auto">
         {notifications.length === 0 ? (
-          <p className="text-center text-white/20 text-sm py-8">No notifications yet</p>
+          <p className="text-center text-ink/20 text-sm py-8">No notifications yet</p>
         ) : (
           notifications.map((notif) => (
             <div
               key={notif.id}
               onClick={() => markAsRead(notif.id)}
-              className={`flex items-start gap-3 px-4 py-3 border-b border-white/5 cursor-pointer hover:bg-white/5 transition ${!notif.read ? "bg-violet-500/5" : ""}`}
+              className={`flex items-start gap-3 px-4 py-3 border-b border-ink/5 cursor-pointer hover:bg-white/5 transition ${!notif.read ? "bg-violet-500/5" : ""}`}
             >
               <div className="w-9 h-9 rounded-full bg-violet-500/15 border border-violet-500/20 flex items-center justify-center shrink-0">
                 {notif.type === "quiz" && (
@@ -58,8 +58,8 @@ function NotificationPanel({ onClose }) {
               </div>
 
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-white/70">{notif.message}</p>
-                <p className="text-xs text-white/20 mt-1">{notif.createdAt?.toDate().toLocaleString()}</p>
+                <p className="text-sm text-ink/70">{notif.message}</p>
+                <p className="text-xs text-ink/20 mt-1">{notif.createdAt?.toDate().toLocaleString()}</p>
               </div>
 
               {!notif.read && <div className="w-2 h-2 bg-violet-500 rounded-full mt-2 shrink-0" />}

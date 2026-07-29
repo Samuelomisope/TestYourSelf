@@ -213,7 +213,7 @@ export default function AppTour({ autoStart = true, onComplete }) {
       {!done && (
         <button
           onClick={() => setDone(true)}
-          className="fixed top-4 right-4 z-[10001] px-3 py-1.5 text-sm text-white/60 border border-white/20 rounded-lg bg-transparent hover:border-white/50 hover:text-white transition-colors cursor-pointer"
+          className="fixed top-4 right-4 z-[10001] px-3 py-1.5 text-sm text-ink/60 border border-ink/20 rounded-lg bg-transparent hover:border-ink/50 hover:text-ink transition-colors cursor-pointer"
         >
           Skip tour
         </button>
@@ -223,16 +223,16 @@ export default function AppTour({ autoStart = true, onComplete }) {
       {!done && (
         <div
           role="tooltip"
-          className="fixed z-[10002] w-60 bg-[#0d0d14] border border-white/10 rounded-xl p-4"
+          className="fixed z-[10002] w-60 bg-bg-elevated border border-ink/10 rounded-xl p-4"
           style={{ top: tooltipPos.top, left: tooltipPos.left }}
         >
           <p className="text-xs font-semibold text-violet-400 uppercase tracking-wide mb-1">
             Step {step + 1} of {TOUR_STEPS.length}
           </p>
-          <h3 className="text-sm font-semibold text-white mb-1.5">
+          <h3 className="text-sm font-semibold text-ink mb-1.5">
             {currentStep.title}
           </h3>
-          <p className="text-xs text-white/40 leading-relaxed mb-4">
+          <p className="text-xs text-ink/40 leading-relaxed mb-4">
             {currentStep.desc}
           </p>
 
@@ -254,7 +254,7 @@ export default function AppTour({ autoStart = true, onComplete }) {
               {step > 0 && (
                 <button
                   onClick={handlePrev}
-                  className="px-3 py-1 text-xs border border-white/10 rounded-lg text-white/50 hover:bg-white/5 hover:text-white transition-colors cursor-pointer active:scale-95"
+                  className="px-3 py-1 text-xs border border-ink/10 rounded-lg text-ink/50 hover:bg-white/5 hover:text-ink transition-colors cursor-pointer active:scale-95"
                 >
                   Back
                 </button>
@@ -277,7 +277,7 @@ export default function AppTour({ autoStart = true, onComplete }) {
           role="alertdialog"
           aria-label="Tour complete"
         >
-          <div className="bg-[#0d0d14] border border-white/10 rounded-2xl px-8 py-8 text-center w-[280px]">
+          <div className="bg-bg-elevated border border-ink/10 rounded-2xl px-8 py-8 text-center w-[280px]">
             <div className="w-12 h-12 rounded-full bg-violet-500/20 flex items-center justify-center mx-auto mb-4">
               <svg
                 className="w-6 h-6 text-violet-400"
@@ -290,10 +290,10 @@ export default function AppTour({ autoStart = true, onComplete }) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-base font-semibold text-white mb-2">
+            <h2 className="text-base font-semibold text-ink mb-2">
               You're all set!
             </h2>
-            <p className="text-sm text-white/40 leading-relaxed mb-6">
+            <p className="text-sm text-ink/40 leading-relaxed mb-6">
               That's a quick look at TestYourSelf. Start by uploading a study
               material or chatting with the AI tutor.
             </p>
