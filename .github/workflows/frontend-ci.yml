@@ -1,0 +1,40 @@
+name: Frontend CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  build-and-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+        env:
+          # Vite inlines VITE_* vars at build time. If your build fails
+          # locally without a .env, add the same keys here as repo secrets
+          # (Settings > Secrets and variables > Actions) and reference them,
+          # e.g. VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          NODE_ENV: production
+
+      # Uncomment once you have a test suite worth running in CI
+      # - name: Test
+      #   run: npm run test

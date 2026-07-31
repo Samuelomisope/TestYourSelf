@@ -120,27 +120,52 @@ function NovelDetail() {
   const { id } = useParams();
   const { user } = useAuth();
   const [novel, setNovel] = useState(null);
-  const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+const [reviews, setReviews] = useState([]);
+const [loading, setLoading] = useState(false);
+const [error, setError] = useState(false);
+const idRef = useRef(id);
 
-  const loadNovel = () => {
-    apiGet(`/novels/${id}`).then(setNovel).catch(() => setError(true));
-  };
-  const loadReviews = () => {
-    apiGet(`/novels/${id}/reviews`).then(setReviews).catch(() => setReviews([]));
-  };
+useEffect(() => {
+  idRef.current = id;
+}, [id]);
 
-  useEffect(() => {
+const loadNovel = useCallback(async () => {
+  const requestedId = id;
+  try {
+    const n = await apiGet(`/novels/${requestedId}`);
+    if (idRef.current !== requestedId) return; // stale — a newer id is now active
+    setNovel(n);
+  } catch (err) {
+    if (idRef.current !== requestedId) return;
+    setError(true);
+  }
+}, [id]);
+
+const loadReviews = useCallback(async () => {
+  const requestedId = id;
+  try {
+    const r = await apiGet(`/novels/${requestedId}/reviews`);
+    if (idRef.current !== requestedId) return;
+    setReviews(r);
+  } catch (err) {
+    if (idRef.current !== requestedId) return;
+    setReviews([]);
+  }
+}, [id]);
+
+useEffect(() => {
+  let cancelled = false;
+
+  (async () => {
     setLoading(true);
-    Promise.all([apiGet(`/novels/${id}`), apiGet(`/novels/${id}/reviews`)])
-      .then(([n, r]) => { setNovel(n); setReviews(r); })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, [id]);
+    await Promise.all([loadNovel(), loadReviews()]);
+    if (!cancelled) setLoading(false);
+  })();
 
-  const myReview = user ? reviews.find(r => r.user?.id === user.id) : null;
+  return () => { cancelled = true; };
+}, [id, loadNovel, loadReviews]);
 
+const myReview = user ? reviews.find(r => r.user?.id === user.id) : null;
   return (
     <div className="min-h-screen bg-bg text-ink">
       <div className="fixed inset-0 pointer-events-none overflow-hidden">

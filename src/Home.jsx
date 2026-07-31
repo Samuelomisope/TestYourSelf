@@ -149,12 +149,14 @@ const QUOTES = [
   { text: "It always seems impossible until it's done.", author: "Nelson Mandela" },
   { text: "Discipline is choosing between what you want now and what you want most.", author: "Abraham Lincoln" },
 ];
+ const [quote] = useState(() => {
   const dayIndex = Math.floor(Date.now() / 86400000) % QUOTES.length;
-  const [quote] = useState(QUOTES[dayIndex]);
+  return QUOTES[dayIndex];
+});
   const [leaderboardRank, setLeaderboardRank] = useState(null);
   const [activityDays, setActivityDays] = useState(7);
   const { unreadCount } = useNotifications();
-  const [, setLastMarketplace] = useState(null);
+  const [ setLastMarketplace] = useState(null);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -242,20 +244,22 @@ useEffect(() => {
   };
 
   const activityIcon = (type) => {
-    if (type === "upload") return <FontAwesomeIcon icon={faFile} />;
-    if (type === "ai") return <FontAwesomeIcon icon={faRobot} />;
-    if (type === "marketplace") return <FontAwesomeIcon icon={faBagShopping} />;
-    if (type === "chat") return <FontAwesomeIcon icon={faMessage} />;
-    return "";
-  };
+  if (type === "upload") return <FontAwesomeIcon icon={faFile} />;
+  if (type === "ai") return <FontAwesomeIcon icon={faRobot} />;
+  if (type === "marketplace") return <FontAwesomeIcon icon={faBagShopping} />;
+  if (type === "chat") return <FontAwesomeIcon icon={faMessage} />;
+  return "";
+};
 
-  const timeAgo = (dateStr) => {
-    const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
-    if (diff < 60) return `${diff}s ago`;
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    return `${Math.floor(diff / 86400)}d ago`;
-  };
+const timeAgo = (dateStr) => {
+  // eslint-disable-next-line react-hooks/purity -- "time ago" labels are inherently
+  // time-dependent; this is a display-only helper, not a value stored in state.
+  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+};
 
   const cards = [
     { title: "Study Material", icon: <FontAwesomeIcon icon={faBookOpen} className="text-violet-400 text-2xl" />, href: "/study-material", content: lastMaterial ? `Last uploaded: ${lastMaterial.title}` : "No file uploaded yet.\nNo file viewed yet." },

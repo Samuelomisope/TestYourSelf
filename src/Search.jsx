@@ -32,31 +32,43 @@ function Search() {
   const [activeTab, setActiveTab] = useState("all");
   const [results, setResults] = useState({ materials: [], users: [], marketplace: [], universities: [] });
   const [loading, setLoading] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const debounceRef = useRef(null);
-  const inputRef = useRef(null);
+const [hasSearched, setHasSearched] = useState(false);
+const debounceRef = useRef(null);
+const inputRef = useRef(null);
 
-  useEffect(() => { inputRef.current?.focus(); }, []);
+useEffect(() => { inputRef.current?.focus(); }, []);
 
-  useEffect(() => {
-    if (!query.trim() || query.trim().length < 2) {
+const doSearch = useCallback(async (q, type) => {
+  setLoading(true);
+  setHasSearched(true);
+  try {
+    const data = await searchApi(q, type);
+    setResults({
+      materials: data.materials || [],
+      users: data.users || [],
+      marketplace: data.marketplace || [],
+      universities: data.universities || [],
+    });
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+}, []);
+
+useEffect(() => {
+  if (!query.trim() || query.trim().length < 2) {
+    clearTimeout(debounceRef.current);
+    queueMicrotask(() => {
       setResults({ materials: [], users: [], marketplace: [], universities: [] });
       setHasSearched(false);
-      return;
-    }
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => doSearch(query, activeTab), 350);
-    return () => clearTimeout(debounceRef.current);
-  }, [query, activeTab]);
-
-  const doSearch = async (q, type) => {
-    setLoading(true); setHasSearched(true);
-    try {
-      const data = await searchApi(q, type);
-      setResults({ materials: data.materials || [], users: data.users || [], marketplace: data.marketplace || [], universities: data.universities || [] });
-    } catch (err) { console.error(err); }
-    setLoading(false);
-  };
+    });
+    return;
+  }
+  clearTimeout(debounceRef.current);
+  debounceRef.current = setTimeout(() => doSearch(query, activeTab), 350);
+  return () => clearTimeout(debounceRef.current);
+}, [query, activeTab, doSearch]);
 
   const total = results.materials.length + results.users.length + results.marketplace.length + results.universities.length;
 

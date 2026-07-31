@@ -77,7 +77,7 @@ function Login() {
         <div className="flex flex-col justify-center gap-8 md:pr-6">
           <div>
             <h1 className="text-4xl font-black tracking-tight mb-2">
-              TEST<span className="text-violet-400">YOURSELF</span>
+              UNI<span className="text-violet-400">LIB</span>
             </h1>
             <p className="text-ink/40 text-sm leading-relaxed">
               Study smarter. Learn together. Test yourself daily.
@@ -145,7 +145,7 @@ function Login() {
 
       {/* Watermark */}
       <div className="absolute bottom-4 left-0 w-full text-center pointer-events-none select-none">
-        <p className="text-[10px] text-ink/10 tracking-widest uppercase">© 2026 TestYourSelf</p>
+        <p className="text-[10px] text-ink/10 tracking-widest uppercase">© 2026 UniLib</p>
       </div>
     </div>
   );

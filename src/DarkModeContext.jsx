@@ -25,12 +25,11 @@ export function DarkModeProvider({ children }) {
 
   // Apply theme + persist whenever `theme` changes
   useEffect(() => {
-    const applied = resolveTheme(theme);
-    setResolvedTheme(applied);
-    document.documentElement.classList.toggle("dark", applied === "dark");
-    localStorage.setItem("theme", theme);
-  }, [theme]);
-
+   const resolvedTheme = resolveTheme(theme)}); // derived every render, no state needed
+useEffect(() => {
+  document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
+  localStorage.setItem("theme", theme);
+}, [theme, resolvedTheme]);
   // If on "system", track OS preference changes live
   useEffect(() => {
     if (theme !== "system") return;
@@ -62,3 +61,4 @@ export function DarkModeProvider({ children }) {
 export function useDarkMode() {
   return useContext(DarkModeContext);
 }
+

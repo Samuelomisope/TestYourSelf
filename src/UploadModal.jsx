@@ -65,8 +65,9 @@ export function UploadModal({ onClose, universitiesList = [] }) {
       ...valid.map((f) => ({
         file: f,
         title: f.name.replace(/\.[^/.]+$/, ""),
-        course: "",       // faculty / course code e.g. "CHM 101"
+        faculty: "",       // faculty
         department: "",   // e.g. "MINING ENGINEERING"
+        course: "",       // course code e.g. "CHM 101"
         level: "",        // e.g. "100"
         semester: "",     // "first" | "second"
         description: "",
@@ -439,8 +440,9 @@ const handleZipUpload = async () => {
                     {expandedIndex === i && (
                       <div className="px-3 pb-3 pt-1 border-t border-ink/5 bg-white/[0.02] space-y-2">
                         <input type="text" placeholder="Title *" value={item.title} onChange={(e) => updateMeta(i, "title", e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
-                        <input type="text" placeholder="Course code e.g. CHM 101" value={item.course} onChange={(e) => updateMeta(i, "course", e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
+                        <input type="text" placeholder="Faculty e.g ENGINEERING" value={item.faculty} onChange={(e) => updateMeta(i, "faculty", e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
                         <input type="text" placeholder="Department e.g. MINING ENGINEERING" value={item.department} onChange={(e) => updateMeta(i, "department", e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
+                        <input type="text" placeholder="Course code e.g. CHM 101" value={item.course} onChange={(e) => updateMeta(i, "course", e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
                         <div className="flex gap-2">
                           <select value={item.level} onChange={(e) => updateMeta(i, "level", e.target.value)} className="flex-1 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
                             <option value="">Level</option>

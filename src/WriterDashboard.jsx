@@ -253,21 +253,31 @@ function WriterDashboard() {
   const [novels, setNovels] = useState([]);
   const [genres, setGenres] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showCreate, setShowCreate] = useState(false);
-  const [episodeTarget, setEpisodeTarget] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+const [showCreate, setShowCreate] = useState(false);
+const [episodeTarget, setEpisodeTarget] = useState(null);
+const [refreshKey, setRefreshKey] = useState(0);
 
-  useEffect(() => {
-    apiGet("/novels/genres").then(setGenres).catch(() => setGenres([]));
-  }, []);
+useEffect(() => {
+  apiGet("/novels/genres").then(setGenres).catch(() => setGenres([]));
+}, []);
 
-  useEffect(() => {
+useEffect(() => {
+  let cancelled = false;
+
+  (async () => {
     setLoading(true);
-    apiGet("/novels/mine")
-      .then(setNovels)
-      .catch(() => setNovels([]))
-      .finally(() => setLoading(false));
-  }, [refreshKey]);
+    try {
+      const data = await apiGet("/novels/mine");
+      if (!cancelled) setNovels(data);
+    } catch (err) {
+      if (!cancelled) setNovels([]);
+    } finally {
+      if (!cancelled) setLoading(false);
+    }
+  })();
+
+  return () => { cancelled = true; };
+}, [refreshKey]);
 
   return (
     <div className="min-h-screen bg-bg text-ink">
