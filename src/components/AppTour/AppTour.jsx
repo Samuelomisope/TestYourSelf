@@ -96,17 +96,13 @@ function computeTooltipPos(spotRect, tipPos) {
 }
 
 export default function AppTour({ autoStart = true, onComplete }) {
-  const [active, setActive] = useState(false);
+ const [active, setActive] = useState(() => autoStart && !localStorage.getItem(STORAGE_KEY));
   const [step, setStep] = useState(0);
   const [spotRect, setSpotRect] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ top: 80, left: 80 });
   const [done, setDone] = useState(false);
   const resizeRef = useRef(null);
 
-  useEffect(() => {
-    if (!autoStart) return;
-    if (!localStorage.getItem(STORAGE_KEY)) setActive(true);
-  }, [autoStart]);
 
   const positionStep = useCallback((stepIndex) => {
     const { target, tipPos } = TOUR_STEPS[stepIndex];

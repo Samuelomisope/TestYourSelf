@@ -172,6 +172,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
     level: file.level || "",
     semester: file.semester || "",
     description: file.description || "",
+    course: file.course || "",
   });
 
   const [resolvedUrl, setResolvedUrl] = useState(file.signedUrl || null);
@@ -290,6 +291,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
               <div className="text-center mb-5">
                 <p className="text-5xl text-violet-400 mb-2">{FILE_ICONS[getMimeFileType(file.fileType)]}</p>
                 <div className="flex items-center justify-center gap-2 flex-wrap">
+                  {file.course && <span className="px-3 py-1 bg-violet-500/15 text-violet-400 border border-violet-500/20 rounded-full text-xs">{file.course}</span>}
                   {file.faculty && <span className="px-3 py-1 bg-violet-500/15 text-violet-400 border border-violet-500/20 rounded-full text-xs">{file.faculty}</span>}
                   {file.level && <span className="px-3 py-1 bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 rounded-full text-xs">{file.level}L</span>}
                   {file.semester && <span className="px-3 py-1 bg-blue-500/15 text-blue-400 border border-blue-500/20 rounded-full text-xs">{SEMESTER_LABELS[file.semester] || file.semester}</span>}
@@ -388,11 +390,22 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
                 />
               </div>
 
-              <div>
-                <label className="text-xs text-ink/30 mb-1 block">Course code</label>
+               <div>
+                <label className="text-xs text-ink/30 mb-1 block">Course Code</label>
                 <input
                   type="text"
-                  placeholder="e.g. CHM 101"
+                  placeholder="e.g CHM 101"
+                  value={form.course}
+                  onChange={e => setForm(f => ({ ...f, course: e.target.value }))}
+                  className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-ink/30 mb-1 block">Faculty</label>
+                <input
+                  type="text"
+                  placeholder="e.g ENGINEERING"
                   value={form.faculty}
                   onChange={e => setForm(f => ({ ...f, faculty: e.target.value }))}
                   className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
@@ -751,29 +764,31 @@ function StudyMaterial() {
   const [successMessage, setSuccessMessage] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // ── Offline state ──
-  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
-  const [downloadedIds, setDownloadedIds] = useState(new Set());
-  const [showDownloadedOnly, setShowDownloadedOnly] = useState(false);
-  const [usingOfflineFallback, setUsingOfflineFallback] = useState(false);
+ // ── Offline state ──
+const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+const [downloadedIds, setDownloadedIds] = useState(new Set());
+const [showDownloadedOnly, setShowDownloadedOnly] = useState(false);
+const [usingOfflineFallback, setUsingOfflineFallback] = useState(false);
 
-  const refreshDownloads = useCallback(async () => {
-    const meta = await listDownloadedMaterials();
-    setDownloadedIds(new Set(meta.map(m => m.id)));
-  }, []);
+const refreshDownloads = useCallback(async () => {
+  const meta = await listDownloadedMaterials();
+  setDownloadedIds(new Set(meta.map((m) => m.id)));
+}, []);
 
-  useEffect(() => { refreshDownloads(); }, [refreshDownloads]);
+// eslint-disable-next-line react-hooks/set-state-in-effect -- false positive, `refreshDownloads` is
+// already async; see https://github.com/react/react/issues/34743
+useEffect(() => { refreshDownloads(); }, [refreshDownloads]);
 
-  useEffect(() => {
-    const goOnline = () => setIsOnline(true);
-    const goOffline = () => setIsOnline(false);
-    window.addEventListener("online", goOnline);
-    window.addEventListener("offline", goOffline);
-    return () => {
-      window.removeEventListener("online", goOnline);
-      window.removeEventListener("offline", goOffline);
-    };
-  }, []);
+useEffect(() => {
+  const goOnline = () => setIsOnline(true);
+  const goOffline = () => setIsOnline(false);
+  window.addEventListener("online", goOnline);
+  window.addEventListener("offline", goOffline);
+  return () => {
+    window.removeEventListener("online", goOnline);
+    window.removeEventListener("offline", goOffline);
+  };
+}, []);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 400);
@@ -845,19 +860,21 @@ function StudyMaterial() {
   });
 
   // ── Build hierarchy: dept → level → semester → course → files ──
-  const grouped = {};
-  filtered.forEach(file => {
-    const dept = file.department || "Uncategorized Department";
-    const lvl  = file.level     || "Unknown";
-    const sem  = file.semester  || "unknown";
-    const crs  = file.faculty   || "Uncategorized Course";
+ // AFTER (faculty is now top-level, department nested where course used to be)
+const grouped = {};
+filtered.forEach(file => {
+  const fac  = file.faculty    || "Uncategorized Faculty";
+  const dept = file.department || "Uncategorized Department";
+  const sem  = file.semester   || "unknown";
+  const lvl  = file.level      || "Unknown";
 
-    if (!grouped[dept]) grouped[dept] = {};
-    if (!grouped[dept][lvl]) grouped[dept][lvl] = {};
-    if (!grouped[dept][lvl][sem]) grouped[dept][lvl][sem] = {};
-    if (!grouped[dept][lvl][sem][crs]) grouped[dept][lvl][sem][crs] = [];
-    grouped[dept][lvl][sem][crs].push(file);
-  });
+  if (!grouped[fac]) grouped[fac] = {};
+  if (!grouped[fac][dept]) grouped[fac][dept] = {};
+  if (!grouped[fac][dept][sem]) grouped[fac][dept][sem] = {};
+  if (!grouped[fac][dept][sem][lvl]) grouped[fac][dept][sem][lvl] = [];
+  grouped[fac][dept][sem][lvl].push(file);
+});
+
 
   const sortedDepts = Object.keys(grouped).sort();
   const isSearching = debouncedSearch.trim().length > 0;
@@ -888,7 +905,7 @@ function StudyMaterial() {
                 <FontAwesomeIcon icon={faChevronDown} className="rotate-90" />
               </Link>
               <h1 className="text-lg font-black tracking-tight">
-                TEST<span className="text-violet-400">YOURSELF</span>
+                UNI<span className="text-violet-400">LIB</span>
                 <span className="ml-2 text-xs font-semibold bg-violet-500/20 text-violet-400 border border-violet-500/30 px-2 py-0.5 rounded-full align-middle">Study</span>
               </h1>
             </div>
@@ -1099,8 +1116,7 @@ function StudyMaterial() {
   message: `Your file "${uploaded.title || "File"}" was uploaded successfully.`,
 });
       }
-    }}
-    user={user}
+    }}    user={user}
     universitiesList={universitiesList}
   />
 )}

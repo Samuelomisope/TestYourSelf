@@ -475,20 +475,30 @@ function Flashcards() {
   const location = useLocation();
   const [decks, setDecks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("all"); // "all" | "mine"
-  const [showCreate, setShowCreate] = useState(false);
-  const [studyingDeckId, setStudyingDeckId] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+const [tab, setTab] = useState("all"); // "all" | "mine"
+const [showCreate, setShowCreate] = useState(false);
+const [studyingDeckId, setStudyingDeckId] = useState(null);
+const [refreshKey, setRefreshKey] = useState(0);
 
-  useEffect(() => {
-    if (!user) return;
+useEffect(() => {
+  if (!user) return;
+  let cancelled = false;
+
+  (async () => {
     setLoading(true);
     const path = tab === "mine" ? "/flashcards/decks/my" : "/flashcards/decks";
-    authedFetch(path)
-      .then(setDecks)
-      .catch(() => setDecks([]))
-      .finally(() => setLoading(false));
-  }, [user, tab, refreshKey]);
+    try {
+      const data = await authedFetch(path);
+      if (!cancelled) setDecks(data);
+    } catch (err) {
+      if (!cancelled) setDecks([]);
+    } finally {
+      if (!cancelled) setLoading(false);
+    }
+  })();
+
+  return () => { cancelled = true; };
+}, [user, tab, refreshKey]);
 
   return (
     <div className="min-h-screen bg-bg text-ink">

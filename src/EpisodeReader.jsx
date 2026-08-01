@@ -11,23 +11,33 @@ function EpisodeReader() {
   const navigate = useNavigate();
   const [episode, setEpisode] = useState(null);
   const [siblingEpisodes, setSiblingEpisodes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+const [loading, setLoading] = useState(false);
+const [error, setError] = useState(false);
 
-  useEffect(() => {
+useEffect(() => {
+  let cancelled = false;
+
+  (async () => {
     setLoading(true);
     setError(false);
-    apiGet(`/episodes/${id}`)
-      .then(async (ep) => {
-        setEpisode(ep);
-        // fetch the parent novel to get the ordered episode list for prev/next nav
-        const novel = await apiGet(`/novels/${ep.novel.id}`);
-        setSiblingEpisodes(novel.episodes || []);
-      })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, [id]);
+    try {
+      const ep = await apiGet(`/episodes/${id}`);
+      if (cancelled) return;
+      setEpisode(ep);
 
+      // fetch the parent novel to get the ordered episode list for prev/next nav
+      const novel = await apiGet(`/novels/${ep.novel.id}`);
+      if (cancelled) return;
+      setSiblingEpisodes(novel.episodes || []);
+    } catch (err) {
+      if (!cancelled) setError(true);
+    } finally {
+      if (!cancelled) setLoading(false);
+    }
+  })();
+
+  return () => { cancelled = true; };
+}, [id]);
   const currentIndex = siblingEpisodes.findIndex(e => e.id === id);
   const prevEpisode = currentIndex > 0 ? siblingEpisodes[currentIndex - 1] : null;
   const nextEpisode = currentIndex >= 0 && currentIndex < siblingEpisodes.length - 1

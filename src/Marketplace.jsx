@@ -106,7 +106,7 @@ function Marketplace() {
                 <FontAwesomeIcon icon={faChevronLeft} />
               </Link>
               <h1 className="text-lg font-black tracking-tight">
-                TEST<span className="text-violet-400">YOURSELF</span>
+                UNI<span className="text-violet-400">LIB</span>
                 <span className="ml-2 text-xs font-semibold bg-violet-500/20 text-violet-400 border border-violet-500/30 px-2 py-0.5 rounded-full align-middle">Market</span>
               </h1>
             </div>

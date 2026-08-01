@@ -227,28 +227,36 @@ function QuizTab() {
   const [showCamera, setShowCamera] = useState(false);
 
   // Library state
-  const [materials, setMaterials] = useState([]);
-  const [materialsLoading, setMaterialsLoading] = useState(false);
-  const [selectedMaterial, setSelectedMaterial] = useState(null); // full material object
+ const [materials, setMaterials] = useState([]);
+const [materialsLoading, setMaterialsLoading] = useState(false);
+const [selectedMaterial, setSelectedMaterial] = useState(null); // full material object
 
-  const fileInputRef = useRef(null);
+const fileInputRef = useRef(null);
 
-  // Load library materials when mode switches to "library"
-  useEffect(() => {
-    if (mode !== "library" || materials.length > 0) return;
+// Load library materials when mode switches to "library"
+useEffect(() => {
+  if (mode !== "library" || materials.length > 0) return;
+  let cancelled = false;
+
+  (async () => {
     setMaterialsLoading(true);
-    apiGet("/study-material")
-      .then((data) => {
-        // Only show PDFs
-        const pdfs = data.filter(
-          (m) => m.fileType === "application/pdf" || m.fileType === "pdf"
-        );
-        setMaterials(pdfs);
-      })
-      .catch(() => setMaterials([]))
-      .finally(() => setMaterialsLoading(false));
-  }, [mode]);
+    try {
+      const data = await apiGet("/study-material");
+      if (cancelled) return;
+      // Only show PDFs
+      const pdfs = data.filter(
+        (m) => m.fileType === "application/pdf" || m.fileType === "pdf"
+      );
+      setMaterials(pdfs);
+    } catch (err) {
+      if (!cancelled) setMaterials([]);
+    } finally {
+      if (!cancelled) setMaterialsLoading(false);
+    }
+  })();
 
+  return () => { cancelled = true; };
+}, [mode, materials.length]);
   function handleFileChange(e, source) {
     const picked = e.target.files?.[0];
     if (!picked) return;
@@ -511,7 +519,7 @@ function AskTab({ preloadedFile }) {
   const [messages, setMessages] = useState([
     {
       role: "ai",
-      text: "Hi! I'm TESTYOURSELF AI. Ask me anything — type, speak, snap a photo, or upload a file!",
+      text: "Hi! I'm UNILIB AI. Ask me anything — type, speak, snap a photo, or upload a file!",
     },
   ]);
   const [input, setInput] = useState("");
@@ -538,7 +546,7 @@ function AskTab({ preloadedFile }) {
       setMessages([
         {
           role: "ai",
-          text: "Hi! I'm TESTYOURSELF AI. Ask me anything — type, speak, snap a photo, or upload a file!",
+          text: "Hi! I'm UNILIB AI. Ask me anything — type, speak, snap a photo, or upload a file!",
         },
         {
           role: "ai",
@@ -551,8 +559,9 @@ function AskTab({ preloadedFile }) {
   }, []);
 
   // Pre-load a PDF passed from the study material viewer
-  useEffect(() => {
-    if (!preloadedFile) return;
+ useEffect(() => {
+  if (!preloadedFile) return;
+  queueMicrotask(() => {
     setAttachedFile(preloadedFile);
     setMessages((prev) => [
       ...prev,
@@ -561,7 +570,8 @@ function AskTab({ preloadedFile }) {
         text: `I've loaded "${preloadedFile.name.replace(".pdf", "")}" — ask me anything about it!`,
       },
     ]);
-  }, [preloadedFile]);
+  });
+}, [preloadedFile]);
 
   async function toggleRecording() {
     if (recording) {
@@ -1048,7 +1058,7 @@ function AI() {
                 <FontAwesomeIcon icon={faChevronDown} className="rotate-90" />
               </Link>
               <h1 className="text-lg font-black tracking-tight">
-                TEST<span className="text-violet-400">YOURSELF</span>
+                UNI<span className="text-violet-400">LIB</span>
                 <span className="ml-1.5 text-xs font-semibold bg-violet-500/20 text-violet-400 border border-violet-500/30 px-2 py-0.5 rounded-full align-middle">
                   AI
                 </span>
@@ -1095,7 +1105,7 @@ function AI() {
         <div className="text-center mb-8 mt-2">
           <div className="inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/25 rounded-full px-4 py-1.5 text-xs text-violet-400 font-medium mb-4">
             <span className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-pulse" />
-            Powered by TESTYOURSELF AI
+            Powered by UNILIB AI
           </div>
           <h2 className="text-3xl font-black tracking-tight mb-2">
             Your <span className="text-violet-400">AI Study</span> Companion

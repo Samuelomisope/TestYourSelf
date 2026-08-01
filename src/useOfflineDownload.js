@@ -17,42 +17,44 @@ export function useOfflineDownload(file) {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
 
-  const checkStatus = useCallback(async () => {
-    if (!file?.id) return;
-    const isDown = await isMaterialDownloaded(file.id);
-    setDownloaded(isDown);
-  }, [file?.id]);
+ const checkStatus = useCallback(async () => {
+  if (!file?.id) return;
+  const isDown = await isMaterialDownloaded(file.id);
+  setDownloaded(isDown);
+}, [file]);
 
-  useEffect(() => {
-    checkStatus();
-  }, [checkStatus]);
+// eslint-disable-next-line react-hooks/set-state-in-effect -- false positive, `checkStatus` is
+// already async; see https://github.com/react/react/issues/34743
+useEffect(() => {
+  checkStatus();
+}, [checkStatus]);
 
-  const download = useCallback(async () => {
-    if (!file) return;
-    setDownloading(true);
-    setProgress(0);
-    setError("");
-    try {
-      await downloadMaterial(file, setProgress);
-      setDownloaded(true);
-    } catch (err) {
-      console.error(err);
-      setError("Download failed. Try again.");
-    } finally {
-      setDownloading(false);
-    }
-  }, [file]);
+const download = useCallback(async () => {
+  if (!file) return;
+  setDownloading(true);
+  setProgress(0);
+  setError("");
+  try {
+    await downloadMaterial(file, setProgress);
+    setDownloaded(true);
+  } catch (err) {
+    console.error(err);
+    setError("Download failed. Try again.");
+  } finally {
+    setDownloading(false);
+  }
+}, [file]);
 
-  const remove = useCallback(async () => {
-    if (!file?.id) return;
-    await deleteOfflineMaterial(file.id);
-    setDownloaded(false);
-  }, [file?.id]);
+const remove = useCallback(async () => {
+  if (!file?.id) return;
+  await deleteOfflineMaterial(file.id);
+  setDownloaded(false);
+}, [file]);
 
-  const getBlobUrl = useCallback(async () => {
-    if (!file?.id) return null;
-    return getOfflineBlobUrl(file.id);
-  }, [file?.id]);
+const getBlobUrl = useCallback(async () => {
+  if (!file?.id) return null;
+  return getOfflineBlobUrl(file.id);
+}, [file]);
 
-  return { downloaded, downloading, progress, error, download, remove, getBlobUrl };
+return { downloaded, downloading, progress, error, download, remove, getBlobUrl };
 }

@@ -436,13 +436,17 @@ function ReportsTab() {
     </div>
   );
 }
-
 // ── Main Admin Component ───────────────────────────────────────────────────
 function Admin() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    if (user && !ADMIN_EMAILS.includes(user.email)) return;
+    apiFetch("/admin/stats").then(setStats).catch(console.error);
+  }, [user]);
 
   // Guard — only admin email allowed
   if (user && !ADMIN_EMAILS.includes(user.email)) {
@@ -459,10 +463,6 @@ function Admin() {
       </div>
     );
   }
-
-  useEffect(() => {
-    apiFetch("/admin/stats").then(setStats).catch(console.error);
-  }, []);
 
   const tabs = [
     { id: "overview", label: "Overview", icon: "📊" },
@@ -485,7 +485,7 @@ function Admin() {
           </button>
           <div>
             <h1 style={{ fontFamily: "'Nunito', sans-serif" }} className="text-lg font-bold text-indigo-500">
-              TestYourSelf <span className="text-gray-400 font-normal text-sm">/ Admin</span>
+              UniLib <span className="text-gray-400 font-normal text-sm">/ Admin</span>
             </h1>
           </div>
         </div>

@@ -581,17 +581,34 @@ function NovelsTab() {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
 
-  const load = () => {
-    setLoading(true);
-    apiFetch("/admin/novels").then(setNovels).catch(console.error).finally(() => setLoading(false));
-  };
+ const load = useCallback(async () => {
+  setLoading(true);
+  try {
+    const data = await apiFetch("/admin/novels");
+    setNovels(data);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
-  useEffect(() => { load(); }, []);
+useEffect(() => {
+  let cancelled = false;
+  (async () => {
+    await load();
+  })();
+  return () => { cancelled = true; };
+}, [load]);
 
-  const deleteNovel = async (id) => {
-    try { await apiFetch(`/admin/novels/${id}`, { method: "DELETE" }); setNovels(n => n.filter(x => x.id !== id)); }
-    catch (err) { console.error(err); }
-  };
+const deleteNovel = async (id) => {
+  try {
+    await apiFetch(`/admin/novels/${id}`, { method: "DELETE" });
+    setNovels((n) => n.filter((x) => x.id !== id));
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   const toggleHidden = async (id) => {
     try {
