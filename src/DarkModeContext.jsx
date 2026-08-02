@@ -10,10 +10,24 @@ function resolveTheme(theme) {
   return theme === "system" ? getSystemTheme() : theme;
 }
 
+function applyTheme(applied) {
+  const root = document.documentElement;
+
+  // dark mode uses a class (matches `@variant dark (&:where(.dark, .dark *))`)
+  root.classList.toggle("dark", applied === "dark");
+
+  // sepia uses a data attribute (matches `html[data-theme="sepia"]`)
+  if (applied === "sepia") {
+    root.setAttribute("data-theme", "sepia");
+  } else {
+    root.removeAttribute("data-theme");
+  }
+}
+
 export function DarkModeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
     const stored = localStorage.getItem("theme");
-    if (stored === "light" || stored === "dark" || stored === "system") return stored;
+    if (stored === "light" || stored === "dark" || stored === "sepia" || stored === "system") return stored;
 
     // Migrate from the old boolean key so existing users keep their preference
     const legacy = localStorage.getItem("darkMode");
@@ -25,11 +39,12 @@ export function DarkModeProvider({ children }) {
 
   // Apply theme + persist whenever `theme` changes
   useEffect(() => {
-   const resolvedTheme = resolveTheme(theme)}); // derived every render, no state needed
-useEffect(() => {
-  document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
-  localStorage.setItem("theme", theme);
-}, [theme, resolvedTheme]);
+    const applied = resolveTheme(theme);
+    setResolvedTheme(applied);
+    applyTheme(applied);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
   // If on "system", track OS preference changes live
   useEffect(() => {
     if (theme !== "system") return;
@@ -37,7 +52,7 @@ useEffect(() => {
     const handler = () => {
       const applied = getSystemTheme();
       setResolvedTheme(applied);
-      document.documentElement.classList.toggle("dark", applied === "dark");
+      applyTheme(applied);
     };
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
@@ -61,4 +76,3 @@ useEffect(() => {
 export function useDarkMode() {
   return useContext(DarkModeContext);
 }
-

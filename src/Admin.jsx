@@ -9,6 +9,7 @@ import {
   faChevronLeft, faComment, faBullhorn, faBookOpen
 } from "@fortawesome/free-solid-svg-icons";
 import { API } from "./config";
+import NeedsReviewPanel from "./NeedsReviewPanel";
 
 const ADMIN_EMAILS = ["omisope34@gmail.com"];
 
@@ -807,6 +808,7 @@ function Admin() {
     { id: "reports",        label: "Reports",        icon: <FontAwesomeIcon icon={faFlag} /> },
     { id: "feedback",       label: "Feedback",       icon: <FontAwesomeIcon icon={faComment} /> },
     { id: "announcements",  label: "Announcements",  icon: <FontAwesomeIcon icon={faBullhorn} /> },
+    { id: "needs-review", label: "Needs Review", icon: <FontAwesomeIcon icon={faTriangleExclamation} /> },
   ];
 
   return (
@@ -922,6 +924,7 @@ function Admin() {
         {activeTab === "feedback"       && <FeedbackTab />}
         {activeTab === "announcements"  && <AnnouncementsTab />}
         {activeTab === "novels" && <NovelsTab />}
+        {activeTab === "needs-review" && <NeedsReviewPanel />}
       </div>
     </div>
   );

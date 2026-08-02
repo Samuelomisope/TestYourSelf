@@ -2,10 +2,10 @@ import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
 
-const LAST_UPDATED = "June 12, 2025";
-const APP_NAME = "TestYourself";
+const LAST_UPDATED = "August 1, 2026";
+const APP_NAME = "UniLib";
 const CONTACT_EMAIL = "hello.testyourself@gmail.com"; // update this
-const APP_URL = "https://testyourself-nu.vercel.app";
+const APP_URL = "https://unilib.com.ng";
 
 const Section = ({ title, children }) => (
   <section className="mb-10">
@@ -31,7 +31,7 @@ function Terms() {
             <FontAwesomeIcon icon={faChevronDown} className="rotate-90" />
           </Link>
           <h1 className="text-lg font-black tracking-tight">
-            TEST<span className="text-violet-400">YOURSELF</span>
+            UNI<span className="text-violet-400">LIB</span>
             <span className="ml-2 text-xs font-semibold bg-violet-500/20 text-violet-400 border border-violet-500/30 px-2 py-0.5 rounded-full align-middle">Terms</span>
           </h1>
         </div>
@@ -133,8 +133,28 @@ function Terms() {
             ))}
           </ul>
         </Section>
-
-        <Section title="7. Intellectual Property">
+        <Section title="7. Marketplace">
+  <p>
+    {APP_NAME} provides a marketplace feature that allows users to list and browse
+    goods and services for sale. {APP_NAME} acts solely as a listing platform and is
+    not a party to any transaction between a buyer and a seller.
+  </p>
+  <ul className="space-y-2 mt-2">
+    {[
+      "We do not process, guarantee, or hold payments for any marketplace transaction.",
+      "We do not verify the identity of sellers, or the condition, authenticity, or legality of listed items.",
+      "Buyers are solely responsible for verifying a seller and inspecting goods before paying.",
+      "We strongly recommend meeting in person and confirming an item matches its listing before making any payment.",
+      "We are not liable for any loss, fraud, misrepresentation, non-delivery, or dispute arising from a marketplace transaction.",
+    ].map((item) => (
+      <li key={item} className="flex gap-2">
+        <span className="text-violet-400 mt-0.5">→</span>
+        <span>{item}</span>
+      </li>
+    ))}
+  </ul>
+</Section>
+        <Section title="8. Intellectual Property">
           <p>
             The {APP_NAME} platform, including its design, code, logo, and features, is owned by us
             and protected by applicable intellectual property laws. You may not copy, reproduce, or
@@ -142,7 +162,7 @@ function Terms() {
           </p>
         </Section>
 
-        <Section title="8. Termination">
+        <Section title="9. Termination">
           <p>
             We reserve the right to suspend or terminate your account at any time if you violate
             these terms. You may also delete your account at any time. Upon termination, your
@@ -150,7 +170,7 @@ function Terms() {
           </p>
         </Section>
 
-        <Section title="9. Disclaimer of Warranties">
+        <Section title="10. Disclaimer of Warranties">
           <p>
             {APP_NAME} is provided "as is" without warranties of any kind. We do not guarantee
             that the platform will be available at all times, error-free, or suitable for any
@@ -158,7 +178,7 @@ function Terms() {
           </p>
         </Section>
 
-        <Section title="10. Limitation of Liability">
+        <Section title="11. Limitation of Liability">
           <p>
             To the fullest extent permitted by law, {APP_NAME} shall not be liable for any indirect,
             incidental, or consequential damages arising from your use of the platform, including
@@ -166,7 +186,7 @@ function Terms() {
           </p>
         </Section>
 
-        <Section title="11. Changes to Terms">
+        <Section title="12. Changes to Terms">
           <p>
             We may update these terms from time to time. We will notify you by updating the date
             at the top of this page. Continued use of {APP_NAME} after changes means you accept
@@ -174,7 +194,7 @@ function Terms() {
           </p>
         </Section>
 
-        <Section title="12. Contact Us">
+        <Section title="13. Contact Us">
           <p>
             Questions about these terms? Reach us at{" "}
             <a href={`mailto:${CONTACT_EMAIL}`} className="text-violet-400 hover:underline">{CONTACT_EMAIL}</a>.

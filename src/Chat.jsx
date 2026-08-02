@@ -1,20 +1,17 @@
 import { getAccessToken } from "./token";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { auth } from "./firebase";
 import { useAuth } from "./useAuth";
 import { io } from "socket.io-client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faChevronLeft, faUsers, faUser, faPaperPlane,
+  faChevronLeft, faUsers, faPaperPlane,
   faSpinner, faStore, faMicrophone, faImage,
   faFile, faSmile, faReply, faCheck, faCheckDouble,
   faPlus, faTimes, faSearch, faStop, faVideo,
   faPalette, faXmark, faChevronRight, faUserGroup,
   faPhotoFilm, faMagnifyingGlass, faFileAudio,
-  faHouse, faBook, faRobot, faComments, faChevronDown,
-  faBell, faCircle, faEllipsisV, faLock, faGlobe,
-  faStar, faHashtag, faAt, faInfoCircle,
+  faHouse, faBook, faRobot, faComments, faChevronDown, faCircle, faLock,
 } from "@fortawesome/free-solid-svg-icons";
 import { encryptMessage, decryptMessage } from "./crypto";
 import { uploadSingle } from "./useUpload";
@@ -575,8 +572,9 @@ function StatusCircle({ status, onClick, isOwn }) {
 }
 
 // ── Room List Item ─────────────────────────────────────────────────
-function RoomItem({ room, currentUserId, onClick, active }) {
+function RoomItem({ room, currentUserId, onClick, active, onlineUsers }) {
   const otherMember = room.isGroup ? null : room.members?.find(m => m.user?.id !== currentUserId);
+  const isOnline = !room.isGroup && otherMember && onlineUsers?.has(otherMember.user?.id);
   const lastMessage = room.messages?.[0];
   const name = room.isGroup
     ? (room.name || room.university?.shortName || "Group")
@@ -604,7 +602,9 @@ function RoomItem({ room, currentUserId, onClick, active }) {
             onError={(e) => avatarError(e, name)} alt="" />
         )}
         {/* Online dot — can be driven by real presence later */}
+        {isOnline && (
         <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-[#0a0a0f] rounded-full" />
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">
@@ -631,7 +631,7 @@ function RoomItem({ room, currentUserId, onClick, active }) {
 }
 
 // ── Chat Room ──────────────────────────────────────────────────────
-function ChatRoom({ room, dbUserId, onBack, onOpenWallpaper }) {
+function ChatRoom({ room, dbUserId, onBack, onOpenWallpaper, onlineUsers }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
@@ -870,14 +870,20 @@ function ChatRoom({ room, dbUserId, onBack, onOpenWallpaper }) {
             <img src={safeAvatar(otherMember?.user?.photoURL, roomName)}
               className="w-10 h-10 rounded-full object-cover border border-ink/10" alt=""
               onError={(e) => avatarError(e, roomName)} />
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-[#0d0d14] rounded-full" />
+            {!room.isGroup && onlineUsers?.has(otherMember?.user?.id) && (
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-[#0d0d14] rounded-full" />
+            )}
           </div>
         )}
         <div className="flex-1">
           <p className="font-semibold text-ink text-sm">{roomName}</p>
           {typingUser
             ? <p className="text-xs text-violet-400 animate-pulse">typing...</p>
-            : <p className="text-xs text-ink/30">{room.isGroup ? `${room.members?.length || 0} members` : "Online"}</p>
+            :  <p className="text-xs text-ink/30">
+            {room.isGroup
+            ? `${room.members?.length || 0} members`
+            : onlineUsers?.has(otherMember?.user?.id) ? "Online" : "Offline"}
+          </p>
           }
         </div>
         <div className="flex items-center gap-1">
@@ -1201,6 +1207,7 @@ function Chat() {
   const [dbUser, setDbUser] = useState(null);
   const [statuses, setStatuses] = useState([]);
   const [viewingStatus, setViewingStatus] = useState(null);
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [showStatusCreate, setShowStatusCreate] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [userSearch, setUserSearch] = useState("");
@@ -1243,6 +1250,28 @@ function Chat() {
     };
     init();
   }, [location.search]);
+
+  useEffect(() => {
+  if (!dbUser?.id) return;
+  const token = getAccessToken();
+  const presenceSocket = io(`${API}/chat`, {
+    transports: ["websocket"],
+    auth: { token, userId: dbUser.id },
+  });
+
+  presenceSocket.on("userOnline", ({ userId }) => {
+    setOnlineUsers(prev => new Set(prev).add(userId));
+  });
+  presenceSocket.on("userOffline", ({ userId }) => {
+    setOnlineUsers(prev => {
+      const next = new Set(prev);
+      next.delete(userId);
+      return next;
+    });
+  });
+
+  return () => presenceSocket.disconnect();
+}, [dbUser?.id]);
 
   const handleWallpaperSelect = async (preset) => {
     setWallpaper(preset);
@@ -1414,8 +1443,13 @@ function Chat() {
               ) : (
                 <div className="flex-1 overflow-y-auto">
                   {rooms.map(room => (
-                    <RoomItem key={room.id} room={room} currentUserId={dbUser?.id}
-                      active={activeRoom?.id === room.id} onClick={() => setActiveRoom(room)} />
+                  <RoomItem key={room.id} room={room} currentUserId={dbUser?.id}
+ active={activeRoom?.id === room.id}
+ onClick={() => {
+   setActiveRoom(room);
+   setRooms(prev => prev.map(r => r.id === room.id ? { ...r, unreadCount: 0 } : r));
+ }}
+  onlineUsers={onlineUsers} />
                   ))}
                 </div>
               )}
@@ -1474,11 +1508,12 @@ function Chat() {
         <div className={`flex-1 flex flex-col overflow-hidden ${activeRoom ? "flex" : "hidden md:flex"}`}>
           {activeRoom ? (
             <ChatRoom
-              room={activeRoom}
-              dbUserId={dbUser?.id}
-              onBack={() => setActiveRoom(null)}
-              wallpaper={wallpaper}
-              onOpenWallpaper={() => setShowWallpaperPicker(true)}
+             room={activeRoom}
+             dbUserId={dbUser?.id}
+             onBack={() => setActiveRoom(null)}
+             wallpaper={wallpaper}
+             onOpenWallpaper={() => setShowWallpaperPicker(true)}
+             onlineUsers={onlineUsers}
             />
           ) : (
             <EmptyState onCreateGroup={() => setShowCreateGroup(true)} />

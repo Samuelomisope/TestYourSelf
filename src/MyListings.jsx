@@ -1,11 +1,10 @@
 import { getAccessToken } from "./token";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth } from "./firebase";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faChevronLeft, faPlus, faBoxOpen,
-  faEdit, faTrash, faStore, faCheckCircle, faXmark
+  faEdit, faTrash, faStore, faCheckCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import { API } from "./config";
 
