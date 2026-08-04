@@ -680,7 +680,7 @@ function ChatRoom({ room, dbUserId, onBack, onOpenWallpaper, onlineUsers }) {
       try {
         const token = getAccessToken();
         if (!mounted) return;
-        socket = io(`${API}/chat`, { transports: ["websocket"], auth: { token } });
+        socket = io(`${API}/chat`, { auth: { token } });
         socketRef.current = socket;
 
         socket.on("connect", () => socket.emit("joinRoom", { roomId: room.id }));
