@@ -320,13 +320,17 @@ function UsersTab() {
 }
 
 // ── Materials Tab ──────────────────────────────────────────────────
-function MaterialsTab() {
+  function MaterialsTab() {
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [confirm, setConfirm] = useState(null);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
+
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [missingOnly, setMissingOnly] = useState(false); // quick filter for the "mix of both" cleanup
+  const [bulkSaving, setBulkSaving] = useState(false);
 
   useEffect(() => { apiFetch("/admin/materials").then(setMaterials).catch(console.error).finally(() => setLoading(false)); }, []);
 
@@ -335,20 +339,65 @@ function MaterialsTab() {
     catch (err) { console.error(err); }
   };
 
-  const filtered = materials.filter(m => m.title?.toLowerCase().includes(search.toLowerCase()) || m.faculty?.toLowerCase().includes(search.toLowerCase()));
+  const filtered = materials.filter(m => {
+    const matchesSearch = m.title?.toLowerCase().includes(search.toLowerCase()) || m.faculty?.toLowerCase().includes(search.toLowerCase());
+    if (!matchesSearch) return false;
+    if (missingOnly) return !m.faculty || !m.department || !m.course || !m.level || !m.semester;
+    return true;
+  });
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const pageIds = paginated.map(m => m.id);
+  const allPageSelected = pageIds.length > 0 && pageIds.every(id => selectedIds.has(id));
+
+  const toggleSelect = (id) => setSelectedIds(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+
+  const toggleSelectPage = () => setSelectedIds(prev => {
+    if (allPageSelected) {
+      const next = new Set(prev);
+      pageIds.forEach(id => next.delete(id));
+      return next;
+    }
+    return new Set([...prev, ...pageIds]);
+  });
+
+  const applyBulkEdit = async (data) => {
+    if (selectedIds.size === 0) return;
+    setBulkSaving(true);
+    try {
+      await apiFetch("/admin/materials/bulk", { method: "PATCH", body: JSON.stringify({ ids: [...selectedIds], data }) });
+      setMaterials(prev => prev.map(m => selectedIds.has(m.id) ? { ...m, ...data } : m));
+      setSelectedIds(new Set());
+    } catch (err) { console.error(err); }
+    setBulkSaving(false);
+  };
 
   return (
     <div>
-      <input type="text" placeholder="Search materials..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className={`${inputCls} mb-4`} />
+<div className="flex items-center gap-3 mb-4">
+        <input type="text" placeholder="Search materials..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className={`${inputCls} flex-1`} />
+        <button
+          onClick={() => { setMissingOnly(m => !m); setPage(1); }}
+          className={`px-3.5 py-2.5 rounded-xl text-xs font-medium whitespace-nowrap transition ${missingOnly ? "bg-violet-500 text-white" : "bg-white/5 text-ink/40 hover:text-violet-400"}`}
+        >
+          Missing metadata only
+        </button>
+      </div>
       {loading ? <p className="text-ink/20 text-sm text-center py-10">Loading...</p> : (
         <>
           <div className="overflow-x-auto rounded-2xl border border-ink/10">
             <table className="w-full">
-              <thead className="bg-white/[0.03]"><tr><th className={thCls}>Title</th><th className={thCls}>Uploaded By</th><th className={thCls}>Faculty</th><th className={thCls}>Visibility</th><th className={thCls}>Date</th><th className={thCls}>Action</th></tr></thead>
+            <thead className="bg-white/[0.03]"><tr>
+                <th className={thCls}><input type="checkbox" checked={allPageSelected} onChange={toggleSelectPage} /></th>
+                <th className={thCls}>Title</th><th className={thCls}>Uploaded By</th><th className={thCls}>Faculty</th><th className={thCls}>Visibility</th><th className={thCls}>Date</th><th className={thCls}>Action</th></tr></thead>
               <tbody className="divide-y divide-white/5">
                 {paginated.map(m => (
-                  <tr key={m.id} className="hover:bg-white/[0.02] transition">
+                  <tr key={m.id} className={`hover:bg-white/[0.02] transition ${selectedIds.has(m.id) ? "bg-violet-500/[0.05]" : ""}`}>
+                    <td className="px-4 py-3"><input type="checkbox" checked={selectedIds.has(m.id)} onChange={() => toggleSelect(m.id)} /></td>
                     <td className="px-4 py-3 font-medium text-ink text-sm max-w-[180px] truncate">{m.title}</td>
                     <td className={tdCls}>{m.user?.displayName || "—"}</td>
                     <td className={tdCls}>{m.faculty || "—"}</td>
@@ -365,6 +414,26 @@ function MaterialsTab() {
         </>
       )}
       {confirm && <ConfirmModal message={`Delete "${confirm.name}"? This cannot be undone.`} onConfirm={() => { deleteMaterial(confirm.id); setConfirm(null); }} onCancel={() => setConfirm(null)} />}
+
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-bg-elevated shadow-xl rounded-2xl px-5 py-3 flex items-center gap-2 z-50 flex-wrap justify-center max-w-[90vw]">
+          <span className="text-sm text-ink/60 mr-1">{selectedIds.size} selected</span>
+          <input placeholder="Faculty" onKeyDown={e => e.key === "Enter" && applyBulkEdit({ faculty: e.target.value })} className="w-32 bg-white/5 border border-ink/10 rounded-lg px-2 py-1.5 text-xs text-ink outline-none focus:border-violet-500/40" />
+          <input placeholder="Department" onKeyDown={e => e.key === "Enter" && applyBulkEdit({ department: e.target.value })} className="w-32 bg-white/5 border border-ink/10 rounded-lg px-2 py-1.5 text-xs text-ink outline-none focus:border-violet-500/40" />
+          <select onChange={e => e.target.value && applyBulkEdit({ level: e.target.value })} defaultValue="" className="bg-white/5 border border-ink/10 rounded-lg px-2 py-1.5 text-xs text-ink/70 outline-none">
+            <option value="" disabled>Level</option>
+            {["100","200","300","400","500"].map(l => <option key={l} value={l}>{l}</option>)}
+          </select>
+          <select onChange={e => e.target.value && applyBulkEdit({ semester: e.target.value })} defaultValue="" className="bg-white/5 border border-ink/10 rounded-lg px-2 py-1.5 text-xs text-ink/70 outline-none">
+            <option value="" disabled>Semester</option>
+            <option value="first">1st</option>
+            <option value="second">2nd</option>
+          </select>
+          <input placeholder="Course code" onKeyDown={e => e.key === "Enter" && applyBulkEdit({ course: e.target.value })} className="w-28 bg-white/5 border border-ink/10 rounded-lg px-2 py-1.5 text-xs text-ink outline-none focus:border-violet-500/40" />
+          {bulkSaving && <span className="text-xs text-violet-400">Saving…</span>}
+          <button onClick={() => setSelectedIds(new Set())} className="text-xs text-ink/40 hover:text-ink/70 ml-1">Clear</button>
+        </div>
+      )}
     </div>
   );
 }
