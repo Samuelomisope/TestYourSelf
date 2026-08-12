@@ -12,6 +12,14 @@ import { API } from "./config";
 
 const LIMIT = 20;
 
+// Maps our internal state keys to the keys the /search API returns
+const API_KEY_MAP = {
+  materials: "study-materials",
+  users: "users",
+  marketplace: "marketplace",
+  universities: "universities",
+};
+
 async function searchApi(q, type = "all", page = 1) {
   const token = getAccessToken();
   const res = await fetch(`${API}/search?q=${encodeURIComponent(q)}&type=${type}&page=${page}&limit=${LIMIT}`, {
@@ -19,6 +27,7 @@ async function searchApi(q, type = "all", page = 1) {
   });
   return res.json();
 }
+
 const TABS = [
   { id: "all", label: "All", icon: faSearch },
   { id: "materials", label: "Materials", icon: faBook },
@@ -40,61 +49,61 @@ function Search() {
   const debounceRef = useRef(null);
   const inputRef = useRef(null);
 
-useEffect(() => { inputRef.current?.focus(); }, []);
+  useEffect(() => { inputRef.current?.focus(); }, []);
 
-const doSearch = useCallback(async (q, type) => {
-  setLoading(true);
-  setHasSearched(true);
-  try {
-    const data = await searchApi(q, type, 1);
-    const materials = data.materials || [];
-    const users = data.users || [];
-    const marketplace = data.marketplace || [];
-    const universities = data.universities || [];
-    setResults({ materials, users, marketplace, universities });
-    setPage({ materials: 1, users: 1, marketplace: 1, universities: 1 });
-    setHasMore({
-      materials: materials.length === LIMIT,
-      users: users.length === LIMIT,
-      marketplace: marketplace.length === LIMIT,
-      universities: universities.length === LIMIT,
-    });
-  } catch (err) {
-    console.error(err);
-  } finally {
-    setLoading(false);
-  }
-}, []);
+  const doSearch = useCallback(async (q, type) => {
+    setLoading(true);
+    setHasSearched(true);
+    try {
+      const data = await searchApi(q, type, 1);
+      const materials = data["study-materials"] || [];
+      const users = data.users || [];
+      const marketplace = data.marketplace || [];
+      const universities = data.universities || [];
+      setResults({ materials, users, marketplace, universities });
+      setPage({ materials: 1, users: 1, marketplace: 1, universities: 1 });
+      setHasMore({
+        materials: materials.length === LIMIT,
+        users: users.length === LIMIT,
+        marketplace: marketplace.length === LIMIT,
+        universities: universities.length === LIMIT,
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-const loadMore = useCallback(async (category) => {
-  setLoadingMore(category);
-  try {
-    const nextPage = page[category] + 1;
-    const data = await searchApi(query, activeTab, nextPage);
-    const newItems = data[category] || [];
-    setResults(prev => ({ ...prev, [category]: [...prev[category], ...newItems] }));
-    setPage(prev => ({ ...prev, [category]: nextPage }));
-    setHasMore(prev => ({ ...prev, [category]: newItems.length === LIMIT }));
-  } catch (err) {
-    console.error(err);
-  } finally {
-    setLoadingMore(null);
-  }
-}, [query, activeTab, page]);
+  const loadMore = useCallback(async (category) => {
+    setLoadingMore(category);
+    try {
+      const nextPage = page[category] + 1;
+      const data = await searchApi(query, activeTab, nextPage);
+      const newItems = data[API_KEY_MAP[category]] || [];
+      setResults(prev => ({ ...prev, [category]: [...prev[category], ...newItems] }));
+      setPage(prev => ({ ...prev, [category]: nextPage }));
+      setHasMore(prev => ({ ...prev, [category]: newItems.length === LIMIT }));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingMore(null);
+    }
+  }, [query, activeTab, page]);
 
-useEffect(() => {
-  if (!query.trim() || query.trim().length < 2) {
+  useEffect(() => {
+    if (!query.trim() || query.trim().length < 2) {
+      clearTimeout(debounceRef.current);
+      queueMicrotask(() => {
+        setResults({ materials: [], users: [], marketplace: [], universities: [] });
+        setHasSearched(false);
+      });
+      return;
+    }
     clearTimeout(debounceRef.current);
-    queueMicrotask(() => {
-      setResults({ materials: [], users: [], marketplace: [], universities: [] });
-      setHasSearched(false);
-    });
-    return;
-  }
-  clearTimeout(debounceRef.current);
-  debounceRef.current = setTimeout(() => doSearch(query, activeTab), 350);
-  return () => clearTimeout(debounceRef.current);
-}, [query, activeTab, doSearch]);
+    debounceRef.current = setTimeout(() => doSearch(query, activeTab), 350);
+    return () => clearTimeout(debounceRef.current);
+  }, [query, activeTab, doSearch]);
 
   const total = results.materials.length + results.users.length + results.marketplace.length + results.universities.length;
 
@@ -164,8 +173,8 @@ useEffect(() => {
               <div>
                 <p className="text-sm font-semibold text-ink/50 mb-3 flex items-center gap-2"><FontAwesomeIcon icon={faBook} className="text-violet-400" /> Study Materials</p>
                 <div className="flex flex-col gap-2">
-                {results.materials.map(m => (
-                    <div key={m.id} onClick={() => navigate(`/material/${m.id}`)}
+                  {results.materials.map(m => (
+                    <div key={m.id} onClick={() => navigate(`/study-material/${m.id}`)}
                       className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4 flex gap-3 cursor-pointer hover:border-violet-500/20 transition">
                       <div className="w-10 h-10 bg-violet-500/10 rounded-xl flex items-center justify-center shrink-0 text-violet-400"><FontAwesomeIcon icon={faBook} /></div>
                       <div className="flex-1 min-w-0">
@@ -183,7 +192,6 @@ useEffect(() => {
                   </button>
                 )}
               </div>
-              
             )}
 
             {/* Users */}
@@ -203,7 +211,7 @@ useEffect(() => {
                         <span className="flex items-center gap-1 text-xs text-yellow-400 shrink-0"><FontAwesomeIcon icon={faStar} /> {u.sellerProfile.rating.toFixed(1)}</span>
                       )}
                     </div>
-                 ))}
+                  ))}
                 </div>
                 {hasMore.users && (
                   <button onClick={() => loadMore("users")} disabled={loadingMore === "users"}
@@ -219,7 +227,7 @@ useEffect(() => {
               <div>
                 <p className="text-sm font-semibold text-ink/50 mb-3 flex items-center gap-2"><FontAwesomeIcon icon={faStore} className="text-violet-400" /> Marketplace</p>
                 <div className="grid grid-cols-2 gap-3">
-                    {results.marketplace.map(item => (
+                  {results.marketplace.map(item => (
                     <div key={item.id} onClick={() => navigate(`/marketplace/${item.id}`)}
                       className="bg-white/[0.03] border border-ink/10 rounded-2xl overflow-hidden cursor-pointer hover:border-violet-500/20 transition">
                       <div className="h-28 bg-white/5">
@@ -247,7 +255,7 @@ useEffect(() => {
               <div>
                 <p className="text-sm font-semibold text-ink/50 mb-3 flex items-center gap-2"><FontAwesomeIcon icon={faUniversity} className="text-violet-400" /> Universities</p>
                 <div className="flex flex-col gap-2">
-                {results.universities.map(u => (
+                  {results.universities.map(u => (
                     <div key={u.id} className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4 flex items-center justify-between gap-3 hover:border-violet-500/20 transition">
                       <div>
                         <p className="font-medium text-ink">{u.name}</p>
@@ -273,4 +281,3 @@ useEffect(() => {
 }
 
 export default Search;
-

@@ -16,6 +16,7 @@ import { createNotification } from "./notifications";
 import { useOfflineDownload } from "./useOfflineDownload";
 import { listDownloadedMaterials, getOfflineBlobUrl } from "./offlineStorage";
 import { getUniversity } from "./universities";
+import { useParams } from "react-router-dom";
 
 // TODO: fill in your real contact details — shown on empty faculty cards.
 const DEVELOPER_CONTACT = {
@@ -775,6 +776,7 @@ function StudyMaterial() {
   const [universitiesList, setUniversitiesList] = useState([]);
   const [successMessage, setSuccessMessage] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
+  const { id } = useParams();
 
  // ── Offline state ──
 const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
