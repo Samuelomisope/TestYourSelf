@@ -12,14 +12,6 @@ import { API } from "./config";
 
 const LIMIT = 20;
 
-// Maps our internal state keys to the keys the /search API returns
-const API_KEY_MAP = {
-  materials: "study-materials",
-  users: "users",
-  marketplace: "marketplace",
-  universities: "universities",
-};
-
 async function searchApi(q, type = "all", page = 1) {
   const token = getAccessToken();
   const res = await fetch(`${API}/search?q=${encodeURIComponent(q)}&type=${type}&page=${page}&limit=${LIMIT}`, {
@@ -56,7 +48,7 @@ function Search() {
     setHasSearched(true);
     try {
       const data = await searchApi(q, type, 1);
-      const materials = data["study-materials"] || [];
+      const materials = data.materials || [];
       const users = data.users || [];
       const marketplace = data.marketplace || [];
       const universities = data.universities || [];
@@ -80,7 +72,7 @@ function Search() {
     try {
       const nextPage = page[category] + 1;
       const data = await searchApi(query, activeTab, nextPage);
-      const newItems = data[API_KEY_MAP[category]] || [];
+      const newItems = data[category] || [];
       setResults(prev => ({ ...prev, [category]: [...prev[category], ...newItems] }));
       setPage(prev => ({ ...prev, [category]: nextPage }));
       setHasMore(prev => ({ ...prev, [category]: newItems.length === LIMIT }));
