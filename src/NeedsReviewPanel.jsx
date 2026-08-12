@@ -109,30 +109,28 @@ export default function NeedsReviewPanel() {
   const [error, setError] = useState("");
 
   const load = async () => {
-  setLoading(true);
-  setError("");
-  try {
-    const token = getAccessToken();
-    const res = await fetch(`${API_URL}/study-material/needs-review`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) throw new Error("Request failed");
-    setFiles(await res.json());
-  } catch (err) {
-    console.error(err);
-    setError("Could not load flagged files.");
-  } finally {
-    setLoading(false);
-  }
-};
+    setLoading(true);
+    setError("");
+    try {
+      const token = getAccessToken();
+      const res = await fetch(`${API_URL}/study-material/needs-review`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Request failed");
+      setFiles(await res.json());
+    } catch (err) {
+      console.error(err);
+      setError("Could not load flagged files.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-// eslint-disable-next-line react-hooks/set-state-in-effect -- false positive, `load` is
-// already async; see https://github.com/react/react/issues/34743
-useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, []);
 
-const handleResolved = (id) => {
-  setFiles((prev) => prev.filter((f) => f.id !== id));
-};
+  const handleResolved = (id) => {
+    setFiles((prev) => prev.filter((f) => f.id !== id));
+  };
 
   return (
     <div>
