@@ -1,36 +1,78 @@
 import { useState, useEffect } from "react";
 import { getAccessToken } from "./token";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTriangleExclamation, faCheck, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faTriangleExclamation, faCheck, faSpinner, faXmark } from "@fortawesome/free-solid-svg-icons";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-function ReviewRow({ file, onResolved }) {
-  const [form, setForm] = useState({
-    department: file.department || "",
-    level: file.level || "",
-    semester: file.semester || "",
-    faculty: file.faculty || "",
+async function authFetch(path, options = {}) {
+  const token = getAccessToken();
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
   });
+  if (!res.ok) throw new Error(`Request failed: ${path}`);
+  return res.json();
+}
+
+function ReviewRow({ file, schools, onResolved, onDismissed }) {
+  const [departments, setDepartments] = useState([]);
+  const [programs, setPrograms] = useState([]);
+  const [courses, setCourses] = useState([]);
+
+  const [schoolId, setSchoolId] = useState("");
+  const [departmentId, setDepartmentId] = useState("");
+  const [programId, setProgramId] = useState("");
+  const [courseId, setCourseId] = useState("");
+
   const [saving, setSaving] = useState(false);
+  const [dismissing, setDismissing] = useState(false);
   const [error, setError] = useState("");
 
-  const canSave = form.department && form.level && form.semester && form.faculty;
+  // Cascade: school -> departments
+  useEffect(() => {
+    setDepartmentId(""); setProgramId(""); setCourseId("");
+    setDepartments([]); setPrograms([]); setCourses([]);
+    if (!schoolId) return;
+    authFetch(`/departments?schoolId=${schoolId}`)
+      .then(setDepartments)
+      .catch(() => setError("Could not load departments."));
+  }, [schoolId]);
+
+  // Cascade: department -> programs
+  useEffect(() => {
+    setProgramId(""); setCourseId("");
+    setPrograms([]); setCourses([]);
+    if (!departmentId) return;
+    authFetch(`/programs?departmentId=${departmentId}`)
+      .then(setPrograms)
+      .catch(() => setError("Could not load programs."));
+  }, [departmentId]);
+
+  // Cascade: program -> courses (via /programs/:id which includes courses)
+  useEffect(() => {
+    setCourseId("");
+    setCourses([]);
+    if (!programId) return;
+    authFetch(`/programs/${programId}`)
+      .then((p) => setCourses(p.courses || []))
+      .catch(() => setError("Could not load courses."));
+  }, [programId]);
+
+  const canSave = !!courseId;
 
   const handleSave = async () => {
     setSaving(true);
     setError("");
     try {
-      const token = getAccessToken();
-      const res = await fetch(`${API_URL}/study-material/${file.id}/resolve-review`, {
+      await authFetch(`/admin/materials/${file.id}/resolve-review`, {
         method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ courseId }),
       });
-      if (!res.ok) throw new Error("Failed to save");
       onResolved(file.id);
     } catch (err) {
       console.error(err);
@@ -40,11 +82,37 @@ function ReviewRow({ file, onResolved }) {
     }
   };
 
+  const handleDismiss = async () => {
+    setDismissing(true);
+    setError("");
+    try {
+      await authFetch(`/admin/materials/${file.id}/dismiss-review`, {
+        method: "PATCH",
+      });
+      onDismissed(file.id);
+    } catch (err) {
+      console.error(err);
+      setError("Could not dismiss. Try again.");
+    } finally {
+      setDismissing(false);
+    }
+  };
+
+  const selectClass =
+    "bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition disabled:opacity-30 disabled:cursor-not-allowed";
+
   return (
     <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-ink truncate">{file.title}</p>
+      <a 
+         href={file.signedUrl}
+         target="_blank"
+         rel="noopener noreferrer"
+         className="text-sm font-semibold text-ink hover:text-violet-400 truncate block transition"
+        >
+       {file.title}
+      </a>
           <p className="text-xs text-ink/30 mt-0.5">
             {file.user?.displayName} · {file.university?.shortName || file.university?.name || "—"}
           </p>
@@ -58,53 +126,76 @@ function ReviewRow({ file, onResolved }) {
       {error && <p className="text-pink-400 text-xs mb-2">{error}</p>}
 
       <div className="grid grid-cols-2 gap-2 mb-3">
-        <input
-          placeholder="Department"
-          value={form.department}
-          onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
-          className="bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
-        />
-        <input
-          placeholder="Course code (e.g. CHM 101)"
-          value={form.faculty}
-          onChange={(e) => setForm((f) => ({ ...f, faculty: e.target.value }))}
-          className="bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
-        />
-        <select
-          value={form.level}
-          onChange={(e) => setForm((f) => ({ ...f, level: e.target.value }))}
-          className="bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
-        >
-          <option value="">— Level —</option>
-          {["100", "200", "300", "400", "500"].map((l) => (
-            <option key={l} value={l}>{l} Level</option>
+        <select value={schoolId} onChange={(e) => setSchoolId(e.target.value)} className={selectClass}>
+          <option value="">— School —</option>
+          {schools.map((s) => (
+            <option key={s.id} value={s.id}>{s.code} — {s.name}</option>
           ))}
         </select>
+
         <select
-          value={form.semester}
-          onChange={(e) => setForm((f) => ({ ...f, semester: e.target.value }))}
-          className="bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
+          value={departmentId}
+          onChange={(e) => setDepartmentId(e.target.value)}
+          disabled={!schoolId}
+          className={selectClass}
         >
-          <option value="">— Semester —</option>
-          <option value="first">1st Semester</option>
-          <option value="second">2nd Semester</option>
+          <option value="">— Department —</option>
+          {departments.map((d) => (
+            <option key={d.id} value={d.id}>{d.name}</option>
+          ))}
+        </select>
+
+        <select
+          value={programId}
+          onChange={(e) => setProgramId(e.target.value)}
+          disabled={!departmentId}
+          className={selectClass}
+        >
+          <option value="">— Program —</option>
+          {programs.map((p) => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+
+        <select
+          value={courseId}
+          onChange={(e) => setCourseId(e.target.value)}
+          disabled={!programId}
+          className={selectClass}
+        >
+          <option value="">— Course —</option>
+          {courses.map((c) => (
+            <option key={c.id} value={c.id}>{c.code} — {c.title}</option>
+          ))}
         </select>
       </div>
 
-      <button
-        onClick={handleSave}
-        disabled={!canSave || saving}
-        className="w-full py-2 bg-violet-500 hover:bg-violet-400 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-xl text-sm font-medium transition flex items-center justify-center gap-2"
-      >
-        <FontAwesomeIcon icon={saving ? faSpinner : faCheck} className={saving ? "animate-spin" : ""} />
-        {saving ? "Saving…" : "Resolve"}
-      </button>
+      <div className="flex gap-2">
+        <button
+          onClick={handleSave}
+          disabled={!canSave || saving || dismissing}
+          className="flex-1 py-2 bg-violet-500 hover:bg-violet-400 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-xl text-sm font-medium transition flex items-center justify-center gap-2"
+        >
+          <FontAwesomeIcon icon={saving ? faSpinner : faCheck} className={saving ? "animate-spin" : ""} />
+          {saving ? "Saving…" : "Resolve"}
+        </button>
+
+        <button
+          onClick={handleDismiss}
+          disabled={saving || dismissing}
+          className="py-2 px-4 bg-white/[0.05] hover:bg-white/[0.08] disabled:opacity-30 disabled:cursor-not-allowed text-ink/60 border border-ink/10 rounded-xl text-sm font-medium transition flex items-center justify-center gap-2"
+        >
+          <FontAwesomeIcon icon={dismissing ? faSpinner : faXmark} className={dismissing ? "animate-spin" : ""} />
+          {dismissing ? "…" : "Dismiss"}
+        </button>
+      </div>
     </div>
   );
 }
 
 export default function NeedsReviewPanel() {
   const [files, setFiles] = useState([]);
+  const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -112,12 +203,15 @@ export default function NeedsReviewPanel() {
     setLoading(true);
     setError("");
     try {
-      const token = getAccessToken();
-      const res = await fetch(`${API_URL}/study-material/needs-review`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Request failed");
-      setFiles(await res.json());
+      const data = await authFetch(`/admin/materials/needs-review`);
+      setFiles(data);
+
+      // Fetch schools once, using the first material's universityId
+      // (safe assumption: all flagged materials share the same university for now)
+      if (data.length > 0) {
+        const schoolList = await authFetch(`/schools?universityId=${data[0].universityId}`);
+        setSchools(schoolList);
+      }
     } catch (err) {
       console.error(err);
       setError("Could not load flagged files.");
@@ -129,6 +223,10 @@ export default function NeedsReviewPanel() {
   useEffect(() => { load(); }, []);
 
   const handleResolved = (id) => {
+    setFiles((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  const handleDismissed = (id) => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
@@ -152,7 +250,7 @@ export default function NeedsReviewPanel() {
 
       <div className="flex flex-col gap-3">
         {files.map((file) => (
-          <ReviewRow key={file.id} file={file} onResolved={handleResolved} />
+          <ReviewRow key={file.id} file={file} schools={schools} onResolved={handleResolved} onDismissed={handleDismissed} />
         ))}
       </div>
     </div>

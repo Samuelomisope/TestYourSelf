@@ -24,6 +24,7 @@ import WriterDashboard from "./WriterDashboard";
 import NovelDetail from "./NovelDetail";
 import EpisodeReader from "./EpisodeReader";
 import WriterRoute from "./WriterRoute";
+import UniversityWelcomePage from "./UniversityWelcomePage";
 
 function App() {
   return (
@@ -32,7 +33,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-        <Route path="/study-material/:id" element={<ProtectedRoute><StudyMaterial /></ProtectedRoute>} />        
+        <Route path="/study-material" element={<ProtectedRoute><StudyMaterial /></ProtectedRoute>} />        
         <Route path="/ai" element={<ProtectedRoute><AI /></ProtectedRoute>} />
         <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
         <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
@@ -58,6 +59,7 @@ function App() {
             <WriterDashboard />
             </WriterRoute>
             </ProtectedRoute>} />
+        <Route path="/schools/:universitySlug" element={<ProtectedRoute><UniversityWelcomePage /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );
