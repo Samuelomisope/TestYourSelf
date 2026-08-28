@@ -6,7 +6,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBook, faUsers, faShoppingBag, faGraduationCap,
   faFlag, faBan, faCheckCircle, faChartBar, faStore, faStar,
-  faChevronLeft, faComment, faBullhorn, faBookOpen
+  faChevronLeft, faComment, faBullhorn, faBookOpen, faCartShopping, faTriangleExclamation,
+  faNewspaper, faChartLine,
 } from "@fortawesome/free-solid-svg-icons";
 import { API } from "./config";
 
@@ -230,6 +231,277 @@ function AnnouncementsTab() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ── News Tab ───────────────────────────────────────────────────────
+const emptyNewsForm = {
+  title: "", excerpt: "", body: "", coverImageUrl: "", sourceUrl: "", status: "PUBLISHED", publishedAt: "",
+};
+
+function NewsTab() {
+  const [universities, setUniversities] = useState([]);
+  const [universityId, setUniversityId] = useState("");
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [confirm, setConfirm] = useState(null);
+  const [editingId, setEditingId] = useState(null); // null = closed, "new" = creating, else editing that id
+  const [form, setForm] = useState(emptyNewsForm);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formStatus, setFormStatus] = useState(null);
+
+  useEffect(() => {
+    apiFetch("/universities")
+      .then((data) => {
+        setUniversities(data);
+        if (data.length > 0) setUniversityId(data[0].id);
+      })
+      .catch(console.error);
+  }, []);
+
+  const loadNews = useCallback(() => {
+    if (!universityId) return;
+    setLoading(true);
+    apiFetch(`/universities/${universityId}/news/admin`)
+      .then(setItems)
+      .catch((err) => { console.error(err); setItems([]); })
+      .finally(() => setLoading(false));
+  }, [universityId]);
+
+  useEffect(() => { loadNews(); }, [loadNews]);
+
+  const openCreate = () => { setForm(emptyNewsForm); setEditingId("new"); setFormStatus(null); };
+
+  const openEdit = (item) => {
+    setForm({
+      title: item.title || "",
+      excerpt: item.excerpt || "",
+      body: item.body || "",
+      coverImageUrl: item.coverImageUrl || "",
+      sourceUrl: item.sourceUrl || "",
+      status: item.status || "PUBLISHED",
+      publishedAt: item.publishedAt ? item.publishedAt.slice(0, 10) : "",
+    });
+    setEditingId(item.id);
+    setFormStatus(null);
+  };
+
+  const closeForm = () => { setEditingId(null); setForm(emptyNewsForm); setFormStatus(null); };
+
+  const handleCoverImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const token = getAccessToken();
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`${API}/upload/single?folder=university-news`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      setForm((f) => ({ ...f, coverImageUrl: data.url }));
+    } catch (err) {
+      console.error(err);
+      setFormStatus({ type: "error", message: "Cover image upload failed." });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const save = async () => {
+    if (!form.title.trim() || !form.excerpt.trim() || !form.body.trim()) {
+      setFormStatus({ type: "error", message: "Title, excerpt, and body are required." });
+      return;
+    }
+    setSaving(true);
+    setFormStatus(null);
+    const payload = {
+      title: form.title.trim(),
+      excerpt: form.excerpt.trim(),
+      body: form.body.trim(),
+      coverImageUrl: form.coverImageUrl || undefined,
+      sourceUrl: form.sourceUrl.trim() || undefined,
+      status: form.status,
+      publishedAt: form.publishedAt || undefined,
+    };
+    try {
+      if (editingId === "new") {
+        await apiFetch(`/universities/${universityId}/news`, { method: "POST", body: JSON.stringify(payload) });
+      } else {
+        await apiFetch(`/universities/${universityId}/news/${editingId}`, { method: "PATCH", body: JSON.stringify(payload) });
+      }
+      closeForm();
+      loadNews();
+    } catch (err) {
+      console.error(err);
+      setFormStatus({ type: "error", message: "Failed to save. Check the console for details." });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleStatus = async (item) => {
+    try {
+      await apiFetch(`/universities/${universityId}/news/${item.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: item.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED" }),
+      });
+      loadNews();
+    } catch (err) { console.error(err); }
+  };
+
+  const deleteNews = async (id) => {
+    try {
+      await apiFetch(`/universities/${universityId}/news/${id}`, { method: "DELETE" });
+      setItems((n) => n.filter((x) => x.id !== id));
+    } catch (err) { console.error(err); }
+  };
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <select
+          value={universityId}
+          onChange={(e) => setUniversityId(e.target.value)}
+          className={`${inputCls} max-w-xs`}
+        >
+          {universities.map((u) => (
+            <option key={u.id} value={u.id}>{u.name}</option>
+          ))}
+        </select>
+        <button
+          onClick={openCreate}
+          className="px-4 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium transition whitespace-nowrap"
+        >
+          + New post
+        </button>
+      </div>
+
+      {editingId && (
+        <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-5 space-y-4 mb-5">
+          <p className="text-xs font-semibold text-ink/30 uppercase tracking-wider">
+            {editingId === "new" ? "New news item" : "Edit news item"}
+          </p>
+          <input
+            type="text"
+            placeholder="Title"
+            value={form.title}
+            onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+            className={inputCls}
+          />
+          <textarea
+            placeholder="Excerpt — short teaser shown in the news list"
+            rows={2}
+            value={form.excerpt}
+            onChange={(e) => setForm((f) => ({ ...f, excerpt: e.target.value }))}
+            className={`${inputCls} resize-none`}
+          />
+          <textarea
+            placeholder="Full body"
+            rows={5}
+            value={form.body}
+            onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
+            className={`${inputCls} resize-none`}
+          />
+          <div>
+            <label className="text-xs text-ink/30 mb-1.5 block">Cover image (optional)</label>
+            <input type="file" accept="image/*" onChange={handleCoverImageUpload} className="text-sm text-ink/60" />
+            {uploadingImage && <span className="text-xs text-ink/30 ml-2">Uploading…</span>}
+            {form.coverImageUrl && (
+              <img src={form.coverImageUrl} alt="Cover preview" className="mt-2 h-20 w-20 rounded-xl object-cover" />
+            )}
+          </div>
+          <input
+            type="url"
+            placeholder="Source link (optional)"
+            value={form.sourceUrl}
+            onChange={(e) => setForm((f) => ({ ...f, sourceUrl: e.target.value }))}
+            className={inputCls}
+          />
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="text-xs text-ink/30 mb-1.5 block">Publish date (optional)</label>
+              <input
+                type="date"
+                value={form.publishedAt}
+                onChange={(e) => setForm((f) => ({ ...f, publishedAt: e.target.value }))}
+                className={inputCls}
+              />
+            </div>
+            <div className="flex-1">
+              <label className="text-xs text-ink/30 mb-1.5 block">Status</label>
+              <select
+                value={form.status}
+                onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+                className={inputCls}
+              >
+                <option value="PUBLISHED">Published</option>
+                <option value="DRAFT">Draft</option>
+              </select>
+            </div>
+          </div>
+          {formStatus && (
+            <div className={`rounded-xl px-4 py-2.5 text-sm ${formStatus.type === "error" ? "bg-pink-500/10 text-pink-400 border border-pink-500/20" : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"}`}>
+              {formStatus.message}
+            </div>
+          )}
+          <div className="flex gap-3">
+            <button
+              onClick={save}
+              disabled={saving || uploadingImage}
+              className="px-5 py-2.5 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white rounded-xl text-sm font-medium transition"
+            >
+              {saving ? "Saving…" : "Save"}
+            </button>
+            <button onClick={closeForm} className="px-5 py-2.5 border border-ink/10 text-ink/40 rounded-xl text-sm hover:border-ink/20 transition">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {loading ? <p className="text-ink/20 text-sm text-center py-10">Loading...</p> : (
+        <div className="overflow-x-auto rounded-2xl border border-ink/10">
+          <table className="w-full">
+            <thead className="bg-white/[0.03]"><tr><th className={thCls}>Title</th><th className={thCls}>Status</th><th className={thCls}>Published</th><th className={thCls}>Action</th></tr></thead>
+            <tbody className="divide-y divide-white/5">
+              {items.map((item) => (
+                <tr key={item.id} className="hover:bg-white/[0.02] transition">
+                  <td className="px-4 py-3 font-medium text-ink text-sm max-w-[240px] truncate">{item.title}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${item.status === "PUBLISHED" ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-ink/30"}`}>
+                      {item.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-ink/30">
+                    {item.publishedAt ? new Date(item.publishedAt).toLocaleDateString() : "—"}
+                  </td>
+                  <td className="px-4 py-3 flex items-center gap-3 whitespace-nowrap">
+                    <button onClick={() => toggleStatus(item)} className="text-violet-400 hover:text-violet-300 text-xs font-medium transition">
+                      {item.status === "PUBLISHED" ? "Unpublish" : "Publish"}
+                    </button>
+                    <button onClick={() => openEdit(item)} className="text-ink/40 hover:text-ink/70 text-xs font-medium transition">Edit</button>
+                    <button onClick={() => setConfirm({ id: item.id, name: item.title })} className="text-pink-400 hover:text-pink-300 text-xs font-medium transition">Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {items.length === 0 && <p className="text-center text-ink/20 py-8 text-sm">No news items for this university yet.</p>}
+        </div>
+      )}
+      {confirm && (
+        <ConfirmModal
+          message={`Delete "${confirm.name}"? This cannot be undone.`}
+          onConfirm={() => { deleteNews(confirm.id); setConfirm(null); }}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
     </div>
   );
 }
@@ -773,6 +1045,84 @@ function FeedbackTab() {
   );
 }
 
+// ── Analytics Tab ──────────────────────────────────────────────────
+function MiniBarChart({ data, colorClass = "bg-violet-500" }) {
+  const max = Math.max(1, ...data.map((d) => d.count));
+  return (
+    <div className="flex items-end gap-1 h-24">
+      {data.map((d) => (
+        <div key={d.date} className="flex-1 group relative flex flex-col justify-end h-full">
+          <div
+            className={`${colorClass} rounded-t-sm w-full transition-all`}
+            style={{ height: `${Math.max(2, (d.count / max) * 100)}%` }}
+            title={`${d.date}: ${d.count}`}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AnalyticsTab() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    apiFetch("/admin/analytics")
+      .then(setData)
+      .catch((err) => { console.error(err); setError(true); })
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <p className="text-ink/20 text-sm text-center py-10">Loading...</p>;
+  if (error || !data) {
+    return (
+      <p className="text-center text-ink/20 py-8 text-sm">
+        Analytics data unavailable — make sure the <code>/admin/analytics</code> backend endpoint has been added.
+      </p>
+    );
+  }
+
+  const totalSignups = data.signups.reduce((a, b) => a + b.count, 0);
+  const totalMaterials = data.materialUploads.reduce((a, b) => a + b.count, 0);
+  const totalListings = data.listings.reduce((a, b) => a + b.count, 0);
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatCard label="Daily active users" value={data.activity.dau} icon={<FontAwesomeIcon icon={faUsers} />} accent="violet" />
+        <StatCard label="Weekly active users" value={data.activity.wau} icon={<FontAwesomeIcon icon={faUsers} />} accent="purple" />
+        <StatCard label="Monthly active users" value={data.activity.mau} icon={<FontAwesomeIcon icon={faUsers} />} accent="green" />
+      </div>
+
+      <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-semibold text-ink/30 uppercase tracking-wider">New signups — last 30 days</p>
+          <span className="text-sm text-ink font-semibold">{totalSignups}</span>
+        </div>
+        <MiniBarChart data={data.signups} colorClass="bg-violet-500" />
+      </div>
+
+      <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-semibold text-ink/30 uppercase tracking-wider">Materials uploaded — last 30 days</p>
+          <span className="text-sm text-ink font-semibold">{totalMaterials}</span>
+        </div>
+        <MiniBarChart data={data.materialUploads} colorClass="bg-purple-500" />
+      </div>
+
+      <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-semibold text-ink/30 uppercase tracking-wider">Marketplace listings — last 30 days</p>
+          <span className="text-sm text-ink font-semibold">{totalListings}</span>
+        </div>
+        <MiniBarChart data={data.listings} colorClass="bg-pink-500" />
+      </div>
+    </div>
+  );
+}
+
 // ── Main Admin ─────────────────────────────────────────────────────
 function Admin() {
   const { user } = useAuth();
@@ -797,6 +1147,7 @@ function Admin() {
 
   const tabs = [
     { id: "overview",       label: "Overview",       icon: <FontAwesomeIcon icon={faChartBar} /> },
+    { id: "analytics",      label: "Analytics",      icon: <FontAwesomeIcon icon={faChartLine} /> },
     { id: "users",          label: "Users",          icon: <FontAwesomeIcon icon={faUsers} /> },
     { id: "materials",      label: "Materials",      icon: <FontAwesomeIcon icon={faBook} /> },
     { id: "products",       label: "Products",       icon: <FontAwesomeIcon icon={faShoppingBag} /> },
@@ -804,6 +1155,7 @@ function Admin() {
     { id: "novels", label: "Novels", icon: <FontAwesomeIcon icon={faBookOpen} /> },
     { id: "reviews",        label: "Reviews",        icon: <FontAwesomeIcon icon={faStar} /> },
     { id: "universities",   label: "Universities",   icon: <FontAwesomeIcon icon={faGraduationCap} /> },
+    { id: "news",           label: "News",           icon: <FontAwesomeIcon icon={faNewspaper} /> },
     { id: "reports",        label: "Reports",        icon: <FontAwesomeIcon icon={faFlag} /> },
     { id: "feedback",       label: "Feedback",       icon: <FontAwesomeIcon icon={faComment} /> },
     { id: "announcements",  label: "Announcements",  icon: <FontAwesomeIcon icon={faBullhorn} /> },
@@ -912,10 +1264,12 @@ function Admin() {
           </div>
         )}
 
+        {activeTab === "analytics"      && <AnalyticsTab />}
         {activeTab === "users"          && <UsersTab />}
         {activeTab === "materials"      && <MaterialsTab />}
         {activeTab === "products"       && <ProductsTab />}
         {activeTab === "universities"   && <UniversitiesTab />}
+        {activeTab === "news"           && <NewsTab />}
         {activeTab === "reports"        && <ReportsTab />}
         {activeTab === "sellers"        && <SellersTab />}
         {activeTab === "reviews"        && <ReviewsTab />}
@@ -928,5 +1282,3 @@ function Admin() {
 }
 
 export default Admin;
-
-

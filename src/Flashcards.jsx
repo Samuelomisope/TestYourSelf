@@ -13,7 +13,7 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 const TAB_LINKS = [
   { href: "/home",           label: "Home",   icon: faHouse },
-  { href: "/study-material", label: "Study",  icon: faBook },
+  { href: "/study-material", label: "Library",  icon: faBook },
   { href: "/flashcards",     label: "Cards",  icon: faLayerGroup },
   { href: "/ai",             label: "AI",     icon: faRobot },
    { href: "/novels",         label: "Novels", icon: faBookOpen },

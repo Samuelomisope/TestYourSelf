@@ -79,3 +79,23 @@ export async function getUniversityByName(name) {
   const universities = await getUniversities();
   return universities.find(u => u.name === name || u.shortName === name) || null;
 }
+
+export async function getUniversityNews(universityId) {
+  return apiGet(`/universities/${universityId}/news`);
+}
+ 
+export async function getUniversityNewsAdmin(universityId) {
+  return apiGet(`/universities/${universityId}/news/admin`);
+}
+ 
+export async function createUniversityNews(universityId, data) {
+  return apiPost(`/universities/${universityId}/news`, data);
+}
+ 
+export async function updateUniversityNews(universityId, newsId, data) {
+  return apiPatch(`/universities/${universityId}/news/${newsId}`, data);
+}
+ 
+export async function deleteUniversityNews(universityId, newsId) {
+  return apiDelete(`/universities/${universityId}/news/${newsId}`);
+}
