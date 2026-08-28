@@ -1,5 +1,5 @@
 import { getAccessToken } from "./token";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "./firebase";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -10,9 +10,11 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { API } from "./config";
 
-async function searchApi(q, type = "all") {
+const LIMIT = 20;
+
+async function searchApi(q, type = "all", page = 1) {
   const token = getAccessToken();
-  const res = await fetch(`${API}/search?q=${encodeURIComponent(q)}&type=${type}`, {
+  const res = await fetch(`${API}/search?q=${encodeURIComponent(q)}&type=${type}&page=${page}&limit=${LIMIT}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.json();
@@ -32,43 +34,68 @@ function Search() {
   const [activeTab, setActiveTab] = useState("all");
   const [results, setResults] = useState({ materials: [], users: [], marketplace: [], universities: [] });
   const [loading, setLoading] = useState(false);
-const [hasSearched, setHasSearched] = useState(false);
-const debounceRef = useRef(null);
-const inputRef = useRef(null);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [page, setPage] = useState({ materials: 1, users: 1, marketplace: 1, universities: 1 });
+  const [hasMore, setHasMore] = useState({ materials: false, users: false, marketplace: false, universities: false });
+  const [loadingMore, setLoadingMore] = useState(null);
+  const debounceRef = useRef(null);
+  const inputRef = useRef(null);
 
-useEffect(() => { inputRef.current?.focus(); }, []);
+  useEffect(() => { inputRef.current?.focus(); }, []);
 
-const doSearch = useCallback(async (q, type) => {
-  setLoading(true);
-  setHasSearched(true);
-  try {
-    const data = await searchApi(q, type);
-    setResults({
-      materials: data.materials || [],
-      users: data.users || [],
-      marketplace: data.marketplace || [],
-      universities: data.universities || [],
-    });
-  } catch (err) {
-    console.error(err);
-  } finally {
-    setLoading(false);
-  }
-}, []);
+  const doSearch = useCallback(async (q, type) => {
+    setLoading(true);
+    setHasSearched(true);
+    try {
+      const data = await searchApi(q, type, 1);
+      const materials = data.materials || [];
+      const users = data.users || [];
+      const marketplace = data.marketplace || [];
+      const universities = data.universities || [];
+      setResults({ materials, users, marketplace, universities });
+      setPage({ materials: 1, users: 1, marketplace: 1, universities: 1 });
+      setHasMore({
+        materials: materials.length === LIMIT,
+        users: users.length === LIMIT,
+        marketplace: marketplace.length === LIMIT,
+        universities: universities.length === LIMIT,
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-useEffect(() => {
-  if (!query.trim() || query.trim().length < 2) {
+  const loadMore = useCallback(async (category) => {
+    setLoadingMore(category);
+    try {
+      const nextPage = page[category] + 1;
+      const data = await searchApi(query, activeTab, nextPage);
+      const newItems = data[category] || [];
+      setResults(prev => ({ ...prev, [category]: [...prev[category], ...newItems] }));
+      setPage(prev => ({ ...prev, [category]: nextPage }));
+      setHasMore(prev => ({ ...prev, [category]: newItems.length === LIMIT }));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingMore(null);
+    }
+  }, [query, activeTab, page]);
+
+  useEffect(() => {
+    if (!query.trim() || query.trim().length < 2) {
+      clearTimeout(debounceRef.current);
+      queueMicrotask(() => {
+        setResults({ materials: [], users: [], marketplace: [], universities: [] });
+        setHasSearched(false);
+      });
+      return;
+    }
     clearTimeout(debounceRef.current);
-    queueMicrotask(() => {
-      setResults({ materials: [], users: [], marketplace: [], universities: [] });
-      setHasSearched(false);
-    });
-    return;
-  }
-  clearTimeout(debounceRef.current);
-  debounceRef.current = setTimeout(() => doSearch(query, activeTab), 350);
-  return () => clearTimeout(debounceRef.current);
-}, [query, activeTab, doSearch]);
+    debounceRef.current = setTimeout(() => doSearch(query, activeTab), 350);
+    return () => clearTimeout(debounceRef.current);
+  }, [query, activeTab, doSearch]);
 
   const total = results.materials.length + results.users.length + results.marketplace.length + results.universities.length;
 
@@ -139,7 +166,8 @@ useEffect(() => {
                 <p className="text-sm font-semibold text-ink/50 mb-3 flex items-center gap-2"><FontAwesomeIcon icon={faBook} className="text-violet-400" /> Study Materials</p>
                 <div className="flex flex-col gap-2">
                   {results.materials.map(m => (
-                    <div key={m.id} className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4 flex gap-3 hover:border-violet-500/20 transition">
+                    <div key={m.id} onClick={() => navigate(`/study-material/${m.id}`)}
+                      className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4 flex gap-3 cursor-pointer hover:border-violet-500/20 transition">
                       <div className="w-10 h-10 bg-violet-500/10 rounded-xl flex items-center justify-center shrink-0 text-violet-400"><FontAwesomeIcon icon={faBook} /></div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-ink truncate">{m.title}</p>
@@ -149,6 +177,12 @@ useEffect(() => {
                     </div>
                   ))}
                 </div>
+                {hasMore.materials && (
+                  <button onClick={() => loadMore("materials")} disabled={loadingMore === "materials"}
+                    className="w-full mt-3 py-2 text-xs font-medium text-violet-400 border border-violet-500/20 rounded-xl hover:bg-violet-500/5 transition disabled:opacity-50">
+                    {loadingMore === "materials" ? <FontAwesomeIcon icon={faSpinner} spin /> : "Load more materials"}
+                  </button>
+                )}
               </div>
             )}
 
@@ -171,6 +205,12 @@ useEffect(() => {
                     </div>
                   ))}
                 </div>
+                {hasMore.users && (
+                  <button onClick={() => loadMore("users")} disabled={loadingMore === "users"}
+                    className="w-full mt-3 py-2 text-xs font-medium text-violet-400 border border-violet-500/20 rounded-xl hover:bg-violet-500/5 transition disabled:opacity-50">
+                    {loadingMore === "users" ? <FontAwesomeIcon icon={faSpinner} spin /> : "Load more users"}
+                  </button>
+                )}
               </div>
             )}
 
@@ -193,6 +233,12 @@ useEffect(() => {
                     </div>
                   ))}
                 </div>
+                {hasMore.marketplace && (
+                  <button onClick={() => loadMore("marketplace")} disabled={loadingMore === "marketplace"}
+                    className="w-full mt-3 py-2 text-xs font-medium text-violet-400 border border-violet-500/20 rounded-xl hover:bg-violet-500/5 transition disabled:opacity-50">
+                    {loadingMore === "marketplace" ? <FontAwesomeIcon icon={faSpinner} spin /> : "Load more listings"}
+                  </button>
+                )}
               </div>
             )}
 
@@ -211,6 +257,12 @@ useEffect(() => {
                     </div>
                   ))}
                 </div>
+                {hasMore.universities && (
+                  <button onClick={() => loadMore("universities")} disabled={loadingMore === "universities"}
+                    className="w-full mt-3 py-2 text-xs font-medium text-violet-400 border border-violet-500/20 rounded-xl hover:bg-violet-500/5 transition disabled:opacity-50">
+                    {loadingMore === "universities" ? <FontAwesomeIcon icon={faSpinner} spin /> : "Load more universities"}
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -221,4 +273,3 @@ useEffect(() => {
 }
 
 export default Search;
-

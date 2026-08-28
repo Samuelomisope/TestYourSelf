@@ -2,10 +2,10 @@ import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
 
-const LAST_UPDATED = "June 12, 2025";
-const APP_NAME = "TestYourself";
+const LAST_UPDATED = "August 1, 2026";
+const APP_NAME = "UniLib";
 const CONTACT_EMAIL = "hello.testyourself@gmail.com"; // update this
-const APP_URL = "https://testyourself-nu.vercel.app";
+const APP_URL = "https://unilib.com.ng";
 
 const Section = ({ title, children }) => (
   <section className="mb-10">
@@ -31,7 +31,7 @@ function Privacy() {
             <FontAwesomeIcon icon={faChevronDown} className="rotate-90" />
           </Link>
           <h1 className="text-lg font-black tracking-tight">
-            TEST<span className="text-violet-400">YOURSELF</span>
+            UNI<span className="text-violet-400">LIB</span>
             <span className="ml-2 text-xs font-semibold bg-violet-500/20 text-violet-400 border border-violet-500/30 px-2 py-0.5 rounded-full align-middle">Privacy</span>
           </h1>
         </div>
@@ -138,15 +138,24 @@ function Privacy() {
             ))}
           </ul>
         </Section>
+        
+        <Section title="6. Marketplace Data">
+  <p>
+    If you list an item for sale, the contact details you provide (such as your
+    ChatSnap username or WhatsApp number) are shown to buyers who choose to
+    contact you. We do not verify sellers or buyers, and we are not involved
+    in any transaction or communication that follows.
+  </p>
+</Section>
 
-        <Section title="6. Data Retention">
+        <Section title="7. Data Retention">
           <p>
             We retain your account data and uploaded files for as long as your account is active.
             If you delete a file or your account, the associated data is permanently removed within 30 days.
           </p>
         </Section>
 
-        <Section title="7. Your Rights">
+        <Section title="8. Your Rights">
           <p>You have the right to:</p>
           <ul className="space-y-2 mt-2">
             {[
@@ -167,14 +176,14 @@ function Privacy() {
           </p>
         </Section>
 
-        <Section title="8. Security">
+        <Section title="9. Security">
           <p>
             We use industry-standard security measures including HTTPS, Firebase Authentication,
             and secure file storage. However, no method of transmission over the internet is 100% secure.
           </p>
         </Section>
 
-        <Section title="9. Children's Privacy">
+        <Section title="10. Children's Privacy">
           <p>
             {APP_NAME} is not directed at children under 13. We do not knowingly collect personal
             information from children under 13. If you believe a child has provided us with personal
@@ -182,7 +191,7 @@ function Privacy() {
           </p>
         </Section>
 
-        <Section title="10. Changes to This Policy">
+        <Section title="11. Changes to This Policy">
           <p>
             We may update this policy from time to time. We will notify you of significant changes
             by updating the date at the top of this page. Continued use of {APP_NAME} after changes
@@ -190,7 +199,7 @@ function Privacy() {
           </p>
         </Section>
 
-        <Section title="11. Contact Us">
+        <Section title="12. Contact Us">
           <p>
             Questions about this privacy policy? Reach us at{" "}
             <a href={`mailto:${CONTACT_EMAIL}`} className="text-violet-400 hover:underline">{CONTACT_EMAIL}</a>.

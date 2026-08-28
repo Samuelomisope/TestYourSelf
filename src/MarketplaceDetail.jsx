@@ -2,7 +2,7 @@ import { getAccessToken } from "./token";
 // MarketplaceDetail.jsx - dark theme
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { auth } from "./firebase";
+import SellerDisclaimerModal from "./components/SellerDisclaimerModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faStar, faUniversity, faTag, faBoxOpen,
@@ -42,6 +42,8 @@ function MarketplaceDetail() {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [contactRevealed, setContactRevealed] = useState(false);
 
   useEffect(() => {
     apiFetch(`/marketplace/${id}`).then(setItem).catch(console.error).finally(() => setLoading(false));
@@ -140,10 +142,27 @@ function MarketplaceDetail() {
               </div>
             </div>
             <div className="flex gap-2">
-              {chatSnapUsername && <button onClick={() => navigate(`/chat?dm=${seller.id}`)} className="flex items-center gap-1.5 px-3 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-xs font-medium transition"><FontAwesomeIcon icon={faCommentDots} /> Chat</button>}
-              {whatsapp && <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-medium hover:bg-emerald-500/30 transition">WhatsApp</a>}
-              {!chatSnapUsername && !whatsapp && <span className="text-xs text-ink/20">No contact info</span>}
-            </div>
+  {!contactRevealed ? (
+    (chatSnapUsername || whatsapp) ? (
+      <button onClick={() => setShowDisclaimer(true)} className="flex items-center gap-1.5 px-3 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-xs font-medium transition">
+        <FontAwesomeIcon icon={faCommentDots} /> Contact Seller
+      </button>
+    ) : (
+      <span className="text-xs text-ink/20">No contact info</span>
+    )
+  ) : (
+    <>
+      {chatSnapUsername && <button onClick={() => navigate(`/chat?dm=${seller.id}`)} className="flex items-center gap-1.5 px-3 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-xs font-medium transition"><FontAwesomeIcon icon={faCommentDots} /> Chat</button>}
+      {whatsapp && <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-medium hover:bg-emerald-500/30 transition">WhatsApp</a>}
+    </>
+  )}
+</div>
+
+<SellerDisclaimerModal
+  open={showDisclaimer}
+  onClose={() => setShowDisclaimer(false)}
+  onAcknowledge={() => { setContactRevealed(true); setShowDisclaimer(false); }}
+/>
           </div>
         </div>
 
