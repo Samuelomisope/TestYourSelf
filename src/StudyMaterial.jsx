@@ -2,7 +2,7 @@ import { getAccessToken } from "./token";
 import { useState, useEffect, useCallback, useMemo, createContext, useContext } from "react";
 import { useAuth } from "./useAuth";
 import { useNavigate } from "react-router-dom";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faFileLines, faLock, faVideo, faBox, faFile, faNoteSticky, faUser, faGlobe,
@@ -17,6 +17,7 @@ import { useOfflineDownload } from "./useOfflineDownload";
 import { listDownloadedMaterials, getOfflineBlobUrl } from "./offlineStorage";
 import { getUniversity } from "./universities";
 import { useParams } from "react-router-dom";
+
 
 // TODO: fill in your real contact details — shown on empty faculty cards.
 const DEVELOPER_CONTACT = {
@@ -54,7 +55,7 @@ const SEMESTER_LABELS = { first: "First Semester", second: "Second Semester" };
 
 const TAB_LINKS = [
   { href: "/home",           label: "Home",   icon: faHouse },
-  { href: "/study-material", label: "Study",  icon: faBook },
+  { href: "/study-material", label: "Library",  icon: faBook },
   { href: "/ai",             label: "AI",     icon: faRobot },
   { href: "/chat",           label: "Chat",   icon: faComments },
   { href: "/marketplace",    label: "Market", icon: faStore },
@@ -584,12 +585,14 @@ function CourseSection({ courseName, files, user, onSelect, onDelete, defaultOpe
     </div>
   );
 }
-
-// ─── Department Block (middle of the tree — contains real courses) ───
-function DepartmentBlock({ deptName, courses, user, onSelect, onDelete, defaultOpen, autoOpenFirstCourse }) {
+// ─── Department Block (middle of the tree — now: Department → Programme → Course) ───
+function DepartmentBlock({ deptName, programmes, user, onSelect, onDelete, defaultOpen, autoOpenFirstCourse }) {
   const [open, setOpen] = useState(!!defaultOpen);
-  const sortedCourses = Object.keys(courses).sort();
-  const totalFiles = Object.values(courses).reduce((a, arr) => a + arr.length, 0);
+  const sortedProgrammes = Object.keys(programmes).sort();
+  const totalCourses = sortedProgrammes.reduce((a, p) => a + Object.keys(programmes[p]).length, 0);
+  const totalFiles = sortedProgrammes.reduce(
+    (a, p) => a + Object.values(programmes[p]).reduce((b, arr) => b + arr.length, 0), 0
+  );
 
   return (
     <div>
@@ -602,11 +605,58 @@ function DepartmentBlock({ deptName, courses, user, onSelect, onDelete, defaultO
           className={`text-ink/20 text-xs transition-transform ${open ? "rotate-90" : ""}`}
         />
         <span className="text-xs font-bold text-ink/60 uppercase tracking-wider truncate">{deptName}</span>
-        <span className="text-xs text-ink/25 ml-auto shrink-0">{sortedCourses.length} {sortedCourses.length === 1 ? "course" : "courses"} · {totalFiles} files</span>
+        <span className="text-xs text-ink/25 ml-auto shrink-0">{totalCourses} {totalCourses === 1 ? "course" : "courses"} · {totalFiles} files</span>
       </button>
       {open && (
         <div className="flex flex-col gap-1.5 mt-1 mb-3 pl-5">
-          {sortedCourses.map((course, i) => (
+          {sortedProgrammes.map((programme) => {
+            const courses = programmes[programme];
+            const sortedCourses = Object.keys(courses).sort();
+            return (
+              <div key={programme} className="mb-2">
+                <p className="text-[11px] font-semibold text-ink/35 uppercase tracking-wide mb-1 pl-0.5">{programme}</p>
+                {sortedCourses.map((course) => (
+                  <CourseSection
+                    key={course}
+                    courseName={course}
+                    files={courses[course]}
+                    user={user}
+                    onSelect={onSelect}
+                    onDelete={onDelete}
+                  />
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProgrammeBlock({ programmeName, courses, user, onSelect, onDelete, defaultOpen }) {
+  const [open, setOpen] = useState(!!defaultOpen);
+  const sortedCourses = Object.keys(courses).sort();
+  const totalFiles = Object.values(courses).reduce((a, arr) => a + arr.length, 0);
+
+  return (
+    <div className="pl-2">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2.5 py-2 group w-full text-left"
+      >
+        <FontAwesomeIcon
+          icon={faChevronRight}
+          className={`text-ink/15 text-[10px] transition-transform ${open ? "rotate-90" : ""}`}
+        />
+        <span className="text-xs font-semibold text-ink/50 truncate">{programmeName}</span>
+        <span className="text-[11px] text-ink/25 ml-auto shrink-0">
+          {sortedCourses.length} {sortedCourses.length === 1 ? "course" : "courses"} · {totalFiles} files
+        </span>
+      </button>
+      {open && (
+        <div className="flex flex-col gap-1.5 mt-1 mb-2 pl-4">
+          {sortedCourses.map(course => (
             <CourseSection
               key={course}
               courseName={course}
@@ -614,7 +664,6 @@ function DepartmentBlock({ deptName, courses, user, onSelect, onDelete, defaultO
               user={user}
               onSelect={onSelect}
               onDelete={onDelete}
-              defaultOpen={autoOpenFirstCourse && i === 0 && sortedCourses.length <= 3}
             />
           ))}
         </div>
@@ -631,7 +680,9 @@ function FacultyBlock({ facultyName, facultyFullName, departments = {}, user, on
   const [open, setOpen] = useState(!!defaultOpen);
   const sortedDepts = Object.keys(departments).sort();
   const totalFiles = Object.values(departments).reduce(
-    (a, courseObj) => a + Object.values(courseObj).reduce((b, arr) => b + arr.length, 0), 0
+    (a, programmesObj) => a + Object.values(programmesObj).reduce(
+      (b, coursesObj) => b + Object.values(coursesObj).reduce((c, arr) => c + arr.length, 0), 0
+    ), 0
   );
   const hasFiles = totalFiles > 0;
 
@@ -695,18 +746,17 @@ function FacultyBlock({ facultyName, facultyFullName, departments = {}, user, on
       {/* Departments inside */}
       {open && (
         <div className="px-6 pb-5 pt-1 flex flex-col gap-1">
-          {sortedDepts.map((dept, i) => (
-            <DepartmentBlock
-              key={dept}
-              deptName={dept}
-              courses={departments[dept]}
-              user={user}
-              onSelect={onSelect}
-              onDelete={onDelete}
-              defaultOpen={defaultOpen && i === 0}
-              autoOpenFirstCourse={defaultOpen && i === 0}
-            />
-          ))}
+         {sortedDepts.map((dept, i) => (
+  <DepartmentBlock
+    key={dept}
+    deptName={dept}
+    programmes={departments[dept]}
+    user={user}
+    onSelect={onSelect}
+    onDelete={onDelete}
+    defaultOpen={defaultOpen && i === 0}
+  />
+))}
         </div>
       )}
     </div>
@@ -758,6 +808,43 @@ function FileCard({ file, user, onSelect, onDelete }) {
   );
 }
 
+function UniversityCard({ uni }) {
+  return (
+    <Link
+      to={`/schools/${uni.slug}`}
+      className={`${CARD} p-6 flex items-center gap-4 hover:-translate-y-0.5 transition group`}
+    >
+      <div className="w-12 h-12 bg-violet-500/10 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-violet-500/15 transition">
+        <FontAwesomeIcon icon={faBookOpen} className="text-violet-400" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold text-ink truncate">{uni.shortName || uni.name}</p>
+        {uni.shortName && uni.name !== uni.shortName && (
+          <p className="text-xs text-ink/35 truncate mt-0.5">{uni.name}</p>
+        )}
+      </div>
+      <FontAwesomeIcon icon={faChevronRight} className="text-ink/20 text-xs shrink-0" />
+    </Link>
+  );
+}
+
+function UniversityPicker({ universities }) {
+  return (
+    <div>
+      <p className="text-sm font-bold text-ink/70 mb-1">Choose your university</p>
+      <p className="text-xs text-ink/35 mb-5">
+        Pick a university to browse its schools, departments and course materials.
+      </p>
+      <div className="grid sm:grid-cols-2 gap-3">
+        {universities.map(uni => <UniversityCard key={uni.id} uni={uni} />)}
+      </div>
+      {universities.length === 0 && (
+        <p className="text-ink/30 text-sm">No universities available yet.</p>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Component ────────────────────────────────────────────────
 function StudyMaterial() {
   const { user } = useAuth();
@@ -777,6 +864,8 @@ function StudyMaterial() {
   const [successMessage, setSuccessMessage] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const universitySlugParam = searchParams.get("university");
 
  // ── Offline state ──
 const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
@@ -824,10 +913,12 @@ useEffect(() => {
 
       try {
         const token = getAccessToken();
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material?search=${debouncedSearch}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const params = new URLSearchParams({ search: debouncedSearch });
+if (universitySlugParam) params.set("university", universitySlugParam);
+const res = await fetch(
+  `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material?${params}`,
+  { headers: { Authorization: `Bearer ${token}` } }
+);
         if (!res.ok) throw new Error("Request failed");
         const data = await res.json();
         setFiles(Array.isArray(data) ? data : []);
@@ -844,7 +935,7 @@ useEffect(() => {
       }
     };
     fetchFiles();
-  }, [user, debouncedSearch, refreshKey, isOnline]);
+  }, [user, debouncedSearch, refreshKey, isOnline, universitySlugParam]);
 
   useEffect(() => {
     const load = async () => {
@@ -872,6 +963,14 @@ useEffect(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
+  // If we arrived here from a university's welcome page (?university=slug),
+// pre-select that university's chip once the universities list has loaded.
+useEffect(() => {
+  if (!universitySlugParam || universitiesList.length === 0) return;
+  const match = universitiesList.find(u => u.slug === universitySlugParam);
+  if (match) setUniversityFilter(match.shortName || match.name);
+}, [universitySlugParam, universitiesList]);
+
   const handleDownloadChange = useCallback(() => {
     refreshDownloads();
   }, [refreshDownloads]);
@@ -891,20 +990,36 @@ useEffect(() => {
   // ── Build hierarchy: Faculty → Department → Course → Files ──
   // (Level and Semester are handled as filters above, not folder depth —
   // keeps the tree shallow so users reach a course in 2 taps instead of 4.)
-  const grouped = useMemo(() => {
-    const g = {};
-    filtered.forEach(file => {
-      const fac    = file.faculty    || "Uncategorized Faculty";
-      const dept   = file.department || "Uncategorized Department";
-      const course = file.course     || "Uncategorized Course";
+ const grouped = useMemo(() => {
+  const g = {};
+  filtered.forEach(file => {
+    // Real chain: courseRef -> program -> department -> school.
+    // (Program.schoolId was dropped in Phase 3 — school now only
+    // reachable via department.) Materials with no courseRef (legacy,
+    // pre-migration, or needsReview) are excluded from the browse tree
+    // entirely — surfacing their raw `faculty` string as a fake school
+    // (e.g. "SEET") is misleading. They're still visible in the admin
+    // NeedsReviewPanel.
+    const school = file.courseRef?.program?.department?.school?.name;
+    if (!school) return; // skip legacy/needsReview materials
 
-      if (!g[fac]) g[fac] = {};
-      if (!g[fac][dept]) g[fac][dept] = {};
-      if (!g[fac][dept][course]) g[fac][dept][course] = [];
-      g[fac][dept][course].push(file);
-    });
-    return g;
-  }, [filtered]);
+    const department = file.courseRef?.program?.department?.name || "Uncategorized Department";
+    const programme  = file.courseRef?.program?.name              || "Uncategorized Programme";
+    const course      = file.courseRef?.code                      || "Uncategorized Course";
+
+    if (!g[school]) g[school] = {};
+    if (!g[school][department]) g[school][department] = {};
+    if (!g[school][department][programme]) g[school][department][programme] = {};
+    if (!g[school][department][programme][course]) g[school][department][programme][course] = [];
+    g[school][department][programme][course].push(file);
+  });
+  return g;
+}, [filtered]);
+
+  const pendingReviewCount = useMemo(
+    () => filtered.filter(f => !f.courseRef?.program?.department?.school?.name).length,
+    [filtered]
+  );
 
   const sortedFaculties = Object.keys(grouped).sort();
   const isSearching = debouncedSearch.trim().length > 0;
@@ -916,18 +1031,11 @@ useEffect(() => {
   // With "All" universities selected we fall back to only showing
   // faculties that actually have matching files (enumerating every
   // faculty across every university would be overwhelming).
-  const selectedUniversityData = universityFilter !== "All" ? getUniversity(universityFilter) : null;
 
-  const rosterFaculties = useMemo(() => {
-    if (selectedUniversityData) {
-      return selectedUniversityData.faculties.map(f => ({
-        name: f.name,
-        fullName: f.fullName,
-        departments: grouped[f.name] || {},
-      }));
-    }
-    return sortedFaculties.map(fac => ({ name: fac, fullName: null, departments: grouped[fac] }));
-  }, [selectedUniversityData, grouped, sortedFaculties]);
+const rosterFaculties = useMemo(
+  () => sortedFaculties.map(fac => ({ name: fac, fullName: null, departments: grouped[fac] })),
+  [grouped, sortedFaculties]
+);
 
   // Auto-expand the user's own faculty (matched against the roster) so
   // it's visible without any clicks; falls back to nothing pre-expanded.
@@ -957,7 +1065,7 @@ useEffect(() => {
               </Link>
               <h1 className="text-lg font-black tracking-tight">
                 UNI<span className="text-violet-400">LIB</span>
-                <span className="ml-2.5 text-[11px] font-semibold bg-violet-500/10 text-violet-400 px-2.5 py-1 rounded-full align-middle">Study</span>
+                <span className="ml-2.5 text-[11px] font-semibold bg-violet-500/10 text-violet-400 px-2.5 py-1 rounded-full align-middle">Library</span>
               </h1>
             </div>
             <div className="flex items-center gap-2">
@@ -1032,162 +1140,165 @@ useEffect(() => {
           </div>
         )}
 
-        {/* Search Bar */}
-        <div className="flex items-center gap-3 bg-bg-elevated shadow-[0_1px_2px_rgba(0,0,0,0.3),0_8px_24px_-12px_rgba(0,0,0,0.5)] rounded-2xl px-5 py-3.5 mt-2 mb-5 focus-within:ring-2 focus-within:ring-violet-500/30 transition">
-          <svg className="w-4 h-4 text-ink/30 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" strokeLinecap="round" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search by title, course code or keyword..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 bg-transparent text-sm outline-none text-ink placeholder-ink/25"
-          />
-          {search && (
-            <button onClick={() => setSearch("")} className="text-ink/30 hover:text-ink/60 transition">
-              <FontAwesomeIcon icon={faXmark} className="text-xs" />
-            </button>
-          )}
-        </div>
-
-        {/* Filter chips: University, Level, Semester — set once, whole tree below narrows instantly.
-            Single accent (violet) marks the active chip in every row, so "active" reads the same
-            language everywhere instead of a different color per filter type. */}
-        <div className="flex gap-2 overflow-x-auto pb-1 mb-2 scrollbar-hide">
-          {["All", ...universitiesList.map(u => u.shortName || u.name)].map(u => (
-            <button key={u} onClick={() => setUniversityFilter(u)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition ${
-                universityFilter === u
-                  ? "bg-violet-500 text-white"
-                  : "bg-ink/[0.05] text-ink/45 hover:text-violet-400"
-              }`}>
-              {u}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-2 overflow-x-auto pb-1 mb-2 scrollbar-hide">
-          {["All", ...LEVEL_ORDER].map(l => (
-            <button key={l} onClick={() => setLevelFilter(l)}
-              className={`px-3.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition ${
-                levelFilter === l
-                  ? "bg-violet-500 text-white"
-                  : "bg-ink/[0.05] text-ink/40 hover:text-violet-400"
-              }`}>
-              {l === "All" ? "All Levels" : `${l}L`}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-2 overflow-x-auto pb-1 mb-5 scrollbar-hide">
-          {["All", ...SEMESTER_ORDER].map(s => (
-            <button key={s} onClick={() => setSemesterFilter(s)}
-              className={`px-3.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition ${
-                semesterFilter === s
-                  ? "bg-violet-500 text-white"
-                  : "bg-ink/[0.05] text-ink/40 hover:text-violet-400"
-              }`}>
-              {s === "All" ? "All Semesters" : SEMESTER_LABELS[s]}
-            </button>
-          ))}
-        </div>
-
-        {/* Stats bar */}
-        <div className="flex items-center justify-between mb-6">
-          <p className="text-xs text-ink/35">
-            {filtered.length} {filtered.length === 1 ? "file" : "files"}
-            {isSearching ? ` matching "${debouncedSearch}"` : ""}
-            {hasActiveFilters ? " · filtered" : ""}
-            {showDownloadedOnly ? " · downloaded only" : ""}
-          </p>
-          {!isSearching && (
-            <p className="text-xs text-ink/25">{rosterFaculties.length} {rosterFaculties.length === 1 ? "faculty" : "faculties"}</p>
-          )}
-        </div>
-
-        {/* Loading Skeleton */}
-        {loading && (
-          <div className="flex flex-col gap-4">
-            {[1,2,3].map(i => (
-              <div key={i} className={`${CARD} p-5 shadow-none animate-pulse`}>
-                <div className="flex items-center gap-4">
-                  <div className="h-11 w-11 bg-ink/[0.06] rounded-2xl" />
-                  <div className="flex-1">
-                    <div className="h-3 bg-ink/[0.06] rounded w-1/3 mb-2.5" />
-                    <div className="h-2 bg-ink/[0.06] rounded w-1/5" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Empty State — suppressed when a specific university's full
-            faculty roster is about to render instead, since each empty
-            faculty already carries its own explanation. */}
-        {!loading && filtered.length === 0 && !(selectedUniversityData && (viewMode === "hierarchy" || !isSearching) && viewMode !== "grid") && (
-          <div className="text-center py-24">
-            <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-ink/[0.04] flex items-center justify-center">
-              <FontAwesomeIcon icon={faFile} className="text-2xl text-ink/15" />
-            </div>
-            <p className="text-ink/50 font-medium">
-              {showDownloadedOnly ? "No downloaded files yet" : "No files found"}
-            </p>
-            <p className="text-ink/25 text-sm mt-1.5">
-              {showDownloadedOnly
-                ? "Open a file and tap \"Save for offline\" to keep it here."
-                : search ? "Try a different search term" : hasActiveFilters ? "Try clearing a filter above" : "Upload your first file to get started"}
-            </p>
-            {!showDownloadedOnly && isOnline && (
-              <button
-                onClick={() => setShowUpload(true)}
-                className="mt-5 px-6 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm font-medium transition"
-              >
-                Upload file
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* ── HIERARCHY VIEW (default) — Faculty → Department → Course ──
-            When a specific university is selected, this always renders the
-            FULL faculty roster (cards, empty ones included) even if
-            filtered.length is 0. Otherwise it only renders faculties that
-            actually have matching files. */}
-        {!loading && (filtered.length > 0 || !!selectedUniversityData) && (viewMode === "hierarchy" || !isSearching) && viewMode !== "grid" && (
-          <div className="flex flex-col gap-4">
-            {rosterFaculties.map((f, i) => (
-              <FacultyBlock
-                key={f.name}
-                facultyName={f.name}
-                facultyFullName={f.fullName}
-                departments={f.departments}
-                user={user}
-                onSelect={setSelectedFile}
-                onDelete={() => setRefreshKey(k => k + 1)}
-                onUploadClick={() => setShowUpload(true)}
-                defaultOpen={myFacultyIndex === -1 ? rosterFaculties.length === 1 : i === myFacultyIndex}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* ── GRID VIEW (when toggled or searching) ── */}
-        {!loading && filtered.length > 0 && (viewMode === "grid" || isSearching) && (
+        {!universitySlugParam ? (
+          <UniversityPicker universities={universitiesList} />
+        ) : (
           <>
-            {isSearching && viewMode !== "grid" && (
-              <p className="text-xs text-ink/30 mb-4">Showing flat results for search. Switch to grid or clear search to return to hierarchy.</p>
-            )}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filtered.map(file => (
-                <FileCard
-                  key={file.id}
-                  file={file}
-                  user={user}
-                  onSelect={setSelectedFile}
-                  onDelete={() => setRefreshKey(k => k + 1)}
-                />
+            {/* Search Bar */}
+            <div className="flex items-center gap-3 bg-bg-elevated shadow-[0_1px_2px_rgba(0,0,0,0.3),0_8px_24px_-12px_rgba(0,0,0,0.5)] rounded-2xl px-5 py-3.5 mt-2 mb-5 focus-within:ring-2 focus-within:ring-violet-500/30 transition">
+              <svg className="w-4 h-4 text-ink/30 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" strokeLinecap="round" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search by title, course code or keyword..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="flex-1 bg-transparent text-sm outline-none text-ink placeholder-ink/25"
+              />
+              {search && (
+                <button onClick={() => setSearch("")} className="text-ink/30 hover:text-ink/60 transition">
+                  <FontAwesomeIcon icon={faXmark} className="text-xs" />
+                </button>
+              )}
+            </div>
+
+            {/* Filter chips: University, Level, Semester — set once, whole tree below narrows instantly.
+                Single accent (violet) marks the active chip in every row, so "active" reads the same
+                language everywhere instead of a different color per filter type. */}
+            <div className="flex gap-2 overflow-x-auto pb-1 mb-2 scrollbar-hide">
+              {["All", ...universitiesList.map(u => u.shortName || u.name)].map(u => (
+                <button key={u} onClick={() => setUniversityFilter(u)}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition ${
+                    universityFilter === u
+                      ? "bg-violet-500 text-white"
+                      : "bg-ink/[0.05] text-ink/45 hover:text-violet-400"
+                  }`}>
+                  {u}
+                </button>
               ))}
             </div>
+            <div className="flex gap-2 overflow-x-auto pb-1 mb-2 scrollbar-hide">
+              {["All", ...LEVEL_ORDER].map(l => (
+                <button key={l} onClick={() => setLevelFilter(l)}
+                  className={`px-3.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition ${
+                    levelFilter === l
+                      ? "bg-violet-500 text-white"
+                      : "bg-ink/[0.05] text-ink/40 hover:text-violet-400"
+                  }`}>
+                  {l === "All" ? "All Levels" : `${l}L`}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1 mb-5 scrollbar-hide">
+              {["All", ...SEMESTER_ORDER].map(s => (
+                <button key={s} onClick={() => setSemesterFilter(s)}
+                  className={`px-3.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition ${
+                    semesterFilter === s
+                      ? "bg-violet-500 text-white"
+                      : "bg-ink/[0.05] text-ink/40 hover:text-violet-400"
+                  }`}>
+                  {s === "All" ? "All Semesters" : SEMESTER_LABELS[s]}
+                </button>
+              ))}
+            </div>
+
+            {/* Stats bar */}
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-xs text-ink/35">
+                {filtered.length} {filtered.length === 1 ? "file" : "files"}
+                {isSearching ? ` matching "${debouncedSearch}"` : ""}
+                {hasActiveFilters ? " · filtered" : ""}
+                {showDownloadedOnly ? " · downloaded only" : ""}
+              </p>
+              {!isSearching && (
+                <p className="text-xs text-ink/25">{rosterFaculties.length} {rosterFaculties.length === 1 ? "school" : "schools"}</p>
+              )}
+            </div>
+
+            {/* Loading Skeleton */}
+            {loading && (
+              <div className="flex flex-col gap-4">
+                {[1,2,3].map(i => (
+                  <div key={i} className={`${CARD} p-5 shadow-none animate-pulse`}>
+                    <div className="flex items-center gap-4">
+                      <div className="h-11 w-11 bg-ink/[0.06] rounded-2xl" />
+                      <div className="flex-1">
+                        <div className="h-3 bg-ink/[0.06] rounded w-1/3 mb-2.5" />
+                        <div className="h-2 bg-ink/[0.06] rounded w-1/5" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!loading && filtered.length === 0 && (
+              <div className="text-center py-24">
+                <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-ink/[0.04] flex items-center justify-center">
+                  <FontAwesomeIcon icon={faFile} className="text-2xl text-ink/15" />
+                </div>
+                <p className="text-ink/50 font-medium">
+                  {showDownloadedOnly ? "No downloaded files yet" : "No files found"}
+                </p>
+                <p className="text-ink/25 text-sm mt-1.5">
+                  {showDownloadedOnly
+                    ? "Open a file and tap \"Save for offline\" to keep it here."
+                    : search ? "Try a different search term" : hasActiveFilters ? "Try clearing a filter above" : "Upload your first file to get started"}
+                </p>
+                {!showDownloadedOnly && isOnline && (
+                  <button
+                    onClick={() => setShowUpload(true)}
+                    className="mt-5 px-6 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm font-medium transition"
+                  >
+                    Upload file
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* ── HIERARCHY VIEW (default) — School → Department → Programme → Course ──
+                Only schools that actually have matching files are shown; empty
+                schools with zero materials don't render (see note on the roster
+                fallback removal in the grouping logic). */}
+            {!loading && filtered.length > 0 && (viewMode === "hierarchy" || !isSearching) && viewMode !== "grid" && (
+              <div className="flex flex-col gap-4">
+                {rosterFaculties.map((f, i) => (
+                  <FacultyBlock
+                    key={f.name}
+                    facultyName={f.name}
+                    facultyFullName={f.fullName}
+                    departments={f.departments}
+                    user={user}
+                    onSelect={setSelectedFile}
+                    onDelete={() => setRefreshKey(k => k + 1)}
+                    onUploadClick={() => setShowUpload(true)}
+                    defaultOpen={myFacultyIndex === -1 ? rosterFaculties.length === 1 : i === myFacultyIndex}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* ── GRID VIEW (when toggled or searching) ── */}
+            {!loading && filtered.length > 0 && (viewMode === "grid" || isSearching) && (
+              <>
+                {isSearching && viewMode !== "grid" && (
+                  <p className="text-xs text-ink/30 mb-4">Showing flat results for search. Switch to grid or clear search to return to hierarchy.</p>
+                )}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {filtered.map(file => (
+                    <FileCard
+                      key={file.id}
+                      file={file}
+                      user={user}
+                      onSelect={setSelectedFile}
+                      onDelete={() => setRefreshKey(k => k + 1)}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </>
         )}
       </main>
