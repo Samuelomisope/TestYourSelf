@@ -106,6 +106,48 @@ function CoreValueSeal({ letter, word, desc, delay = 0 }) {
   );
 }
 
+function formatNewsDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function NewsItem({ title, excerpt, coverImageUrl, sourceUrl, publishedAt, delay = 0 }) {
+  return (
+    <div
+      style={{ animationDelay: `${delay}ms` }}
+      className="flex animate-[fadeUp_0.5s_ease-out_both] gap-4 rounded-2xl border border-ink/10 bg-bg-elevated p-5 transition-colors duration-200 hover:border-ink/20"
+    >
+      {coverImageUrl && (
+        <img
+          src={coverImageUrl}
+          alt=""
+          className="h-20 w-20 shrink-0 rounded-xl object-cover"
+        />
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="mb-1.5 flex items-center justify-between gap-3">
+          <p className="font-serif text-lg font-medium text-ink">{title}</p>
+          <span className="shrink-0 text-xs text-ink/30">{formatNewsDate(publishedAt)}</span>
+        </div>
+        <p className="mb-2 text-sm leading-relaxed text-ink/60">{excerpt}</p>
+        {sourceUrl && (
+          <a
+            href={sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="border-b border-accent pb-px text-[13px] text-accent-hover no-underline"
+          >
+            Read more →
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function coreValueGridClass(count) {
   // Keep the row sane for university value sets that aren't exactly 5.
   if (count <= 3) return "grid-cols-3 max-[480px]:grid-cols-1";
@@ -118,6 +160,7 @@ export default function UniversityWelcomePage() {
   const [university, setUniversity] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [news, setNews] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -147,11 +190,32 @@ export default function UniversityWelcomePage() {
     };
   }, [universitySlug]);
 
+  useEffect(() => {
+    if (!university?.id) return;
+    let cancelled = false;
+
+    getUniversityNews(university.id)
+      .then((data) => {
+        if (!cancelled) setNews(data);
+      })
+      .catch((err) => {
+        console.error(err);
+        if (!cancelled) setNews([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [university?.id]);
+
   if (loading) {
     return (
-      <div className="mx-auto max-w-[960px] px-6 py-16 pb-24 text-ink/30">
-        Loading university…
-      </div>
+      <>
+        <Navbar />
+        <div className="mx-auto max-w-[960px] px-6 pt-32 py-16 pb-24 text-ink/30">
+          Loading university…
+        </div>
+      </>
     );
   }
 

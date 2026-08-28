@@ -21,7 +21,7 @@ import ThemeToggle from "./components/ThemeToggle";
 // ─── Shared Nav Links ──────────────────────────────────────────────
 const TAB_LINKS = [
   { href: "/home",           label: "Home",   icon: faHouse },
-  { href: "/study-material", label: "Study",  icon: faBook,     tour: "nav-study" },
+  { href: "/study-material", label: "Library",  icon: faBook,     tour: "nav-study" },
   { href: "/ai",             label: "AI",     icon: faRobot,    tour: "nav-ai" },
    { href: "/novels",         label: "Novels", icon: faBookOpen },
   { href: "/chat",           label: "Chat",   icon: faComments, tour: "nav-chat" },
@@ -271,7 +271,7 @@ const timeAgo = (dateStr) => {
 
   const sidebarLinks = [
     { name: "Home", href: "/home", icon: faHouse },
-    { name: "Study Material", href: "/study-material", icon: faBook },
+    { name: "Library", href: "/study-material", icon: faBook },
     { name: "Flashcards", href: "/flashcards", icon: faLayerGroup },
     { name: "AI Assistant", href: "/ai", icon: faRobot },
     { name: "Chat", href: "/chat", icon: faComments },
@@ -530,7 +530,7 @@ const timeAgo = (dateStr) => {
             <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4">
               <p className="text-xs font-semibold text-ink/30 tracking-widest uppercase mb-3">Quick shortcuts</p>
               <div className="flex flex-col gap-2">
-                <Link to="/study-material" className="text-sm text-violet-400 hover:text-violet-300 transition flex items-center gap-2"><FontAwesomeIcon icon={faBookmark} />Go to Study Material</Link>
+                <Link to="/study-material" className="text-sm text-violet-400 hover:text-violet-300 transition flex items-center gap-2"><FontAwesomeIcon icon={faBookmark} />Go to Library</Link>
                 <Link to="/ai" className="text-sm text-violet-400 hover:text-violet-300 transition flex items-center gap-2"><FontAwesomeIcon icon={faRobot} />Resume AI conversation</Link>
                 <Link to="/chat" className="text-sm text-violet-400 hover:text-violet-300 transition flex items-center gap-2"><FontAwesomeIcon icon={faMessage} />Open Chat</Link>
                 <Link to="/marketplace" className="text-sm text-violet-400 hover:text-violet-300 transition flex items-center gap-2"><FontAwesomeIcon icon={faBagShopping} />Browse Marketplace</Link>
@@ -551,7 +551,7 @@ const timeAgo = (dateStr) => {
             <div>
               <h3 className="font-bold text-xs text-ink/30 uppercase tracking-widest mb-4">Resources</h3>
               <ul className="space-y-2 text-sm text-ink/50">
-                <li><Link to="/study-material" className="hover:text-violet-400 transition">Study Material</Link></li>
+                <li><Link to="/study-material" className="hover:text-violet-400 transition">Library</Link></li>
                 <li><Link to="/ai" className="hover:text-violet-400 transition">AI</Link></li>
                 <li><Link to="/marketplace" className="hover:text-violet-400 transition">Marketplace</Link></li>
                 <li><Link to="/chat" className="hover:text-violet-400 transition">Chat</Link></li>
