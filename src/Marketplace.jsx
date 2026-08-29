@@ -1,21 +1,12 @@
 import { getAccessToken } from "./token";
 import { useState, useEffect } from "react";
-import { useNavigate, Link, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faSearch, faPlus, faList, faStore, faFilter, faTag, faBoxOpen, faTimes, faStar,
-  faHouse, faBook, faRobot, faComments, faChevronLeft, faBookOpen,
+  faSearch, faPlus, faList, faFilter, faTag, faBoxOpen, faTimes, faStar,
 } from "@fortawesome/free-solid-svg-icons";
 import { API } from "./config";
-
-const TAB_LINKS = [
-  { href: "/home",          label: "Home",   icon: faHouse },
-  { href: "/study-material",label: "Study",  icon: faBook },
-  { href: "/ai",            label: "AI",     icon: faRobot },
-   { href: "/novels",         label: "Novels", icon: faBookOpen },
-  { href: "/chat",          label: "Chat",   icon: faComments },
-  { href: "/marketplace",   label: "Market", icon: faStore },
-];
+import Navbar from "./Navbar";
 
 async function apiFetch(path, options = {}) {
   const token = getAccessToken();
@@ -58,38 +49,57 @@ function ListingCard({ item, onClick }) {
 
 function Marketplace() {
   const navigate = useNavigate();
-  const location = useLocation();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({ category: "", type: "", condition: "", minPrice: "", maxPrice: "" });
 
-  const fetchListings = async () => {
+  // Takes the filters/search to use directly, rather than reading from
+  // closure state — avoids the stale-state bug where a setFilters call
+  // right before fetchListings() would still see the pre-update value,
+  // since setState is async and doesn't apply before the next line runs.
+  const fetchListings = async (overrides = {}) => {
+    const activeSearch = overrides.search ?? search;
+    const activeFilters = overrides.filters ?? filters;
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (search) params.set("search", search);
-      if (filters.category) params.set("category", filters.category);
-      if (filters.type) params.set("type", filters.type);
-      if (filters.condition) params.set("condition", filters.condition);
-      if (filters.minPrice) params.set("minPrice", filters.minPrice);
-      if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
+      if (activeSearch) params.set("search", activeSearch);
+      if (activeFilters.category) params.set("category", activeFilters.category);
+      if (activeFilters.type) params.set("type", activeFilters.type);
+      if (activeFilters.condition) params.set("condition", activeFilters.condition);
+      if (activeFilters.minPrice) params.set("minPrice", activeFilters.minPrice);
+      if (activeFilters.maxPrice) params.set("maxPrice", activeFilters.maxPrice);
       setListings(await apiFetch(`/marketplace?${params.toString()}`));
     } catch (err) { console.error(err); }
     setLoading(false);
   };
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try { setListings(await apiFetch("/marketplace")); } catch (err) { console.error(err); }
-      setLoading(false);
-    };
-    load();
+    fetchListings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
+
+  const toggleCategory = (cat) => {
+    const nextFilters = { ...filters, category: filters.category === cat ? "" : cat };
+    setFilters(nextFilters);
+    fetchListings({ filters: nextFilters });
+  };
+
+  const applyFilters = () => {
+    fetchListings();
+    setShowFilters(false);
+  };
+
+  const clearFilters = () => {
+    const cleared = { category: "", type: "", condition: "", minPrice: "", maxPrice: "" };
+    setFilters(cleared);
+    setSearch("");
+    fetchListings({ filters: cleared, search: "" });
+  };
 
   return (
     <div className="min-h-screen bg-bg text-ink">
@@ -98,42 +108,25 @@ function Marketplace() {
         <div className="absolute bottom-0 left-1/4 w-72 h-72 bg-pink-500 rounded-full opacity-[0.06] blur-[100px]" />
       </div>
 
-      <header className="fixed top-0 left-0 w-full z-40 bg-bg/80 backdrop-blur-md border-b border-ink/5">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex items-center justify-between px-4 py-2.5">
-            <div className="flex items-center gap-3">
-              <Link to="/home" className="text-ink/40 hover:text-violet-400 transition">
-                <FontAwesomeIcon icon={faChevronLeft} />
-              </Link>
-              <h1 className="text-lg font-black tracking-tight">
-                UNI<span className="text-violet-400">LIB</span>
-                <span className="ml-2 text-xs font-semibold bg-violet-500/20 text-violet-400 border border-violet-500/30 px-2 py-0.5 rounded-full align-middle">Market</span>
-              </h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => navigate("/marketplace/my-listings")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-ink/10 text-sm text-ink/50 hover:border-violet-500/30 hover:text-violet-400 transition">
-                <FontAwesomeIcon icon={faList} /> My Listings
-              </button>
-              <button onClick={() => navigate("/marketplace/create")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-500 hover:bg-violet-400 text-white text-sm transition">
-                <FontAwesomeIcon icon={faPlus} /> Sell
-              </button>
-            </div>
-          </div>
-          <div className="flex items-center justify-around border-t border-ink/5 px-2">
-            {TAB_LINKS.map((tab) => {
-              const isActive = location.pathname === tab.href;
-              return (
-                <Link key={tab.href} to={tab.href} className={`flex flex-col items-center py-2 px-4 border-b-2 transition text-xs gap-0.5 ${isActive ? "border-violet-500 text-violet-400" : "border-transparent text-ink/30 hover:text-ink/60"}`}>
-                  <FontAwesomeIcon icon={tab.icon} className="w-4 h-4" />
-                  <span>{tab.label}</span>
-                </Link>
-              );
-            })}
+      <Navbar />
+
+      <div className="relative z-10 max-w-5xl mx-auto px-4 pt-32 pb-10">
+        {/* Marketplace-specific actions row */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-black tracking-tight">
+            UNI<span className="text-violet-400">LIB</span>
+            <span className="ml-2 text-xs font-semibold bg-violet-500/20 text-violet-400 border border-violet-500/30 px-2 py-0.5 rounded-full align-middle">Market</span>
+          </h2>
+          <div className="flex items-center gap-2">
+            <button onClick={() => navigate("/marketplace/my-listings")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-ink/10 text-sm text-ink/50 hover:border-violet-500/30 hover:text-violet-400 transition">
+              <FontAwesomeIcon icon={faList} /> My Listings
+            </button>
+            <button onClick={() => navigate("/marketplace/create")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-500 hover:bg-violet-400 text-white text-sm transition">
+              <FontAwesomeIcon icon={faPlus} /> Sell
+            </button>
           </div>
         </div>
-      </header>
 
-      <div className="relative z-10 max-w-5xl mx-auto px-4 pt-28 pb-10">
         {/* Search */}
         <form onSubmit={(e) => { e.preventDefault(); fetchListings(); }} className="flex gap-2 mb-4">
           <div className="flex-1 relative">
@@ -176,10 +169,10 @@ function Marketplace() {
               ))}
             </div>
             <div className="flex justify-between mt-3">
-              <button onClick={() => { setFilters({ category: "", type: "", condition: "", minPrice: "", maxPrice: "" }); setSearch(""); }} className="text-xs text-ink/30 hover:text-pink-400 flex items-center gap-1 transition">
+              <button onClick={clearFilters} className="text-xs text-ink/30 hover:text-pink-400 flex items-center gap-1 transition">
                 <FontAwesomeIcon icon={faTimes} /> Clear filters
               </button>
-              <button onClick={() => { fetchListings(); setShowFilters(false); }} className="px-4 py-1.5 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-xs transition">Apply</button>
+              <button onClick={applyFilters} className="px-4 py-1.5 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-xs transition">Apply</button>
             </div>
           </div>
         )}
@@ -187,7 +180,7 @@ function Marketplace() {
         {/* Category Pills */}
         <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
           {CATEGORIES.map(cat => (
-            <button key={cat} onClick={() => { setFilters(f => ({ ...f, category: f.category === cat ? "" : cat })); fetchListings(); }}
+            <button key={cat} onClick={() => toggleCategory(cat)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition border ${filters.category === cat ? "bg-violet-500 text-white border-violet-500" : "bg-white/[0.03] border-ink/10 text-ink/50 hover:border-violet-500/30 hover:text-violet-400"}`}>
               <FontAwesomeIcon icon={faTag} /> {cat}
             </button>
@@ -214,4 +207,3 @@ function Marketplace() {
 }
 
 export default Marketplace;
-

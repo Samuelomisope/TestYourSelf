@@ -99,6 +99,15 @@ function MarketplaceOnboarding() {
               <h1 className="text-xl font-bold text-ink">Set Up Your Seller Profile</h1>
               <p className="text-ink/40 text-sm mt-1">Help buyers know how to reach you</p>
             </div>
+            <div className="bg-violet-500/[0.06] border border-violet-500/15 rounded-2xl p-4 mb-5">
+              <p className="text-xs font-semibold text-violet-400 mb-2">Tips for a listing that sells</p>
+              <ul className="text-xs text-ink/50 space-y-1 list-disc list-inside">
+                <li>Use clear, well-lit photos — items with photos sell faster</li>
+                <li>Mention condition honestly (new, used, any wear)</li>
+                <li>Price fairly — check similar listings first</li>
+                <li>Reply quickly once a buyer reaches out via ChatSnap or WhatsApp</li>
+              </ul>
+            </div>
             <div className="space-y-4">
               <div>
                 <label className="text-xs text-ink/30 mb-1 block flex items-center gap-1"><FontAwesomeIcon icon={faUser} /> Bio (optional)</label>
@@ -142,4 +151,3 @@ function MarketplaceOnboarding() {
 }
 
 export default MarketplaceOnboarding;
-
