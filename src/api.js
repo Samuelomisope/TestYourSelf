@@ -71,6 +71,10 @@ export async function getUniversities() {
   return res.json();
 }
 
+export async function getUniversityBySlug(slug) {
+  return apiGet(`/universities/slug/${encodeURIComponent(slug)}`);
+}
+
 export async function updateMe(data) {
   return apiPatch("/users/me", data);
 }

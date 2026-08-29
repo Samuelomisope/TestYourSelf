@@ -156,7 +156,7 @@ const QUOTES = [
   const [leaderboardRank, setLeaderboardRank] = useState(null);
   const [activityDays, setActivityDays] = useState(7);
   const { unreadCount } = useNotifications();
-  const [ setLastMarketplace] = useState(null);
+  const [lastMarketplace, setLastMarketplace] = useState(null);
 
   const greeting = () => {
     const h = new Date().getHours();

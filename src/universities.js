@@ -3,30 +3,7 @@ export const UNIVERSITIES = [
     name: "FUTA",
     fullName: "Federal University of Technology, Akure",
     faculties: [
-      {
-        name: "SEET",
-        fullName: "School of Engineering & Engineering Technology",
-        departments: [
-          "Mechanical Engineering",
-          "Electrical & Electronics Engineering",
-          "Civil & Environmental Engineering",
-          "Computer Engineering",
-          "Agricultural & Environmental Engineering",
-          "Materials & Metallurgical Engineering",
-          "Industrial & Production Engineering",
-        ],
-      },
-      {
-        name: "SCES",
-        fullName: "School of Computing & Communications Sciences",
-        departments: [
-          "Computer Science",
-          "Information Technology",
-          "Cyber Security",
-          "Software Engineering",
-        ],
-      },
-      {
+       {
         name: "SAAT",
         fullName: "School of Agriculture & Agricultural Technology",
         departments: [
@@ -37,6 +14,39 @@ export const UNIVERSITIES = [
           "Food Science & Technology",
         ],
       },
+      {
+        name: "SIMME",
+        fullName: "School of Infrastructure, Minerals and Manufacturing Engineering",
+        departments: [
+          "Agricultural Engineering",
+          "Civil Engineering",
+          "Mechanical Engineering",
+          "Civil & Environmental Engineering",
+          "Materials & Metallurgical Engineering",
+          
+        ],
+      },
+       {
+        name: "SESE",
+        fullName: "School of Electronics System Engineering",
+        departments: [
+          "BioMedical Engineering",
+          "Computer Engineering",
+          "Electrical & Electronics Engineering",
+          "Industrial & Production Engineering",
+        ],
+      },
+      {
+        name: "SOC",
+        fullName: "School of Computing",
+        departments: [
+          "Computer Science",
+          "Information Technology",
+          "Cyber Security",
+          "Software Engineering",
+        ],
+      },
+     
       {
         name: "SEMS",
         fullName: "School of Earth & Mineral Sciences",
