@@ -33,8 +33,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-        <Route path="/study-material" element={<ProtectedRoute><StudyMaterial /></ProtectedRoute>} />        
-        <Route path="/ai" element={<ProtectedRoute><AI /></ProtectedRoute>} />
+        <Route path="/study-material" element={<ProtectedRoute><StudyMaterial /></ProtectedRoute>} />        <Route path="/ai" element={<ProtectedRoute><AI /></ProtectedRoute>} />
         <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
         <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
         <Route path="/marketplace/create" element={<ProtectedRoute><CreateListing /></ProtectedRoute>} />
@@ -44,6 +43,7 @@ function App() {
         <Route path="/marketplace/:id" element={<ProtectedRoute><MarketplaceDetail /></ProtectedRoute>} />
         <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+        <Route path="/schools/:universitySlug" element={<ProtectedRoute><UniversityWelcomePage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/privacy" element={<ProtectedRoute><Privacy /></ProtectedRoute>} />
         <Route path="/terms" element={<ProtectedRoute><Terms /></ProtectedRoute>} />

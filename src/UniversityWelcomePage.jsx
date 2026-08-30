@@ -220,7 +220,7 @@ export default function UniversityWelcomePage() {
     );
   }
 
-  if (notFound || !university) {
+   if (notFound || !university) {
     return (
       <>
         <Navbar />
@@ -334,20 +334,52 @@ export default function UniversityWelcomePage() {
         )}
 
         {/* Footer */}
-        {university.sourceUrl && (
-          <div className="mt-16 flex flex-wrap items-center justify-between gap-3 border-t border-ink/10 pt-7">
-            <span className="text-[13px] text-ink/30">
-              Source: {university.name} — official university profile
-            </span>
-            <a
-              href={university.sourceUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="border-b border-accent pb-px text-[13px] text-accent-hover no-underline"
-            >
-              Read the full detail →
-            </a>
-          </div>
+        {(university.schools?.some(s => s.admissionRequirement) || university.sourceUrl) && (
+          <footer className="mt-16 border-t border-ink/10 pt-10">
+            <div className="grid grid-cols-1 lg:grid-cols-6 gap-8">
+              <div className="lg:col-span-3 space-y-2">
+                <h2 className="font-serif text-lg font-medium text-ink">{university.name}</h2>
+                {university.sourceUrl && (
+                  <a
+                    href={university.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-block border-b border-accent pb-px text-[13px] text-accent-hover no-underline"
+                  >
+                    Official university profile →
+                  </a>
+                )}
+              </div>
+
+              {university.schools?.some(s => s.admissionRequirement) && (
+                <div className="lg:col-span-3">
+                  <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-ink/30">
+  School websites
+</h3>
+                  <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink/50">
+                    {university.schools
+                      .filter(s => s.admissionRequirement)
+                      .map(s => (
+                        <a
+                          key={s.id}
+                          href={s.admissionRequirement}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="hover:text-violet-400 transition"
+                        >
+                          {s.code}
+                        </a>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-10 pt-4 border-t border-ink/5 flex justify-between items-center">
+              <p className="text-ink/20 text-sm">© 2026 UNILIB</p>
+              <p className="text-sm text-ink/20">All rights reserved.</p>
+            </div>
+          </footer>
         )}
       </div>
     </>
