@@ -10,10 +10,24 @@ function resolveTheme(theme) {
   return theme === "system" ? getSystemTheme() : theme;
 }
 
+function applyTheme(applied) {
+  const root = document.documentElement;
+
+  // dark mode uses a class (matches `@variant dark (&:where(.dark, .dark *))`)
+  root.classList.toggle("dark", applied === "dark");
+
+  // sepia uses a data attribute (matches `html[data-theme="sepia"]`)
+  if (applied === "sepia") {
+    root.setAttribute("data-theme", "sepia");
+  } else {
+    root.removeAttribute("data-theme");
+  }
+}
+
 export function DarkModeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
     const stored = localStorage.getItem("theme");
-    if (stored === "light" || stored === "dark" || stored === "system") return stored;
+    if (stored === "light" || stored === "dark" || stored === "sepia" || stored === "system") return stored;
 
     const legacy = localStorage.getItem("darkMode");
     if (legacy === "false") return "light";
@@ -26,7 +40,7 @@ export function DarkModeProvider({ children }) {
   useEffect(() => {
     const applied = resolveTheme(theme);
     setResolvedTheme(applied);
-    document.documentElement.classList.toggle("dark", applied === "dark");
+    applyTheme(applied);
     localStorage.setItem("theme", theme);
   }, [theme]);
 
@@ -37,7 +51,7 @@ export function DarkModeProvider({ children }) {
     const handler = () => {
       const applied = getSystemTheme();
       setResolvedTheme(applied);
-      document.documentElement.classList.toggle("dark", applied === "dark");
+      applyTheme(applied);
     };
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
@@ -60,4 +74,3 @@ export function DarkModeProvider({ children }) {
 export function useDarkMode() {
   return useContext(DarkModeContext);
 }
-
