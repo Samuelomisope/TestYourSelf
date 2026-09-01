@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getUniversityBySlug } from "./api";
+
+import { getUniversityBySlug, getUniversityNews } from "./api";
+import Navbar from "./Navbar";
+
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCamera } from "@fortawesome/free-solid-svg-icons";
+
 import futa1 from "./assets/futa1.jpg";
 import futa2 from "./assets/futa2.jpg";
 import futa3 from "./assets/futa3.jpg";
@@ -397,6 +401,34 @@ export default function UniversityWelcomePage() {
           </div>
         </>
       )}
+
+
+      {/* News */}
+<section className="mb-[72px]">
+  <p className="mb-5 flex items-center gap-3 text-xs font-medium uppercase tracking-wider text-ink/30 after:h-px after:flex-1 after:bg-ink/10">
+    Latest news
+  </p>
+
+  {news.length > 0 ? (
+    <div className="space-y-3">
+      {news.map((item, i) => (
+        <NewsItem
+          key={item.id ?? i}
+          title={item.title}
+          excerpt={item.excerpt}
+          coverImageUrl={item.coverImageUrl}
+          sourceUrl={item.sourceUrl}
+          publishedAt={item.publishedAt}
+          delay={i * 50}
+        />
+      ))}
+    </div>
+  ) : (
+    <p className="text-sm text-ink/40">
+      No news available for this university yet.
+    </p>
+  )}
+</section>
 
       {/* Footer */}
       {university.sourceUrl && (
