@@ -194,14 +194,14 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [form, setForm] = useState({
-    title: file.title || "",
-    faculty: file.faculty || "",
-    department: file.department || "",
-    level: file.level || "",
-    semester: file.semester || "",
-    description: file.description || "",
-    course: file.course || "",
-  });
+  title: file.title || "",
+  faculty: file.faculty || "",
+  department: file.department || "",
+  level: file.level || "",
+  semester: file.semester || "",
+  description: file.description || "",
+  course: file.course || "",
+});
 
   const [resolvedUrl, setResolvedUrl] = useState(file.signedUrl || null);
   const [resolvingUrl, setResolvingUrl] = useState(!file.signedUrl);
@@ -1418,4 +1418,3 @@ const schoolCodes = useMemo(() => {
 }
 
 export default StudyMaterial;
-

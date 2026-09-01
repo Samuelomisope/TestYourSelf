@@ -212,10 +212,11 @@ const zipRef = useRef();
       formData.append("file", item.file);
       formData.append("title", item.title || item.file.name);
       formData.append("description", item.description);
-      formData.append("faculty", item.course);           // course code
-      formData.append("department", item.department);    // department name
-      formData.append("level", item.level);              // 100 / 200 / etc
-      formData.append("semester", item.semester);        // first / second
+      formData.append("faculty", item.faculty);           // faculty/school name
+      formData.append("course", item.course);             // course code
+      formData.append("department", item.department);     // department name
+      formData.append("level", item.level);                // 100 / 200 / etc
+      formData.append("semester", item.semester);          // first / second
       formData.append("isPublic", String(isPublic));
       if (item.university) formData.append("university", item.university);
 
@@ -556,5 +557,3 @@ const handleZipUpload = async () => {
 }
 
 export default UploadModal;
-
-
