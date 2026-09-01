@@ -139,6 +139,7 @@ function Home() {
   const [streak, setStreak] = useState(0);
   const [recentActivity, setRecentActivity] = useState([]);
   const [lastMaterial, setLastMaterial] = useState(null);
+
  // ─── Quotes pool ──────────────────────────────────────────────
 const QUOTES = [
   { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },

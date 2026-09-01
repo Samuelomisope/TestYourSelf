@@ -219,7 +219,7 @@ export default function UniversityWelcomePage() {
     );
   }
 
-  if (notFound || !university) {
+   if (notFound || !university) {
     return (
       <div className="mx-auto max-w-[960px] px-6 py-16 pb-24">
         <p className="text-ink/60">
@@ -244,6 +244,92 @@ export default function UniversityWelcomePage() {
             <span className="h-1 w-1 rounded-full bg-ink/30" />
             <span className="text-ink/30">Est. {university.establishedYear}</span>
           </>
+        )}
+
+        {/* Vision & Mission */}
+        {(university.vision || university.mission) && (
+          <>
+            <p className="mb-5 flex items-center gap-3 text-xs font-medium uppercase tracking-wider text-ink/30 after:h-px after:flex-1 after:bg-ink/10">
+              Vision &amp; mission
+            </p>
+            <div className="mb-[72px] grid grid-cols-2 gap-4 max-[720px]:grid-cols-1">
+              {university.vision && (
+                <VisionMissionCard kicker="Vision" text={university.vision} delay={0} />
+              )}
+              {university.mission && (
+                <VisionMissionCard kicker="Mission" text={university.mission} delay={80} />
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Core values */}
+        {coreValues && coreValues.length > 0 && (
+          <>
+            <p className="mb-5 flex items-center gap-3 text-xs font-medium uppercase tracking-wider text-ink/30 after:h-px after:flex-1 after:bg-ink/10">
+              Core values
+            </p>
+            <p className="mb-8 max-w-[560px] text-[15px] leading-relaxed text-ink/60">
+              Commitments carried by every school, every department and every
+              student at {university.name}.
+            </p>
+            <div
+              className={`mb-5 grid gap-3 ${coreValueGridClass(coreValues.length)}`}
+            >
+              {coreValues.map((v, i) => (
+                <CoreValueSeal key={v.letter ?? v.word} {...v} delay={i * 50} />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Footer */}
+        {(university.schools?.some(s => s.admissionRequirement) || university.sourceUrl) && (
+          <footer className="mt-16 border-t border-ink/10 pt-10">
+            <div className="grid grid-cols-1 lg:grid-cols-6 gap-8">
+              <div className="lg:col-span-3 space-y-2">
+                <h2 className="font-serif text-lg font-medium text-ink">{university.name}</h2>
+                {university.sourceUrl && (
+                  <a
+                    href={university.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-block border-b border-accent pb-px text-[13px] text-accent-hover no-underline"
+                  >
+                    Official university profile →
+                  </a>
+                )}
+              </div>
+
+              {university.schools?.some(s => s.admissionRequirement) && (
+                <div className="lg:col-span-3">
+                  <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-ink/30">
+  School websites
+</h3>
+                  <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink/50">
+                    {university.schools
+                      .filter(s => s.admissionRequirement)
+                      .map(s => (
+                        <a
+                          key={s.id}
+                          href={s.admissionRequirement}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="hover:text-violet-400 transition"
+                        >
+                          {s.code}
+                        </a>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-10 pt-4 border-t border-ink/5 flex justify-between items-center">
+              <p className="text-ink/20 text-sm">© 2026 UNILIB</p>
+              <p className="text-sm text-ink/20">All rights reserved.</p>
+            </div>
+          </footer>
         )}
       </div>
 

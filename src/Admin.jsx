@@ -6,7 +6,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBook, faUsers, faShoppingBag, faGraduationCap,
   faFlag, faBan, faCheckCircle, faChartBar, faStore, faStar,
-  faChevronLeft, faComment, faBullhorn, faBookOpen, faTriangleExclamation,
+  faChevronLeft, faComment, faBullhorn, faBookOpen, faCartShopping, faTriangleExclamation,
+  faNewspaper, faChartLine,
 } from "@fortawesome/free-solid-svg-icons";
 import { API } from "./config";
 import NeedsReviewPanel from "./NeedsReviewPanel";

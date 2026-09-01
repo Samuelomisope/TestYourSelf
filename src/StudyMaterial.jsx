@@ -24,6 +24,23 @@ const DEVELOPER_CONTACT = {
   whatsapp: "https://wa.me/2349056296658",
 };
 
+const LEVEL_ORDER = ["100", "200", "300", "400", "500"];
+const SEMESTER_ORDER = ["first", "second"];
+const SEMESTER_LABELS = { first: "First Semester", second: "Second Semester" };
+
+function normalizeSemester(raw) {
+  if (raw === 1 || raw === "1") return "first";
+  if (raw === 2 || raw === "2") return "second";
+  if (typeof raw === "string") return raw.toLowerCase();
+  return "unspecified";
+}
+
+function normalizeLevel(raw) {
+  if (raw == null) return "Unspecified";
+  const num = String(raw).replace(/\D/g, "");
+  return num ? `${num}L` : "Unspecified";
+}
+
 const FILE_ICONS = {
   pdf: <FontAwesomeIcon icon={faFileLines} />,
   video: <FontAwesomeIcon icon={faVideo} />,
@@ -48,10 +65,6 @@ const formatBytes = (bytes) => {
   if (!bytes) return "0 MB";
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
 };
-
-const LEVEL_ORDER = ["100", "200", "300", "400", "500"];
-const SEMESTER_ORDER = ["first", "second"];
-const SEMESTER_LABELS = { first: "First Semester", second: "Second Semester" };
 
 const TAB_LINKS = [
   { href: "/home",           label: "Home",   icon: faHouse },
@@ -164,11 +177,11 @@ function AskAIButton({ fileUrl, fileName, onClose }) {
 
   return (
     <div className="mb-3">
-      {error && <p className="text-rose-400 text-xs mb-2">{error}</p>}
+      {error && <p className="text-pink-400 text-xs mb-1">{error}</p>}
       <button
         onClick={handleAskAI}
         disabled={loading}
-        className="w-full py-3 bg-violet-500/10 text-violet-400 rounded-xl text-sm font-medium hover:bg-violet-500/15 disabled:opacity-40 transition flex items-center justify-center gap-2"
+        className="w-full py-2.5 border border-violet-500/30 text-violet-400 rounded-xl text-sm font-medium hover:bg-violet-500/10 disabled:opacity-40 transition flex items-center justify-center gap-2"
       >
         <FontAwesomeIcon icon={faRobot} />
         {loading ? "Loading PDF…" : "Ask AI about this"}
@@ -183,14 +196,14 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [form, setForm] = useState({
-    title: file.title || "",
-    faculty: file.faculty || "",
-    department: file.department || "",
-    level: file.level || "",
-    semester: file.semester || "",
-    description: file.description || "",
-    course: file.course || "",
-  });
+  title: file.title || "",
+  faculty: file.faculty || "",
+  department: file.department || "",
+  level: file.level || "",
+  semester: file.semester || "",
+  description: file.description || "",
+  course: file.course || "",
+});
 
   const [resolvedUrl, setResolvedUrl] = useState(file.signedUrl || null);
   const [resolvingUrl, setResolvingUrl] = useState(!file.signedUrl);
@@ -215,7 +228,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
         createdBlobUrl = blobUrl;
         setResolvedUrl(blobUrl);
       } else if (file.signedUrl) {
-
+    
         setResolvedUrl(file.signedUrl);
       }
       setResolvingUrl(false);
@@ -270,18 +283,18 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-      <div className={`${CARD} w-full max-w-lg overflow-hidden max-h-[90vh] overflow-y-auto`}>
+      <div className="bg-bg-elevated border border-ink/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5">
-          <h2 className="font-bold text-ink text-lg truncate pr-4">
-            {editMode ? "Edit file info" : file.title}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-ink/5">
+          <h2 className="font-bold text-ink truncate pr-4">
+            {editMode ? "Edit File Info" : file.title}
           </h2>
           <div className="flex items-center gap-2 shrink-0">
             {isOwner && !editMode && (
               <button
                 onClick={() => setEditMode(true)}
-                className="px-3.5 py-1.5 text-xs font-medium bg-ink/[0.05] text-ink/50 hover:text-violet-400 rounded-full transition"
+                className="px-3 py-1.5 text-xs font-medium bg-white/5 border border-ink/10 text-ink/50 hover:text-violet-400 hover:border-violet-500/40 rounded-xl transition"
               >
                 Edit
               </button>
@@ -289,56 +302,54 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
             {editMode && (
               <button
                 onClick={() => { setEditMode(false); setSaveError(""); }}
-                className="px-3.5 py-1.5 text-xs font-medium bg-ink/[0.05] text-ink/50 hover:text-ink/80 rounded-full transition"
+                className="px-3 py-1.5 text-xs font-medium bg-white/5 border border-ink/10 text-ink/50 hover:text-ink/80 rounded-xl transition"
               >
                 Cancel
               </button>
             )}
-            <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center text-ink/30 hover:text-ink hover:bg-ink/[0.06] transition">
+            <button onClick={onClose} className="text-ink/30 hover:text-ink transition">
               <FontAwesomeIcon icon={faXmark} />
             </button>
           </div>
         </div>
 
-        <div className="px-6 pb-6">
+        <div className="p-6">
 
           {/* ── VIEW MODE ── */}
           {!editMode && (
             <>
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-violet-500/10 flex items-center justify-center text-2xl text-violet-400">
-                  {FILE_ICONS[getMimeFileType(file.fileType)]}
-                </div>
-                <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                  {file.course && <span className={BADGE_ACCENT}>{file.course}</span>}
-                  {file.faculty && <span className={BADGE_NEUTRAL}>{file.faculty}</span>}
-                  {file.level && <span className={BADGE_NEUTRAL}>{file.level}L</span>}
-                  {file.semester && <span className={BADGE_NEUTRAL}>{SEMESTER_LABELS[file.semester] || file.semester}</span>}
-                  {file.university?.name && <span className={BADGE_NEUTRAL}>{file.university.shortName || file.university.name}</span>}
+              <div className="text-center mb-5">
+                <p className="text-5xl text-violet-400 mb-2">{FILE_ICONS[getMimeFileType(file.fileType)]}</p>
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  {file.course && <span className="px-3 py-1 bg-violet-500/15 text-violet-400 border border-violet-500/20 rounded-full text-xs">{file.course}</span>}
+                  {file.faculty && <span className="px-3 py-1 bg-violet-500/15 text-violet-400 border border-violet-500/20 rounded-full text-xs">{file.faculty}</span>}
+                  {file.level && <span className="px-3 py-1 bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 rounded-full text-xs">{file.level}L</span>}
+                  {file.semester && <span className="px-3 py-1 bg-blue-500/15 text-blue-400 border border-blue-500/20 rounded-full text-xs">{SEMESTER_LABELS[file.semester] || file.semester}</span>}
+                  {file.university?.name && <span className="px-3 py-1 bg-white/5 text-ink/50 border border-ink/10 rounded-full text-xs">{file.university.shortName || file.university.name}</span>}
                   {downloaded && (
-                    <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-medium">
+                    <span className="px-3 py-1 bg-sky-500/15 text-sky-400 border border-sky-500/20 rounded-full text-xs">
                       <FontAwesomeIcon icon={faCheck} className="mr-1" />Downloaded
                     </span>
                   )}
                 </div>
               </div>
-              <div className="space-y-2 mb-6 text-sm text-ink/50">
-                {file.department && <p><span className="text-ink/30 mr-1">Department</span>{file.department}</p>}
-                {file.description && <p className="text-ink/45 leading-relaxed">{file.description}</p>}
-                {file.createdAt && <p><FontAwesomeIcon icon={faFile} className="mr-2 text-ink/25" />Uploaded {formatDate(file.createdAt)}</p>}
-                {file.user?.displayName && <p><FontAwesomeIcon icon={faUser} className="mr-2 text-ink/25" />By {file.user?.displayName}</p>}
+              <div className="space-y-2 mb-5 text-sm text-ink/50">
+                {file.department && <p className="text-ink/40"><span className="text-ink/20 mr-1">Dept:</span>{file.department}</p>}
+                {file.description && <p className="text-ink/40">{file.description}</p>}
+                {file.createdAt && <p><FontAwesomeIcon icon={faFile} className="mr-1" /> Uploaded: {formatDate(file.createdAt)}</p>}
+                {file.user?.displayName && <p><FontAwesomeIcon icon={faUser} className="mr-1" /> By: {file.user?.displayName}</p>}
                 {file.isPublic != null && (
-                  <p>{file.isPublic ? <><FontAwesomeIcon icon={faGlobe} className="mr-2 text-ink/25" />Public</> : <><FontAwesomeIcon icon={faLock} className="mr-2 text-ink/25" />Private</>}</p>
+                  <p>{file.isPublic ? <><FontAwesomeIcon icon={faGlobe} className="mr-1" />Public</> : <><FontAwesomeIcon icon={faLock} className="mr-1" />Private</>}</p>
                 )}
-                {file.fileSize && <p><FontAwesomeIcon icon={faBox} className="mr-2 text-ink/25" />{formatBytes(file.fileSize)}</p>}
+                {file.fileSize && <p><FontAwesomeIcon icon={faBox} className="mr-1" /> Size: {formatBytes(file.fileSize)}</p>}
               </div>
 
               {resolvingUrl && (
-                <div className="mb-4 py-10 text-center text-ink/30 text-sm">Loading file…</div>
+                <div className="mb-4 py-8 text-center text-ink/30 text-sm">Loading file…</div>
               )}
 
               {!resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "pdf" && (
-                <div className="mb-4 rounded-xl overflow-hidden bg-black/20" style={{ height: 300 }}>
+                <div className="mb-4 rounded-xl overflow-hidden border border-ink/10" style={{ height: 300 }}>
                   <iframe src={resolvedUrl} className="w-full h-full" title={file.title} />
                 </div>
               )}
@@ -349,33 +360,33 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
               )}
 
               {!resolvingUrl && resolvedUrl && (
-                <div className="flex gap-3 mb-3">
-                  <a href={resolvedUrl} target="_blank" rel="noopener noreferrer" className="flex-1 py-3 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium text-center transition">Open</a>
-                  <a href={resolvedUrl} download={file.title} className="flex-1 py-3 bg-ink/[0.05] text-ink/70 rounded-xl text-sm font-medium text-center hover:bg-ink/[0.08] transition">Download</a>
-                </div>
-              )}
+  <div className="flex gap-3 mb-3">
+    <a href={resolvedUrl} target="_blank" rel="noopener noreferrer" className="flex-1 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium text-center transition">Open</a>
+    <a href={resolvedUrl} download={file.title} className="flex-1 py-2.5 border border-violet-500/30 text-violet-400 rounded-xl text-sm font-medium text-center hover:bg-violet-500/10 transition">Download</a>
+  </div>
+)}
 
-              {!resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "pdf" && (
-                <AskAIButton fileUrl={resolvedUrl} fileName={file.title} onClose={onClose} />
-              )}
+{!resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "pdf" && (
+  <AskAIButton fileUrl={resolvedUrl} fileName={file.title} onClose={onClose} />
+)}
 
               {/* ── Offline save / remove ── */}
-              {downloadError && <p className="text-rose-400 text-xs mb-2">{downloadError}</p>}
+              {downloadError && <p className="text-pink-400 text-xs mb-2">{downloadError}</p>}
 
               {downloading ? (
-                <div className="w-full bg-ink/[0.04] rounded-xl px-4 py-3.5">
-                  <div className="flex items-center justify-between text-xs text-ink/40 mb-2">
-                    <span>Saving for offline</span>
-                    <span className="font-medium text-violet-400">{progress}%</span>
+                <div className="w-full bg-white/5 border border-ink/10 rounded-xl px-4 py-3">
+                  <div className="flex items-center justify-between text-xs text-ink/40 mb-1.5">
+                    <span>Saving for offline…</span>
+                    <span>{progress}%</span>
                   </div>
-                  <div className="h-1.5 bg-ink/[0.08] rounded-full overflow-hidden">
-                    <div className="h-full bg-violet-500 rounded-full transition-all" style={{ width: `${progress}%` }} />
+                  <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-violet-500 transition-all" style={{ width: `${progress}%` }} />
                   </div>
                 </div>
               ) : downloaded ? (
                 <button
                   onClick={handleRemoveClick}
-                  className="w-full py-3 bg-rose-500/10 text-rose-400 rounded-xl text-sm font-medium hover:bg-rose-500/15 transition flex items-center justify-center gap-2"
+                  className="w-full py-2.5 border border-pink-500/30 text-pink-400 rounded-xl text-sm font-medium hover:bg-pink-500/10 transition flex items-center justify-center gap-2"
                 >
                   <FontAwesomeIcon icon={faTrash} className="text-xs" />
                   Remove offline copy
@@ -384,7 +395,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
                 file.signedUrl && (
                   <button
                     onClick={handleDownloadClick}
-                    className="w-full py-3 bg-ink/[0.05] text-ink/60 rounded-xl text-sm font-medium hover:bg-ink/[0.08] transition flex items-center justify-center gap-2"
+                    className="w-full py-2.5 border border-sky-500/30 text-sky-400 rounded-xl text-sm font-medium hover:bg-sky-500/10 transition flex items-center justify-center gap-2"
                   >
                     <FontAwesomeIcon icon={faDownload} className="text-xs" />
                     Save for offline
@@ -396,59 +407,59 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
 
           {/* ── EDIT MODE ── */}
           {editMode && (
-            <div className="space-y-4">
-              {saveError && <p className="text-rose-400 text-sm">{saveError}</p>}
+            <div className="space-y-3">
+              {saveError && <p className="text-pink-400 text-sm">{saveError}</p>}
 
               <div>
-                <label className="text-xs font-medium text-ink/35 mb-1.5 block">Title</label>
+                <label className="text-xs text-ink/30 mb-1 block">Title</label>
                 <input
                   type="text"
                   value={form.title}
                   onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                  className="w-full bg-ink/[0.04] rounded-xl px-4 py-3 text-sm text-ink placeholder-ink/20 outline-none focus:ring-2 focus:ring-violet-500/40 transition"
+                  className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
                 />
               </div>
 
                <div>
-                <label className="text-xs font-medium text-ink/35 mb-1.5 block">Course code</label>
+                <label className="text-xs text-ink/30 mb-1 block">Course Code</label>
                 <input
                   type="text"
                   placeholder="e.g CHM 101"
                   value={form.course}
                   onChange={e => setForm(f => ({ ...f, course: e.target.value }))}
-                  className="w-full bg-ink/[0.04] rounded-xl px-4 py-3 text-sm text-ink placeholder-ink/20 outline-none focus:ring-2 focus:ring-violet-500/40 transition"
+                  className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-ink/35 mb-1.5 block">Faculty</label>
+                <label className="text-xs text-ink/30 mb-1 block">Faculty</label>
                 <input
                   type="text"
                   placeholder="e.g ENGINEERING"
                   value={form.faculty}
                   onChange={e => setForm(f => ({ ...f, faculty: e.target.value }))}
-                  className="w-full bg-ink/[0.04] rounded-xl px-4 py-3 text-sm text-ink placeholder-ink/20 outline-none focus:ring-2 focus:ring-violet-500/40 transition"
+                  className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-ink/35 mb-1.5 block">Department</label>
+                <label className="text-xs text-ink/30 mb-1 block">Department</label>
                 <input
                   type="text"
                   placeholder="e.g. MINING ENGINEERING"
                   value={form.department}
                   onChange={e => setForm(f => ({ ...f, department: e.target.value }))}
-                  className="w-full bg-ink/[0.04] rounded-xl px-4 py-3 text-sm text-ink placeholder-ink/20 outline-none focus:ring-2 focus:ring-violet-500/40 transition"
+                  className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
                 />
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <div className="flex-1">
-                  <label className="text-xs font-medium text-ink/35 mb-1.5 block">Level</label>
+                  <label className="text-xs text-ink/30 mb-1 block">Level</label>
                   <select
                     value={form.level}
                     onChange={e => setForm(f => ({ ...f, level: e.target.value }))}
-                    className="w-full bg-ink/[0.04] rounded-xl px-4 py-3 text-sm text-ink/70 outline-none focus:ring-2 focus:ring-violet-500/40 transition"
+                    className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
                   >
                     <option value="">— Level —</option>
                     {["100","200","300","400","500"].map(l => (
@@ -457,11 +468,11 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
                   </select>
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs font-medium text-ink/35 mb-1.5 block">Semester</label>
+                  <label className="text-xs text-ink/30 mb-1 block">Semester</label>
                   <select
                     value={form.semester}
                     onChange={e => setForm(f => ({ ...f, semester: e.target.value }))}
-                    className="w-full bg-ink/[0.04] rounded-xl px-4 py-3 text-sm text-ink/70 outline-none focus:ring-2 focus:ring-violet-500/40 transition"
+                    className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
                   >
                     <option value="">— Semester —</option>
                     <option value="first">1st Semester</option>
@@ -471,22 +482,22 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-ink/35 mb-1.5 block">Description</label>
+                <label className="text-xs text-ink/30 mb-1 block">Description</label>
                 <textarea
                   placeholder="Optional description..."
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   rows={3}
-                  className="w-full bg-ink/[0.04] rounded-xl px-4 py-3 text-sm text-ink placeholder-ink/20 outline-none focus:ring-2 focus:ring-violet-500/40 resize-none transition"
+                  className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
                 />
               </div>
 
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="w-full py-3.5 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white rounded-xl text-sm font-medium transition mt-2"
+                className="w-full py-3 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-xl text-sm font-medium transition mt-2"
               >
-                {saving ? "Saving…" : "Save changes"}
+                {saving ? "Saving…" : "Save Changes"}
               </button>
             </div>
           )}
@@ -505,27 +516,26 @@ function FileRow({ file, user, onSelect, onDelete }) {
   return (
     <div
       onClick={() => onSelect(file)}
-      className="flex items-center gap-3.5 px-4 py-3.5 hover:bg-violet-500/[0.06] rounded-xl cursor-pointer group transition"
+      className="flex items-center gap-3 px-4 py-3 hover:bg-violet-500/5 rounded-xl cursor-pointer group transition"
     >
-      <div className="w-9 h-9 bg-ink/[0.05] rounded-lg flex items-center justify-center text-violet-400 text-sm shrink-0 group-hover:bg-violet-500/15 transition">
+      <div className="w-8 h-8 bg-violet-500/10 rounded-lg flex items-center justify-center text-violet-400 text-sm shrink-0 group-hover:bg-violet-500/20 transition">
         {FILE_ICONS[fileType]}
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-ink truncate">{file.title}</p>
-        <p className="text-xs text-ink/35 mt-0.5">
-          {file.level ? `${file.level}L` : ""}{file.level && file.semester ? " · " : ""}
-          {file.semester ? (SEMESTER_LABELS[file.semester] || file.semester) : ""}
-          {(file.level || file.semester) ? " · " : ""}
-          {formatDate(file.createdAt)} · {file.user?.displayName}
-        </p>
+        <p className="text-xs text-ink/30">{formatDate(file.createdAt)} · {file.user?.displayName}</p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         {isDownloaded && (
-          <span title="Downloaded for offline use" className="w-5 h-5 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center text-[10px]">
+          <span title="Downloaded for offline use" className="w-5 h-5 bg-sky-500/15 text-sky-400 rounded-full flex items-center justify-center text-[10px]">
             <FontAwesomeIcon icon={faDownload} />
           </span>
         )}
-        <span className="text-xs px-2 py-0.5 rounded-full bg-ink/[0.05] text-ink/40 font-medium">
+        <span className={`text-xs px-2 py-0.5 rounded-full ${
+          fileType === "pdf" ? "bg-red-500/10 text-red-400" :
+          fileType === "video" ? "bg-blue-500/10 text-blue-400" :
+          "bg-white/5 text-ink/40"
+        }`}>
           {fileType === "pdf" ? "PDF" : fileType === "video" ? "Video" : "Note"}
         </span>
         {file.user?.displayName === user?.displayName && (
@@ -542,7 +552,7 @@ function FileRow({ file, user, onSelect, onDelete }) {
                 onDelete();
               } catch (err) { console.error(err); }
             }}
-            className="w-6 h-6 bg-rose-500/10 text-rose-400 rounded-full flex items-center justify-center hover:bg-rose-500/20 transition opacity-0 group-hover:opacity-100"
+            className="w-6 h-6 bg-pink-500/15 text-pink-400 rounded-full flex items-center justify-center hover:bg-pink-500/25 transition opacity-0 group-hover:opacity-100"
           >
             <FontAwesomeIcon icon={faXmark} className="text-xs" />
           </button>
@@ -552,31 +562,42 @@ function FileRow({ file, user, onSelect, onDelete }) {
   );
 }
 
-// ─── Course Section (collapsible — bottom of the tree, real course grouping) ─
-function CourseSection({ courseName, files, user, onSelect, onDelete, defaultOpen }) {
-  const [open, setOpen] = useState(!!defaultOpen);
-  // Sort files alphabetically by title
-  const sorted = [...files].sort((a, b) => a.title.localeCompare(b.title));
+// ─── Course Section (collapsible) ─────────────────────────────────
+function CourseSection({ courseName, files, user, onSelect, onDelete }) {
+  const [open, setOpen] = useState(false);
+  const sorted = [...files];
 
   return (
-    <div className="bg-ink/[0.02] rounded-xl overflow-hidden">
+  <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl overflow-hidden shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-violet-500/5 hover:-translate-y-0.5 transition-all duration-200">
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-ink/[0.03] transition text-left"
+        className="w-full flex items-center gap-4 px-5 py-4 hover:bg-violet-500/5 transition text-left group"
       >
+        <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex flex-col items-center justify-center shrink-0 group-hover:border-emerald-500/40 transition-colors">
+          <span className="text-[10px] font-mono font-bold tracking-wider text-emerald-400 leading-none">
+            {courseName}
+          </span>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-black text-ink truncate leading-tight">
+            {courseName}
+          </p>
+          <div className="flex items-center gap-1.5 mt-1">
+            <span className="text-[11px] font-mono text-emerald-400/70">{files.length}</span>
+            <span className="text-xs text-ink/30">
+              {files.length === 1 ? "file" : "files"}
+            </span>
+          </div>
+        </div>
+
         <FontAwesomeIcon
-          icon={open ? faFolderOpen : faFolder}
-          className="text-violet-400/70 text-sm shrink-0"
-        />
-        <span className="flex-1 text-sm font-semibold text-ink/75">{courseName}</span>
-        <span className="text-xs text-ink/30 mr-1">{files.length} {files.length === 1 ? "file" : "files"}</span>
-        <FontAwesomeIcon
-          icon={faChevronRight}
-          className={`text-ink/20 text-xs transition-transform ${open ? "rotate-90" : ""}`}
+          icon={faChevronDown}
+          className={`text-ink/20 text-xs transition-transform duration-200 ${open ? "rotate-180 text-violet-400/60" : ""}`}
         />
       </button>
       {open && (
-        <div className="py-1">
+        <div className="border-t border-white/[0.05] bg-white/[0.01] py-1">
           {sorted.map(file => (
             <FileRow key={file.id} file={file} user={user} onSelect={onSelect} onDelete={onDelete} />
           ))}
@@ -585,13 +606,13 @@ function CourseSection({ courseName, files, user, onSelect, onDelete, defaultOpe
     </div>
   );
 }
-// ─── Department Block (middle of the tree — now: Department → Programme → Course) ───
-function DepartmentBlock({ deptName, programmes, user, onSelect, onDelete, defaultOpen, autoOpenFirstCourse }) {
+function DepartmentBlock({ deptName, programmes, user, onSelect, onDelete, defaultOpen }) {
   const [open, setOpen] = useState(!!defaultOpen);
-  const sortedProgrammes = Object.keys(programmes).sort();
-  const totalCourses = sortedProgrammes.reduce((a, p) => a + Object.keys(programmes[p]).length, 0);
-  const totalFiles = sortedProgrammes.reduce(
-    (a, p) => a + Object.values(programmes[p]).reduce((b, arr) => b + arr.length, 0), 0
+  const sortedDepts = Object.keys(departments).sort();
+  const totalFiles = Object.values(departments).reduce(
+    (a, programmesObj) => a + Object.values(programmesObj).reduce(
+      (b, coursesObj) => b + Object.values(coursesObj).reduce((c, arr) => c + arr.length, 0), 0
+    ), 0
   );
 
   return (
@@ -605,38 +626,47 @@ function DepartmentBlock({ deptName, programmes, user, onSelect, onDelete, defau
           className={`text-ink/20 text-xs transition-transform ${open ? "rotate-90" : ""}`}
         />
         <span className="text-xs font-bold text-ink/60 uppercase tracking-wider truncate">{deptName}</span>
-        <span className="text-xs text-ink/25 ml-auto shrink-0">{totalCourses} {totalCourses === 1 ? "course" : "courses"} · {totalFiles} files</span>
+        <span className="text-xs text-ink/25 ml-auto shrink-0">
+          {sortedProgrammes.length} {sortedProgrammes.length === 1 ? "programme" : "programmes"} · {totalFiles} files
+        </span>
       </button>
       {open && (
-        <div className="flex flex-col gap-1.5 mt-1 mb-3 pl-5">
-          {sortedProgrammes.map((programme) => {
-            const courses = programmes[programme];
-            const sortedCourses = Object.keys(courses).sort();
-            return (
-              <div key={programme} className="mb-2">
-                <p className="text-[11px] font-semibold text-ink/35 uppercase tracking-wide mb-1 pl-0.5">{programme}</p>
-                {sortedCourses.map((course) => (
-                  <CourseSection
-                    key={course}
-                    courseName={course}
-                    files={courses[course]}
-                    user={user}
-                    onSelect={onSelect}
-                    onDelete={onDelete}
-                  />
-                ))}
-              </div>
-            );
-          })}
+        <div className="flex flex-col gap-1 mt-1 mb-3 pl-5">
+          {sortedProgrammes.map(prog => (
+            <ProgrammeBlock
+              key={prog}
+              programmeName={prog}
+              courses={programmes[prog]}
+              user={user}
+              onSelect={onSelect}
+              onDelete={onDelete}
+              defaultOpen={sortedProgrammes.length === 1}
+            />
+          ))}
         </div>
       )}
     </div>
   );
 }
-
 function ProgrammeBlock({ programmeName, courses, user, onSelect, onDelete, defaultOpen }) {
   const [open, setOpen] = useState(!!defaultOpen);
-  const sortedCourses = Object.keys(courses).sort();
+
+  // Programme → Level → Semester → Course
+  const byLevel = useMemo(() => {
+    const l = {};
+    Object.entries(courses).forEach(([courseName, files]) => {
+      const level = normalizeLevel(files[0]?.courseRef?.level);
+      const sem   = normalizeSemester(files[0]?.courseRef?.semester);
+      if (!l[level]) l[level] = {};
+      if (!l[level][sem]) l[level][sem] = {};
+      l[level][sem][courseName] = files;
+    });
+    return l;
+  }, [courses]);
+
+ const sortedLevels = Object.keys(byLevel).sort(
+  (a, b) => LEVEL_ORDER.indexOf(a.replace("L", "")) - LEVEL_ORDER.indexOf(b.replace("L", ""))
+);
   const totalFiles = Object.values(courses).reduce((a, arr) => a + arr.length, 0);
 
   return (
@@ -651,16 +681,16 @@ function ProgrammeBlock({ programmeName, courses, user, onSelect, onDelete, defa
         />
         <span className="text-xs font-semibold text-ink/50 truncate">{programmeName}</span>
         <span className="text-[11px] text-ink/25 ml-auto shrink-0">
-          {sortedCourses.length} {sortedCourses.length === 1 ? "course" : "courses"} · {totalFiles} files
+          {Object.keys(courses).length} {Object.keys(courses).length === 1 ? "course" : "courses"} · {totalFiles} files
         </span>
       </button>
       {open && (
         <div className="flex flex-col gap-1.5 mt-1 mb-2 pl-4">
-          {sortedCourses.map(course => (
-            <CourseSection
-              key={course}
-              courseName={course}
-              files={courses[course]}
+          {sortedLevels.map(level => (
+            <LevelBlock
+              key={level}
+              levelLabel={level}
+              semesters={byLevel[level]}
               user={user}
               onSelect={onSelect}
               onDelete={onDelete}
@@ -672,78 +702,94 @@ function ProgrammeBlock({ programmeName, courses, user, onSelect, onDelete, defa
   );
 }
 
-// ─── Faculty Block (top of the tree) — the page's signature card ──
-// When departments is empty (faculty exists in universities.js but has no
-// uploaded files yet) this renders a quiet empty state instead of a folder,
-// with an upload shortcut and a way to reach the dev.
-function FacultyBlock({ facultyName, facultyFullName, departments = {}, user, onSelect, onDelete, onUploadClick, defaultOpen }) {
-  const [open, setOpen] = useState(!!defaultOpen);
-  const sortedDepts = Object.keys(departments).sort();
-  const totalFiles = Object.values(departments).reduce(
-    (a, programmesObj) => a + Object.values(programmesObj).reduce(
-      (b, coursesObj) => b + Object.values(coursesObj).reduce((c, arr) => c + arr.length, 0), 0
-    ), 0
+// ─── Level Block (inside Department — 100L/200L/etc, contains courses) ───
+function LevelBlock({ levelLabel, semesters = {}, user, onSelect, onDelete }) {
+  const [open, setOpen] = useState(false);
+  const sortedSemesters = Object.keys(semesters).sort(
+  (a, b) => SEMESTER_ORDER.indexOf(a) - SEMESTER_ORDER.indexOf(b)
+);
+  const totalFiles = Object.values(semesters).reduce(
+    (a, courseObj) => a + Object.values(courseObj).reduce((b, arr) => b + arr.length, 0), 0
   );
-  const hasFiles = totalFiles > 0;
-
-  if (!hasFiles) {
-    return (
-      <div className={`${CARD} border border-dashed border-ink/10 shadow-none`}>
-        <div className="px-6 py-8 flex flex-col items-center text-center gap-3">
-          <div className="w-12 h-12 bg-ink/[0.04] rounded-2xl flex items-center justify-center shrink-0">
-            <FontAwesomeIcon icon={faBookOpen} className="text-ink/25 text-sm" />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-ink/70">{facultyName}</p>
-            {facultyFullName && facultyFullName !== facultyName && (
-              <p className="text-xs text-ink/30 mt-0.5">{facultyFullName}</p>
-            )}
-          </div>
-          <p className="text-xs text-ink/35 max-w-xs leading-relaxed">
-            No files here yet. You can upload one yourself, or reach out to the developer if you have materials to share.
-          </p>
-          <div className="flex items-center gap-2 mt-1 flex-wrap justify-center">
-            <button
-              onClick={onUploadClick}
-              className="px-4 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-xs font-medium transition"
-            >
-              Upload a file
-            </button>
-            <a
-              href={DEVELOPER_CONTACT.whatsapp}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 bg-ink/[0.05] text-ink/50 hover:text-violet-400 rounded-full text-xs font-medium transition"
-            >
-              Contact developer
-            </a>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className={CARD}>
-      {/* Faculty Header */}
+    <div className="pl-2">
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-4 px-6 py-5 hover:bg-violet-500/[0.04] transition text-left rounded-2xl"
+        className="flex items-center gap-2.5 py-2 group w-full text-left"
       >
-        <div className="w-11 h-11 bg-violet-500/10 rounded-2xl flex items-center justify-center shrink-0">
+        <FontAwesomeIcon
+          icon={faChevronRight}
+          className={`text-ink/15 text-[10px] transition-transform ${open ? "rotate-90" : ""}`}
+        />
+        <span className="text-xs font-semibold text-ink/50">{levelLabel}</span>
+        <span className="text-[11px] text-ink/25 ml-auto shrink-0">{totalFiles} files</span>
+      </button>
+      {open && (
+        <div className="flex flex-col gap-1.5 mt-1 mb-2 pl-4">
+          {sortedSemesters.length === 0 ? (
+            <p className="text-xs text-ink/30 py-2 pl-1">No materials yet for this level.</p>
+          ) : (
+            sortedSemesters.map(sem => (
+              <SemesterBlock
+                key={sem}
+                semesterKey={sem}
+                courses={semesters[sem]}
+                user={user}
+                onSelect={onSelect}
+                onDelete={onDelete}
+              />
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+
+// ─── Faculty Block (top of the tree — school/faculty) ──────────────
+function FacultyBlock({
+  facultyName,
+  facultyFullName,
+  departments,
+  user,
+  onSelect,
+  onDelete,
+  onUploadClick,
+  defaultOpen,
+}) {
+    const [open, setOpen] = useState(false);
+  const sortedDepts = Object.keys(departments).sort();
+ const totalFiles = Object.values(departments).reduce(
+  (a, levelObj) => a + Object.values(levelObj).reduce(
+    (b, courseObj) => b + Object.values(courseObj).reduce((c, arr) => c + arr.length, 0), 0
+  ), 0
+);
+
+  return (
+    <div className="bg-white/[0.02] border border-white/[0.08] rounded-2xl overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-4 px-5 py-4 hover:bg-violet-500/5 transition text-left"
+      >
+        <div className="w-10 h-10 bg-violet-500/15 border border-violet-500/25 rounded-2xl flex items-center justify-center shrink-0">
           <FontAwesomeIcon icon={faBookOpen} className="text-violet-400 text-sm" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-ink truncate">{facultyName}</p>
-          <p className="text-xs text-ink/35 mt-0.5">{sortedDepts.length} {sortedDepts.length === 1 ? "department" : "departments"} · {totalFiles} files</p>
-        </div>
+          <p className="text-sm font-black text-ink truncate">{facultyName}</p>
+          {facultyFullName && facultyFullName !== facultyName && (
+            <p className="text-xs text-ink/30 truncate">{facultyFullName}</p>
+          )}
+            <p className="text-xs text-ink/20">
+  {sortedDepts.length} {sortedDepts.length === 1 ? "department" : "departments"}
+</p>        </div>
         <FontAwesomeIcon
           icon={faChevronDown}
-          className={`text-ink/25 text-sm transition-transform shrink-0 ${open ? "rotate-180" : ""}`}
+          className={`text-ink/30 text-sm transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
-
-      {/* Departments inside */}
       {open && (
         <div className="px-6 pb-5 pt-1 flex flex-col gap-1">
          {sortedDepts.map((dept, i) => (
@@ -769,7 +815,7 @@ function FileCard({ file, user, onSelect, onDelete }) {
   const isDownloaded = downloadedIds.has(file.id);
 
   return (
-    <div onClick={() => onSelect(file)} className={`${CARD} p-5 hover:-translate-y-0.5 transition cursor-pointer group relative`}>
+    <div onClick={() => onSelect(file)} className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4 hover:border-violet-500/30 hover:bg-violet-500/5 transition cursor-pointer group relative">
       {file.user?.displayName === user?.displayName && (
         <button
           onClick={async (e) => {
@@ -784,24 +830,24 @@ function FileCard({ file, user, onSelect, onDelete }) {
               onDelete();
             } catch (err) { console.error(err); }
           }}
-          className="absolute top-3 right-3 w-7 h-7 bg-rose-500/10 text-rose-400 rounded-full flex items-center justify-center hover:bg-rose-500/20 transition opacity-0 group-hover:opacity-100"
+          className="absolute top-2 right-2 w-7 h-7 bg-pink-500/15 text-pink-400 rounded-full flex items-center justify-center hover:bg-pink-500/25 transition opacity-0 group-hover:opacity-100"
         >
           <FontAwesomeIcon icon={faXmark} className="text-xs" />
         </button>
       )}
       {isDownloaded && (
-        <span title="Downloaded for offline use" className="absolute top-3 left-3 w-6 h-6 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center text-[10px]">
+        <span title="Downloaded for offline use" className="absolute top-2 left-2 w-6 h-6 bg-sky-500/15 text-sky-400 rounded-full flex items-center justify-center text-[10px]">
           <FontAwesomeIcon icon={faDownload} />
         </span>
       )}
-      <div className="w-12 h-12 bg-violet-500/10 rounded-2xl flex items-center justify-center text-xl text-violet-400 mb-4">
+      <div className="w-12 h-12 bg-violet-500/10 rounded-xl flex items-center justify-center text-2xl text-violet-400 mb-3 group-hover:bg-violet-500/20 transition">
         {FILE_ICONS[getMimeFileType(file.fileType)]}
       </div>
-      <p className="text-sm font-semibold text-ink truncate mb-2">{file.title}</p>
-      <div className="flex flex-wrap gap-1.5 mb-3">
-        {file.course && <span className={BADGE_ACCENT}>{file.course}</span>}
-        {file.level && <span className={BADGE_NEUTRAL}>{file.level}L</span>}
-        {file.university?.shortName && <span className={BADGE_NEUTRAL}>{file.university.shortName}</span>}
+      <p className="text-sm font-semibold text-ink truncate mb-1">{file.title}</p>
+      <div className="flex flex-wrap gap-1 mb-2">
+        {file.faculty && <span className="px-2 py-0.5 bg-violet-500/15 text-violet-400 rounded-full text-xs">{file.faculty}</span>}
+        {file.level && <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-400 rounded-full text-xs">{file.level}L</span>}
+        {file.university?.shortName && <span className="px-2 py-0.5 bg-white/5 text-ink/40 rounded-full text-xs">{file.university.shortName}</span>}
       </div>
       <p className="text-xs text-ink/30">{formatDate(file.createdAt)}</p>
     </div>

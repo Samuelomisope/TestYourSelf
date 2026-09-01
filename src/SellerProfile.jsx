@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { auth } from "./firebase";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChevronLeft, faBoxOpen, faStar, faStore, faCommentDots, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faChevronLeft, faBoxOpen, faStar, faStore, faCommentDots, faUser, faCircleCheck } from "@fortawesome/free-solid-svg-icons";
 import { API } from "./config";
 
 async function apiFetch(path, options = {}) {
@@ -14,11 +14,26 @@ async function apiFetch(path, options = {}) {
   return res.json();
 }
 
+// Threshold for the "Trusted Seller" badge — tune these once you see
+// real distribution of ratings/sales across your seller base.
+const TRUSTED_MIN_RATING = 4.5;
+const TRUSTED_MIN_SALES = 5;
+
+function TrustBadge() {
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-xs font-medium">
+      <FontAwesomeIcon icon={faCircleCheck} className="text-[11px]" />
+      Trusted Seller
+    </span>
+  );
+}
+
 function SellerProfile() {
   const { userId } = useParams();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [listings, setListings] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,6 +44,8 @@ function SellerProfile() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
+
+    apiFetch(`/marketplace/seller/${userId}/reviews`).then(setReviews).catch(console.error);
   }, [userId]);
 
   if (loading) return <div className="min-h-screen bg-bg flex items-center justify-center text-violet-400">Loading...</div>;
@@ -42,6 +59,13 @@ function SellerProfile() {
       </div>
     </div>
   );
+
+  const isTrusted = profile.rating >= TRUSTED_MIN_RATING && profile.totalSales >= TRUSTED_MIN_SALES;
+  // Recommend rate: reviews rated 4+ stars, as a % of all reviews.
+  // Falls back gracefully to null until the reviews list is wired in.
+  const recommendPct = reviews.length > 0
+    ? Math.round((reviews.filter(r => r.rating >= 4).length / reviews.length) * 100)
+    : null;
 
   return (
     <div className="min-h-screen bg-bg text-ink">
@@ -60,13 +84,22 @@ function SellerProfile() {
           <div className="flex items-center gap-4">
             <img src={profile.user?.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${profile.user?.displayName}`} className="w-16 h-16 rounded-full object-cover border-2 border-violet-500/30" alt="" />
             <div className="flex-1">
-              <p className="text-lg font-bold text-ink">{profile.user?.displayName}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-lg font-bold text-ink">{profile.user?.displayName}</p>
+                {isTrusted && <TrustBadge />}
+              </div>
               {profile.user?.university?.shortName && <p className="text-xs text-ink/30 mt-0.5">{profile.user.university.shortName}</p>}
               {profile.rating > 0 && (
                 <div className="flex items-center gap-1 mt-1">
                   {[1,2,3,4,5].map(s => <FontAwesomeIcon key={s} icon={faStar} className={`text-sm ${s <= Math.round(profile.rating) ? "text-yellow-400" : "text-ink/10"}`} />)}
-                  <span className="text-xs text-ink/30 ml-1">{profile.rating.toFixed(1)}</span>
+                  <span className="text-xs text-ink/30 ml-1">
+                    {profile.rating.toFixed(1)}
+                    {reviews.length > 0 && ` (${reviews.length} review${reviews.length === 1 ? "" : "s"})`}
+                  </span>
                 </div>
+              )}
+              {recommendPct !== null && (
+                <p className="text-xs text-emerald-400 mt-1">{recommendPct}% of buyers recommend this seller</p>
               )}
             </div>
             {profile.totalSales > 0 && (
@@ -90,6 +123,31 @@ function SellerProfile() {
             )}
           </div>
         </div>
+
+        {/* Reviews — populated once the reviews endpoint is wired in above */}
+        {reviews.length > 0 && (
+          <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-5">
+            <p className="text-sm font-semibold text-ink/50 mb-4 flex items-center gap-2">
+              <FontAwesomeIcon icon={faStar} className="text-yellow-400" /> Reviews ({reviews.length})
+            </p>
+            <div className="space-y-3">
+              {reviews.map((review) => (
+                <div key={review.id} className="border-b border-ink/5 pb-3 last:border-0 last:pb-0">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-ink">{review.user?.displayName || "Anonymous"}</p>
+                      {review.item?.title && <p className="text-[11px] text-ink/25">on {review.item.title}</p>}
+                    </div>
+                    <div className="flex items-center gap-0.5">
+                      {[1,2,3,4,5].map(s => <FontAwesomeIcon key={s} icon={faStar} className={`text-xs ${s <= review.rating ? "text-yellow-400" : "text-ink/10"}`} />)}
+                    </div>
+                  </div>
+                  {review.comment && <p className="text-xs text-ink/40 mt-1">{review.comment}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Listings */}
         <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-5">
@@ -125,4 +183,3 @@ function SellerProfile() {
 }
 
 export default SellerProfile;
-

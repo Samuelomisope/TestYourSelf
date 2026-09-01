@@ -29,15 +29,14 @@ export function DarkModeProvider({ children }) {
     const stored = localStorage.getItem("theme");
     if (stored === "light" || stored === "dark" || stored === "sepia" || stored === "system") return stored;
 
-    // Migrate from the old boolean key so existing users keep their preference
     const legacy = localStorage.getItem("darkMode");
     if (legacy === "false") return "light";
-    return "dark"; // preserves your old default-to-dark behavior
+    return "dark";
   });
 
   const [resolvedTheme, setResolvedTheme] = useState(() => resolveTheme(theme));
 
-  // Apply theme + persist whenever `theme` changes
+  // Recompute resolvedTheme whenever `theme` changes, apply class, persist
   useEffect(() => {
     const applied = resolveTheme(theme);
     setResolvedTheme(applied);
@@ -58,7 +57,6 @@ export function DarkModeProvider({ children }) {
     return () => mq.removeEventListener("change", handler);
   }, [theme]);
 
-  // --- Backward-compatible API for existing consumers ---
   const darkMode = resolvedTheme === "dark";
   const setDarkMode = useCallback((value) => {
     setTheme(value ? "dark" : "light");

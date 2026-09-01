@@ -6,7 +6,6 @@ import {
   faXmark, faLock, faGlobe,
 } from "@fortawesome/free-solid-svg-icons";
 import { faFileLines, faVideo, faNoteSticky } from "@fortawesome/free-solid-svg-icons";
-import { UNIVERSITIES, getFaculties, getDepartments } from "./universities";
 
 // ─── Constants ─────────────────────────────────────────────────────
 const FILE_ICONS = {
@@ -39,76 +38,8 @@ function loadGoogleApis() {
   });
 }
 
-// ─── University → Faculty → Department cascading picker ───────────
-// Data-driven off universities.js — adding a new university, faculty, or
-// department there is all that's needed for new cards to show up here.
-function FacultyDeptPicker({ university, faculty, department, onChange }) {
-  const faculties = university ? getFaculties(university) : [];
-  const departments = university && faculty ? getDepartments(university, faculty) : [];
-
-  return (
-    <div className="space-y-2.5">
-      <select
-        value={university}
-        onChange={(e) => onChange({ university: e.target.value, faculty: "", department: "" })}
-        className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
-      >
-        <option value="">Select University</option>
-        {UNIVERSITIES.map((u) => (
-          <option key={u.name} value={u.name}>{u.fullName}</option>
-        ))}
-      </select>
-
-      {university && (
-        <div>
-          <p className="text-xs text-ink/30 mb-1.5">Faculty / School</p>
-          <div className="flex flex-wrap gap-1.5">
-            {faculties.map((f) => (
-              <button
-                key={f.name}
-                type="button"
-                title={f.fullName}
-                onClick={() => onChange({ university, faculty: f.name, department: "" })}
-                className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition ${
-                  faculty === f.name
-                    ? "bg-violet-500 text-white border-violet-500"
-                    : "bg-white/5 border-ink/10 text-ink/50 hover:border-violet-500/40 hover:text-violet-400"
-                }`}
-              >
-                {f.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {university && faculty && (
-        <div>
-          <p className="text-xs text-ink/30 mb-1.5">Department</p>
-          <div className="flex flex-wrap gap-1.5">
-            {departments.map((d) => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => onChange({ university, faculty, department: d })}
-                className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition ${
-                  department === d
-                    ? "bg-violet-500 text-white border-violet-500"
-                    : "bg-white/5 border-ink/10 text-ink/50 hover:border-violet-500/40 hover:text-violet-400"
-                }`}
-              >
-                {d}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ─── Upload Modal ──────────────────────────────────────────────────
-export function UploadModal({ onClose }) {
+export function UploadModal({ onClose, universitiesList = [] }) {
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -134,13 +65,13 @@ export function UploadModal({ onClose }) {
       ...valid.map((f) => ({
         file: f,
         title: f.name.replace(/\.[^/.]+$/, ""),
-        university: "",   // e.g. "FUTA"
-        faculty: "",       // e.g. "SEET"
-        department: "",   // e.g. "Mining Engineering"
+        faculty: "",       // faculty
+        department: "",   // e.g. "MINING ENGINEERING"
         course: "",       // course code e.g. "CHM 101"
         level: "",        // e.g. "100"
         semester: "",     // "first" | "second"
         description: "",
+        university: "",
         source: "local",
       })),
     ]);
@@ -237,13 +168,12 @@ export function UploadModal({ onClose }) {
         added.push({
           file,
           title: doc.name.replace(/\.[^/.]+$/, ""),
-          university: "",
-          faculty: "",
-          department: "",
           course: "",
+          department: "",
           level: "",
           semester: "",
           description: "",
+          university: "",
           source: "drive",
         });
       } catch (err) {
@@ -264,12 +194,6 @@ export function UploadModal({ onClose }) {
       prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
     );
 
-  // Faculty/Dept/University arrive together from the cascading picker
-  const updateFacultyMeta = (index, patch) =>
-    setFiles((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, ...patch } : item))
-    );
-
   const removeFile = (index) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
     setExpandedIndex(null);
@@ -277,7 +201,7 @@ export function UploadModal({ onClose }) {
 
   const [mode, setMode] = useState("files"); // "files" | "zip"
 const [zipFile, setZipFile] = useState(null);
-const [zipMeta, setZipMeta] = useState({ university: "", faculty: "", department: "", level: "", semester: "" });
+const [zipMeta, setZipMeta] = useState({ department: "", level: "", semester: "" });
 const [zipProgress, setZipProgress] = useState(0);
 const [zipSummary, setZipSummary] = useState(null);
 const zipRef = useRef();
@@ -288,11 +212,11 @@ const zipRef = useRef();
       formData.append("file", item.file);
       formData.append("title", item.title || item.file.name);
       formData.append("description", item.description);
-      formData.append("faculty", item.faculty);          // e.g. "SEET"
-      formData.append("department", item.department);    // department name
+      formData.append("faculty", item.faculty);           // faculty/school name
       formData.append("course", item.course);             // course code
-      formData.append("level", item.level);              // 100 / 200 / etc
-      formData.append("semester", item.semester);        // first / second
+      formData.append("department", item.department);     // department name
+      formData.append("level", item.level);                // 100 / 200 / etc
+      formData.append("semester", item.semester);          // first / second
       formData.append("isPublic", String(isPublic));
       if (item.university) formData.append("university", item.university);
 
@@ -322,8 +246,6 @@ const zipRef = useRef();
   new Promise((resolve, reject) => {
     const formData = new FormData();
     formData.append("zipFile", zipFile);
-    formData.append("university", zipMeta.university);
-    formData.append("faculty", zipMeta.faculty);
     formData.append("department", zipMeta.department);
     formData.append("level", zipMeta.level);
     formData.append("semester", zipMeta.semester);
@@ -349,13 +271,14 @@ const zipRef = useRef();
 
 const handleZipUpload = async () => {
   if (!zipFile) { setError("Please select a zip file."); return; }
-  if (!zipMeta.university || !zipMeta.faculty || !zipMeta.department || !zipMeta.level || !zipMeta.semester) {
-    setError("Please set university, faculty, department, level and semester for this batch.");
+  if (!zipMeta.department || !zipMeta.level || !zipMeta.semester) {
+    setError("Please set department, level and semester for this batch.");
     return;
   }
   setUploading(true);
   setError("");
   try {
+    const { getIdToken } = await import("firebase/auth");
     const token = getAccessToken();
     const summary = await uploadZip(token);
     setZipSummary(summary);
@@ -373,6 +296,8 @@ const handleZipUpload = async () => {
     setUploading(true);
     setError("");
     try {
+      const { auth } = await import("./firebase");
+      const { getIdToken } = await import("firebase/auth");
       const token = getAccessToken();
       const results = await Promise.allSettled(files.map((f) => uploadSingle(f, token)));
       const failed = results.filter((r) => r.status === "rejected");
@@ -490,11 +415,6 @@ const handleZipUpload = async () => {
                               Drive
                             </span>
                           )}
-                          {item.faculty && item.department && (
-                            <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
-                              {item.faculty}
-                            </span>
-                          )}
                         </div>
                         <p className="text-xs text-ink/30">
                           {(item.file.size / 1024 / 1024).toFixed(2)} MB
@@ -521,14 +441,8 @@ const handleZipUpload = async () => {
                     {expandedIndex === i && (
                       <div className="px-3 pb-3 pt-1 border-t border-ink/5 bg-white/[0.02] space-y-2">
                         <input type="text" placeholder="Title *" value={item.title} onChange={(e) => updateMeta(i, "title", e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
-
-                        <FacultyDeptPicker
-                          university={item.university}
-                          faculty={item.faculty}
-                          department={item.department}
-                          onChange={(patch) => updateFacultyMeta(i, patch)}
-                        />
-
+                        <input type="text" placeholder="Faculty e.g ENGINEERING" value={item.faculty} onChange={(e) => updateMeta(i, "faculty", e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
+                        <input type="text" placeholder="Department e.g. MINING ENGINEERING" value={item.department} onChange={(e) => updateMeta(i, "department", e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
                         <input type="text" placeholder="Course code e.g. CHM 101" value={item.course} onChange={(e) => updateMeta(i, "course", e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
                         <div className="flex gap-2">
                           <select value={item.level} onChange={(e) => updateMeta(i, "level", e.target.value)} className="flex-1 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
@@ -541,6 +455,10 @@ const handleZipUpload = async () => {
                             <option value="second">2nd Semester</option>
                           </select>
                         </div>
+                        <select value={item.university} onChange={(e) => updateMeta(i, "university", e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
+                          <option value="">Select University</option>
+                          {universitiesList.map((u) => <option key={u.id} value={u.shortName || u.name}>{u.name}</option>)}
+                        </select>
                         <textarea placeholder="Description (optional)" value={item.description} onChange={(e) => updateMeta(i, "description", e.target.value)} rows={2} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition" />
                       </div>
                     )}
@@ -570,14 +488,9 @@ const handleZipUpload = async () => {
               <input ref={zipRef} type="file" className="hidden" accept=".zip" onChange={(e) => setZipFile(e.target.files[0] || null)} />
             </div>
 
-            <FacultyDeptPicker
-              university={zipMeta.university}
-              faculty={zipMeta.faculty}
-              department={zipMeta.department}
-              onChange={(patch) => setZipMeta((m) => ({ ...m, ...patch }))}
-            />
+            <input type="text" placeholder="Department e.g. MINING ENGINEERING" value={zipMeta.department} onChange={(e) => setZipMeta((m) => ({ ...m, department: e.target.value }))} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition mb-2" />
 
-            <div className="flex gap-2 mt-2 mb-2">
+            <div className="flex gap-2 mb-2">
               <select value={zipMeta.level} onChange={(e) => setZipMeta((m) => ({ ...m, level: e.target.value }))} className="flex-1 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
                 <option value="">Level</option>
                 {LEVELS.map((l) => <option key={l} value={l}>{l} Level</option>)}
