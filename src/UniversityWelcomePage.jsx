@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getUniversityBySlug, getUniversityNews } from "./api";
+import { getUniversityBySlug } from "./api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCamera, faNewspaper } from "@fortawesome/free-solid-svg-icons";
-import Navbar from "./Navbar";
+import { faCamera } from "@fortawesome/free-solid-svg-icons";
 import futa1 from "./assets/futa1.jpg";
 import futa2 from "./assets/futa2.jpg";
 import futa3 from "./assets/futa3.jpg";
@@ -222,15 +221,12 @@ export default function UniversityWelcomePage() {
 
    if (notFound || !university) {
     return (
-      <>
-        <Navbar />
-        <div className="mx-auto max-w-[960px] px-6 pt-32 py-16 pb-24">
-          <p className="text-ink/60">
-            We couldn't find that university. Double-check the link, or head
-            back to the school directory.
-          </p>
-        </div>
-      </>
+      <div className="mx-auto max-w-[960px] px-6 py-16 pb-24">
+        <p className="text-ink/60">
+          We couldn't find that university. Double-check the link, or head
+          back to the school directory.
+        </p>
+      </div>
     );
   }
 
@@ -239,60 +235,14 @@ export default function UniversityWelcomePage() {
     university.slug === "futa" ? [futa1, futa2, futa3] : [null, null, null];
 
   return (
-    <>
-      <Navbar />
-      <div className="mx-auto max-w-[960px] px-6 pt-32 py-16 pb-24 text-ink">
-        {/* Hero */}
-        <div className="mb-6 flex animate-[fadeUp_0.5s_ease-out_both] items-center gap-2.5 text-xs font-medium uppercase tracking-widest text-accent-hover">
-          <span>{university.name}</span>
-          {university.establishedYear && (
-            <>
-              <span className="h-1 w-1 rounded-full bg-ink/30" />
-              <span className="text-ink/30">Est. {university.establishedYear}</span>
-            </>
-          )}
-        </div>
-
-        <h1 className="mb-6 animate-[fadeUp_0.5s_ease-out_both] font-serif text-[clamp(40px,6vw,64px)] font-medium leading-[1.04] tracking-tight text-ink [animation-delay:60ms]">
-          Welcome to <em className="italic text-accent-hover">{university.name}</em>
-        </h1>
-
-        {university.tagline && (
-          <p className="mb-10 max-w-[640px] animate-[fadeUp_0.5s_ease-out_both] text-[17px] leading-relaxed text-ink/60 [animation-delay:120ms]">
-            {university.tagline}
-          </p>
-        )}
-
-        {/* Photo strip */}
-        <div className="mb-[72px] grid grid-cols-[1.4fr_1fr_1fr] gap-3 max-[720px]:grid-cols-1">
-          <PhotoSlot label="Campus photo" src={campusPhotos[0]} wide delay={160} />
-          <PhotoSlot label="Campus photo" src={campusPhotos[1]} delay={200} />
-          <PhotoSlot label="Campus photo" src={campusPhotos[2]} delay={240} />
-        </div>
-
-        {/* Browse study materials CTA */}
-        <div className="mb-[72px] flex animate-[fadeUp_0.5s_ease-out_both] [animation-delay:280ms]">
-          <Link
-            to={`/study-material?university=${university.slug}`}
-            className="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3.5 text-sm font-medium text-white transition hover:bg-accent-hover"
-          >
-            Browse {university.name} study materials
-            <span aria-hidden="true">→</span>
-          </Link>
-        </div>
-
-        {/* Latest news */}
-        {news.length > 0 && (
+    <div className="mx-auto max-w-[960px] px-6 py-16 pb-24 text-ink">
+      {/* Hero */}
+      <div className="mb-6 flex animate-[fadeUp_0.5s_ease-out_both] items-center gap-2.5 text-xs font-medium uppercase tracking-widest text-accent-hover">
+        <span>{university.name}</span>
+        {university.establishedYear && (
           <>
-            <p className="mb-5 flex items-center gap-3 text-xs font-medium uppercase tracking-wider text-ink/30 after:h-px after:flex-1 after:bg-ink/10">
-              <FontAwesomeIcon icon={faNewspaper} className="text-accent-hover" />
-              Latest news
-            </p>
-            <div className="mb-[72px] flex flex-col gap-3">
-              {news.map((item, i) => (
-                <NewsItem key={item.id} {...item} delay={i * 60} />
-              ))}
-            </div>
+            <span className="h-1 w-1 rounded-full bg-ink/30" />
+            <span className="text-ink/30">Est. {university.establishedYear}</span>
           </>
         )}
 
@@ -382,6 +332,88 @@ export default function UniversityWelcomePage() {
           </footer>
         )}
       </div>
-    </>
+
+      <h1 className="mb-6 animate-[fadeUp_0.5s_ease-out_both] font-serif text-[clamp(40px,6vw,64px)] font-medium leading-[1.04] tracking-tight text-ink [animation-delay:60ms]">
+        Welcome to <em className="italic text-accent-hover">{university.name}</em>
+      </h1>
+
+      {university.tagline && (
+        <p className="mb-10 max-w-[640px] animate-[fadeUp_0.5s_ease-out_both] text-[17px] leading-relaxed text-ink/60 [animation-delay:120ms]">
+          {university.tagline}
+        </p>
+      )}
+
+      {/* Photo strip */}
+      <div className="mb-[72px] grid grid-cols-[1.4fr_1fr_1fr] gap-3 max-[720px]:grid-cols-1">
+        <PhotoSlot label="Campus photo" src={campusPhotos[0]} wide delay={160}/>
+        <PhotoSlot label="Campus photo" src={campusPhotos[1]} delay={200} />
+        <PhotoSlot label="Campus photo" src={campusPhotos[2]} delay={240} />
+      </div>
+
+      {/* Browse study materials CTA */}
+      <div className="mb-[72px] flex animate-[fadeUp_0.5s_ease-out_both] [animation-delay:280ms]">
+        <Link
+          to={`/study-material?university=${university.slug}`}
+          className="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3.5 text-sm font-medium text-white transition hover:bg-accent-hover"
+        >
+          Browse {university.name} study materials
+          <span aria-hidden="true">→</span>
+        </Link>
+      </div>
+
+      {/* Vision & Mission */}
+      {(university.vision || university.mission) && (
+        <>
+          <p className="mb-5 flex items-center gap-3 text-xs font-medium uppercase tracking-wider text-ink/30 after:h-px after:flex-1 after:bg-ink/10">
+            Vision &amp; mission
+          </p>
+          <div className="mb-[72px] grid grid-cols-2 gap-4 max-[720px]:grid-cols-1">
+            {university.vision && (
+              <VisionMissionCard kicker="Vision" text={university.vision} delay={0} />
+            )}
+            {university.mission && (
+              <VisionMissionCard kicker="Mission" text={university.mission} delay={80} />
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Core values */}
+      {coreValues && coreValues.length > 0 && (
+        <>
+          <p className="mb-5 flex items-center gap-3 text-xs font-medium uppercase tracking-wider text-ink/30 after:h-px after:flex-1 after:bg-ink/10">
+            Core values
+          </p>
+          <p className="mb-8 max-w-[560px] text-[15px] leading-relaxed text-ink/60">
+            Commitments carried by every school, every department and every
+            student at {university.name}.
+          </p>
+          <div
+            className={`mb-5 grid gap-3 ${coreValueGridClass(coreValues.length)}`}
+          >
+            {coreValues.map((v, i) => (
+              <CoreValueSeal key={v.letter ?? v.word} {...v} delay={i * 50} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Footer */}
+      {university.sourceUrl && (
+        <div className="mt-16 flex flex-wrap items-center justify-between gap-3 border-t border-ink/10 pt-7">
+          <span className="text-[13px] text-ink/30">
+            Source: {university.name} — official university profile
+          </span>
+          <a
+            href={university.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="border-b border-accent pb-px text-[13px] text-accent-hover no-underline"
+          >
+            Read the full detail →
+          </a>
+        </div>
+      )}
+    </div>
   );
 }

@@ -18,6 +18,8 @@ import { listDownloadedMaterials, getOfflineBlobUrl } from "./offlineStorage";
 import { getUniversity } from "./universities";
 import { useParams } from "react-router-dom";
 
+
+// TODO: fill in your real contact details — shown on empty faculty cards.
 const DEVELOPER_CONTACT = {
   whatsapp: "https://wa.me/2349056296658",
 };
@@ -66,7 +68,7 @@ const formatBytes = (bytes) => {
 
 const TAB_LINKS = [
   { href: "/home",           label: "Home",   icon: faHouse },
-  { href: "/study-material", label: "Study",  icon: faBook },
+  { href: "/study-material", label: "Library",  icon: faBook },
   { href: "/ai",             label: "AI",     icon: faRobot },
   { href: "/chat",           label: "Chat",   icon: faComments },
   { href: "/marketplace",    label: "Market", icon: faStore },
@@ -604,11 +606,14 @@ function CourseSection({ courseName, files, user, onSelect, onDelete }) {
     </div>
   );
 }
-// ─── Semester Block ────────────────────────────────────────────────
-function SemesterBlock({ semesterKey, courses, user, onSelect, onDelete }) {
-  const [open, setOpen] = useState(false);
-  const totalFiles = Object.values(courses).reduce((a, b) => a + b.length, 0);
-  const sortedCourses = Object.keys(courses).sort();
+// ─── Department Block (middle of the tree — now: Department → Programme → Course) ───
+function DepartmentBlock({ deptName, programmes, user, onSelect, onDelete, defaultOpen, autoOpenFirstCourse }) {
+  const [open, setOpen] = useState(!!defaultOpen);
+  const sortedProgrammes = Object.keys(programmes).sort();
+  const totalCourses = sortedProgrammes.reduce((a, p) => a + Object.keys(programmes[p]).length, 0);
+  const totalFiles = sortedProgrammes.reduce(
+    (a, p) => a + Object.values(programmes[p]).reduce((b, arr) => b + arr.length, 0), 0
+  );
 
   return (
   <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl overflow-hidden shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-violet-500/5 hover:-translate-y-0.5 transition-all duration-200">
@@ -620,13 +625,58 @@ function SemesterBlock({ semesterKey, courses, user, onSelect, onDelete }) {
           icon={faChevronRight}
           className={`text-ink/20 text-xs transition-transform ${open ? "rotate-90" : ""}`}
         />
-        <span className="text-xs font-bold text-violet-400/80 uppercase tracking-widest">
-          {SEMESTER_LABELS[semesterKey] || semesterKey}
-        </span>
-        <span className="text-xs text-ink/20 ml-auto">{totalFiles} files</span>
+        <span className="text-xs font-bold text-ink/60 uppercase tracking-wider truncate">{deptName}</span>
+        <span className="text-xs text-ink/25 ml-auto shrink-0">{totalCourses} {totalCourses === 1 ? "course" : "courses"} · {totalFiles} files</span>
       </button>
       {open && (
-        <div className="flex flex-col gap-2 mt-1 mb-3">
+        <div className="flex flex-col gap-1.5 mt-1 mb-3 pl-5">
+          {sortedProgrammes.map((programme) => {
+            const courses = programmes[programme];
+            const sortedCourses = Object.keys(courses).sort();
+            return (
+              <div key={programme} className="mb-2">
+                <p className="text-[11px] font-semibold text-ink/35 uppercase tracking-wide mb-1 pl-0.5">{programme}</p>
+                {sortedCourses.map((course) => (
+                  <CourseSection
+                    key={course}
+                    courseName={course}
+                    files={courses[course]}
+                    user={user}
+                    onSelect={onSelect}
+                    onDelete={onDelete}
+                  />
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProgrammeBlock({ programmeName, courses, user, onSelect, onDelete, defaultOpen }) {
+  const [open, setOpen] = useState(!!defaultOpen);
+  const sortedCourses = Object.keys(courses).sort();
+  const totalFiles = Object.values(courses).reduce((a, arr) => a + arr.length, 0);
+
+  return (
+    <div className="pl-2">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2.5 py-2 group w-full text-left"
+      >
+        <FontAwesomeIcon
+          icon={faChevronRight}
+          className={`text-ink/15 text-[10px] transition-transform ${open ? "rotate-90" : ""}`}
+        />
+        <span className="text-xs font-semibold text-ink/50 truncate">{programmeName}</span>
+        <span className="text-[11px] text-ink/25 ml-auto shrink-0">
+          {sortedCourses.length} {sortedCourses.length === 1 ? "course" : "courses"} · {totalFiles} files
+        </span>
+      </button>
+      {open && (
+        <div className="flex flex-col gap-1.5 mt-1 mb-2 pl-4">
           {sortedCourses.map(course => (
             <CourseSection
               key={course}
@@ -645,9 +695,11 @@ function SemesterBlock({ semesterKey, courses, user, onSelect, onDelete }) {
 
 function DepartmentBlock({ deptName, programmes, user, onSelect, onDelete, defaultOpen }) {
   const [open, setOpen] = useState(!!defaultOpen);
-  const sortedProgrammes = Object.keys(programmes).sort();
-  const totalFiles = Object.values(programmes).reduce(
-    (a, courseObj) => a + Object.values(courseObj).reduce((b, arr) => b + arr.length, 0), 0
+  const sortedDepts = Object.keys(departments).sort();
+  const totalFiles = Object.values(departments).reduce(
+    (a, programmesObj) => a + Object.values(programmesObj).reduce(
+      (b, coursesObj) => b + Object.values(coursesObj).reduce((c, arr) => c + arr.length, 0), 0
+    ), 0
   );
 
   return (
@@ -826,8 +878,8 @@ function FacultyBlock({
         />
       </button>
       {open && (
-        <div className="border-t border-white/[0.05] px-4 py-4 flex flex-col gap-3">
-          {sortedDepts.map((dept, i) => (
+        <div className="px-6 pb-5 pt-1 flex flex-col gap-1">
+         {sortedDepts.map((dept, i) => (
   <DepartmentBlock
     key={dept}
     deptName={dept}
@@ -994,7 +1046,7 @@ useEffect(() => {
 
       try {
         const token = getAccessToken();
-       const params = new URLSearchParams({ search: debouncedSearch });
+        const params = new URLSearchParams({ search: debouncedSearch });
 if (universitySlugParam) params.set("university", universitySlugParam);
 const res = await fetch(
   `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material?${params}`,
@@ -1071,13 +1123,22 @@ useEffect(() => {
   // ── Build hierarchy: Faculty → Department → Course → Files ──
   // (Level and Semester are handled as filters above, not folder depth —
   // keeps the tree shallow so users reach a course in 2 taps instead of 4.)
-const grouped = useMemo(() => {
+ const grouped = useMemo(() => {
   const g = {};
   filtered.forEach(file => {
-    const school     = file.courseRef?.program?.department?.school?.name || file.faculty    || "Uncategorized School";
-    const department = file.courseRef?.program?.department?.name          || file.department || "Uncategorized Department";
-    const programme  = file.courseRef?.program?.name                      || "Uncategorized Programme";
-    const course      = file.courseRef?.code                              || file.course     || "Uncategorized Course";
+    // Real chain: courseRef -> program -> department -> school.
+    // (Program.schoolId was dropped in Phase 3 — school now only
+    // reachable via department.) Materials with no courseRef (legacy,
+    // pre-migration, or needsReview) are excluded from the browse tree
+    // entirely — surfacing their raw `faculty` string as a fake school
+    // (e.g. "SEET") is misleading. They're still visible in the admin
+    // NeedsReviewPanel.
+    const school = file.courseRef?.program?.department?.school?.name;
+    if (!school) return; // skip legacy/needsReview materials
+
+    const department = file.courseRef?.program?.department?.name || "Uncategorized Department";
+    const programme  = file.courseRef?.program?.name              || "Uncategorized Programme";
+    const course      = file.courseRef?.code                      || "Uncategorized Course";
 
     if (!g[school]) g[school] = {};
     if (!g[school][department]) g[school][department] = {};
@@ -1088,17 +1149,10 @@ const grouped = useMemo(() => {
   return g;
 }, [filtered]);
 
-// School name -> code (e.g. "SIMME"), built alongside `grouped`
-// from the same source data so it stays in sync.
-const schoolCodes = useMemo(() => {
-  const codes = {};
-  filtered.forEach(file => {
-    const school = file.courseRef?.program?.department?.school?.name || file.faculty || "Uncategorized School";
-    const code   = file.courseRef?.program?.department?.school?.code;
-    if (code && !codes[school]) codes[school] = code;
-  });
-  return codes;
-}, [filtered]);
+  const pendingReviewCount = useMemo(
+    () => filtered.filter(f => !f.courseRef?.program?.department?.school?.name).length,
+    [filtered]
+  );
 
   const sortedFaculties = Object.keys(grouped).sort();
   const isSearching = debouncedSearch.trim().length > 0;
@@ -1110,13 +1164,10 @@ const schoolCodes = useMemo(() => {
   // With "All" universities selected we fall back to only showing
   // faculties that actually have matching files (enumerating every
   // faculty across every university would be overwhelming).
-  const rosterFaculties = useMemo(
-  () => sortedFaculties.map(fac => ({
-    name: fac,
-    fullName: schoolCodes[fac] || null,   // will need adjusting — see below
-    departments: grouped[fac],
-  })),
-  [grouped, sortedFaculties, schoolCodes]
+
+const rosterFaculties = useMemo(
+  () => sortedFaculties.map(fac => ({ name: fac, fullName: null, departments: grouped[fac] })),
+  [grouped, sortedFaculties]
 );
 
   // Auto-expand the user's own faculty (matched against the roster) so
@@ -1147,7 +1198,7 @@ const schoolCodes = useMemo(() => {
               </Link>
               <h1 className="text-lg font-black tracking-tight">
                 UNI<span className="text-violet-400">LIB</span>
-                <span className="ml-2.5 text-[11px] font-semibold bg-violet-500/10 text-violet-400 px-2.5 py-1 rounded-full align-middle">Study</span>
+                <span className="ml-2.5 text-[11px] font-semibold bg-violet-500/10 text-violet-400 px-2.5 py-1 rounded-full align-middle">Library</span>
               </h1>
             </div>
             <div className="flex items-center gap-2">
