@@ -608,11 +608,10 @@ function CourseSection({ courseName, files, user, onSelect, onDelete }) {
 }
 function DepartmentBlock({ deptName, programmes, user, onSelect, onDelete, defaultOpen }) {
   const [open, setOpen] = useState(!!defaultOpen);
-  const sortedDepts = Object.keys(departments).sort();
-  const totalFiles = Object.values(departments).reduce(
-    (a, programmesObj) => a + Object.values(programmesObj).reduce(
-      (b, coursesObj) => b + Object.values(coursesObj).reduce((c, arr) => c + arr.length, 0), 0
-    ), 0
+
+  const sortedProgrammes = Object.keys(programmes).sort();
+  const totalFiles = Object.values(programmes).reduce(
+    (a, coursesObj) => a + Object.values(coursesObj).reduce((b, arr) => b + arr.length, 0), 0
   );
 
   return (
