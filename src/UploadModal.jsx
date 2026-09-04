@@ -25,6 +25,31 @@ const getFileType = (name) => {
   return "default";
 };
 
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+async function apiGet(path) {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`Request failed: ${path}`);
+  return res.json();
+}
+
+async function apiPost(path, body) {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Request failed: ${path}`);
+  }
+  return res.json();
+}
+
 // ─── Google Picker Loader ──────────────────────────────────────────
 function loadGoogleApis() {
   return new Promise((resolve) => {
@@ -60,21 +85,32 @@ export function UploadModal({ onClose, universitiesList = [] }) {
     const valid = incoming.filter((f) => f.size <= 100 * 1024 * 1024);
     if (valid.length < incoming.length)
       setError("Some files exceed 100 MB and were skipped.");
-    setFiles((prev) => [
-      ...prev,
-      ...valid.map((f) => ({
-        file: f,
-        title: f.name.replace(/\.[^/.]+$/, ""),
-        faculty: "",       // faculty
-        department: "",   // e.g. "MINING ENGINEERING"
-        course: "",       // course code e.g. "CHM 101"
-        level: "",        // e.g. "100"
-        semester: "",     // "first" | "second"
-        description: "",
-        university: "",
-        source: "local",
-      })),
-    ]);
+   setFiles((prev) => [
+  ...prev,
+  ...valid.map((f) => ({
+    file: f,
+    title: f.name.replace(/\.[^/.]+$/, ""),
+    universityId: "",
+    university: "",       // shortName, still sent to backend as before
+    schoolId: "",
+    departmentId: "",
+    departmentName: "",   // resolved from Department.name — sent as "department"
+    programId: "",
+    courseId: "",         // set once an existing course is picked
+    courseCode: "",       // typed/selected code — sent as "course"
+    courseTitle: "",      // only used if creating a new course
+    level: "",
+    semester: "",
+    description: "",
+    source: "local",
+    // cascading option lists, fetched lazily per item
+    schools: [],
+    departments: [],
+    programs: [],
+    courses: [],
+    courseSearchDone: false,
+  })),
+]);
     setExpandedIndex((prev) => (prev === null ? 0 : prev));
   };
 
@@ -166,16 +202,27 @@ export function UploadModal({ onClose, universitiesList = [] }) {
           continue;
         }
         added.push({
-          file,
-          title: doc.name.replace(/\.[^/.]+$/, ""),
-          course: "",
-          department: "",
-          level: "",
-          semester: "",
-          description: "",
-          university: "",
-          source: "drive",
-        });
+  file,
+  title: doc.name.replace(/\.[^/.]+$/, ""),
+  universityId: "",
+  university: "",
+  schoolId: "",
+  departmentId: "",
+  departmentName: "",
+  programId: "",
+  courseId: "",
+  courseCode: "",
+  courseTitle: "",
+  level: "",
+  semester: "",
+  description: "",
+  source: "drive",
+  schools: [],
+  departments: [],
+  programs: [],
+  courses: [],
+  courseSearchDone: false,
+});
       } catch (err) {
         console.error(err);
         setError((e) => (e ? e + " " : "") + `Could not download "${doc.name}" from Drive.`);
@@ -194,6 +241,93 @@ export function UploadModal({ onClose, universitiesList = [] }) {
       prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
     );
 
+    const loadSchools = async (index, universityId) => {
+  updateMeta(index, "universityId", universityId);
+  updateMeta(index, "schoolId", "");
+  updateMeta(index, "departmentId", "");
+  updateMeta(index, "programId", "");
+  updateMeta(index, "courseId", "");
+  if (!universityId) return;
+  try {
+    const schools = await apiGet(`/schools?universityId=${universityId}`);
+    setFiles((prev) => prev.map((it, i) => (i === index ? { ...it, schools } : it)));
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+const loadDepartments = async (index, schoolId) => {
+  updateMeta(index, "schoolId", schoolId);
+  updateMeta(index, "departmentId", "");
+  updateMeta(index, "programId", "");
+  updateMeta(index, "courseId", "");
+  if (!schoolId) return;
+  try {
+    const departments = await apiGet(`/schools/${schoolId}/departments`);
+    setFiles((prev) => prev.map((it, i) => (i === index ? { ...it, departments } : it)));
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+const loadPrograms = async (index, departmentId, departmentName) => {
+  updateMeta(index, "departmentId", departmentId);
+  updateMeta(index, "departmentName", departmentName);
+  updateMeta(index, "programId", "");
+  updateMeta(index, "courseId", "");
+  if (!departmentId) return;
+  try {
+    const programs = await apiGet(`/departments/${departmentId}/programs`);
+    setFiles((prev) => prev.map((it, i) => (i === index ? { ...it, programs } : it)));
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+const loadCourses = async (index, programId) => {
+  updateMeta(index, "programId", programId);
+  updateMeta(index, "courseId", "");
+  updateMeta(index, "courseCode", "");
+  if (!programId) return;
+  try {
+    const courses = await apiGet(`/programs/${programId}/courses`);
+    setFiles((prev) => prev.map((it, i) => (i === index ? { ...it, courses } : it)));
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+// Called when the user picks an existing course from the dropdown
+const selectExistingCourse = (index, courseId, courseCode) => {
+  updateMeta(index, "courseId", courseId);
+  updateMeta(index, "courseCode", courseCode);
+};
+
+// Called when the user types a code that isn't in the list and confirms creation
+const createNewCourse = async (index) => {
+  const item = files[index];
+  if (!item.programId || !item.courseCode.trim() || !item.courseTitle.trim()) {
+    setError("Program, course code, and course title are required to create a new course.");
+    return;
+  }
+  try {
+    const course = await apiPost("/courses", {
+      programId: item.programId,
+      code: item.courseCode.trim(),
+      title: item.courseTitle.trim(),
+      level: item.level || undefined,
+      semester: item.semester || undefined,
+    });
+    updateMeta(index, "courseId", course.id);
+    setFiles((prev) =>
+      prev.map((it, i) => (i === index ? { ...it, courses: [...it.courses, course] } : it))
+    );
+  } catch (err) {
+    console.error(err);
+    setError(err.message || "Could not create course.");
+  }
+};
+
   const removeFile = (index) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
     setExpandedIndex(null);
@@ -201,25 +335,53 @@ export function UploadModal({ onClose, universitiesList = [] }) {
 
   const [mode, setMode] = useState("files"); // "files" | "zip"
 const [zipFile, setZipFile] = useState(null);
-const [zipMeta, setZipMeta] = useState({ department: "", level: "", semester: "" });
+const [zipMeta, setZipMeta] = useState({
+  universityId: "", schoolId: "", departmentId: "", programId: "", level: "", semester: "",
+});
+const [zipSchools, setZipSchools] = useState([]);
+const [zipDepartments, setZipDepartments] = useState([]);
+const [zipPrograms, setZipPrograms] = useState([]);
 const [zipProgress, setZipProgress] = useState(0);
 const [zipSummary, setZipSummary] = useState(null);
 const zipRef = useRef();
+
+const loadZipSchools = async (universityId) => {
+  setZipMeta((m) => ({ ...m, universityId, schoolId: "", departmentId: "", programId: "" }));
+  setZipDepartments([]);
+  setZipPrograms([]);
+  if (!universityId) { setZipSchools([]); return; }
+  try { setZipSchools(await apiGet(`/schools?universityId=${universityId}`)); }
+  catch (err) { console.error(err); }
+};
+
+const loadZipDepartments = async (schoolId) => {
+  setZipMeta((m) => ({ ...m, schoolId, departmentId: "", programId: "" }));
+  setZipPrograms([]);
+  if (!schoolId) { setZipDepartments([]); return; }
+  try { setZipDepartments(await apiGet(`/schools/${schoolId}/departments`)); }
+  catch (err) { console.error(err); }
+};
+
+const loadZipPrograms = async (departmentId) => {
+  setZipMeta((m) => ({ ...m, departmentId, programId: "" }));
+  if (!departmentId) { setZipPrograms([]); return; }
+  try { setZipPrograms(await apiGet(`/departments/${departmentId}/programs`)); }
+  catch (err) { console.error(err); }
+};
   // ── Upload ───────────────────────────────────────────────────────
-  const uploadSingle = (item, token) =>
+ const uploadSingle = (item, token) =>
     new Promise((resolve, reject) => {
       const formData = new FormData();
       formData.append("file", item.file);
       formData.append("title", item.title || item.file.name);
       formData.append("description", item.description);
-      formData.append("faculty", item.faculty);           // faculty/school name
-      formData.append("course", item.course);             // course code
-      formData.append("department", item.department);     // department name
-      formData.append("level", item.level);                // 100 / 200 / etc
-      formData.append("semester", item.semester);          // first / second
+      formData.append("department", item.departmentName);
+      formData.append("course", item.courseCode);
+      if (item.courseId) formData.append("courseId", item.courseId);
+      formData.append("level", item.level);
+      formData.append("semester", item.semester);
       formData.append("isPublic", String(isPublic));
       if (item.university) formData.append("university", item.university);
-
       const xhr = new XMLHttpRequest();
       xhr.open(
         "POST",
@@ -246,7 +408,10 @@ const zipRef = useRef();
   new Promise((resolve, reject) => {
     const formData = new FormData();
     formData.append("zipFile", zipFile);
-    formData.append("department", zipMeta.department);
+    formData.append("universityId", zipMeta.universityId);
+    formData.append("schoolId", zipMeta.schoolId);
+    formData.append("departmentId", zipMeta.departmentId);
+    formData.append("programId", zipMeta.programId);
     formData.append("level", zipMeta.level);
     formData.append("semester", zipMeta.semester);
     formData.append("isPublic", String(isPublic));
@@ -270,15 +435,13 @@ const zipRef = useRef();
   });
 
 const handleZipUpload = async () => {
-  if (!zipFile) { setError("Please select a zip file."); return; }
-  if (!zipMeta.department || !zipMeta.level || !zipMeta.semester) {
-    setError("Please set department, level and semester for this batch.");
-    return;
-  }
+  if (!zipMeta.programId || !zipMeta.level || !zipMeta.semester) {
+  setError("Please set university, school, department, program, level and semester for this batch.");
+  return;
+}
   setUploading(true);
   setError("");
   try {
-    const { getIdToken } = await import("firebase/auth");
     const token = getAccessToken();
     const summary = await uploadZip(token);
     setZipSummary(summary);
@@ -296,9 +459,12 @@ const handleZipUpload = async () => {
     setUploading(true);
     setError("");
     try {
-      const { auth } = await import("./firebase");
-      const { getIdToken } = await import("firebase/auth");
       const token = getAccessToken();
+      const unresolved = files.filter((f) => !f.courseId && !f.courseCode);
+      if (unresolved.length > 0) {
+      setError("Please select or create a course for every file before uploading.");
+      return;
+      }
       const results = await Promise.allSettled(files.map((f) => uploadSingle(f, token)));
       const failed = results.filter((r) => r.status === "rejected");
       if (failed.length === 0) onClose(true);
@@ -441,24 +607,106 @@ const handleZipUpload = async () => {
                     {expandedIndex === i && (
                       <div className="px-3 pb-3 pt-1 border-t border-ink/5 bg-white/[0.02] space-y-2">
                         <input type="text" placeholder="Title *" value={item.title} onChange={(e) => updateMeta(i, "title", e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
-                        <input type="text" placeholder="Faculty e.g ENGINEERING" value={item.faculty} onChange={(e) => updateMeta(i, "faculty", e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
-                        <input type="text" placeholder="Department e.g. MINING ENGINEERING" value={item.department} onChange={(e) => updateMeta(i, "department", e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
-                        <input type="text" placeholder="Course code e.g. CHM 101" value={item.course} onChange={(e) => updateMeta(i, "course", e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
-                        <div className="flex gap-2">
-                          <select value={item.level} onChange={(e) => updateMeta(i, "level", e.target.value)} className="flex-1 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
-                            <option value="">Level</option>
-                            {LEVELS.map(l => <option key={l} value={l}>{l} Level</option>)}
-                          </select>
-                          <select value={item.semester} onChange={(e) => updateMeta(i, "semester", e.target.value)} className="flex-1 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
-                            <option value="">Semester</option>
-                            <option value="first">1st Semester</option>
-                            <option value="second">2nd Semester</option>
-                          </select>
-                        </div>
-                        <select value={item.university} onChange={(e) => updateMeta(i, "university", e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
-                          <option value="">Select University</option>
-                          {universitiesList.map((u) => <option key={u.id} value={u.shortName || u.name}>{u.name}</option>)}
-                        </select>
+                        <select
+  value={item.universityId}
+  onChange={(e) => {
+    const uni = universitiesList.find((u) => u.id === e.target.value);
+    updateMeta(i, "university", uni?.shortName || uni?.name || "");
+    loadSchools(i, e.target.value);
+  }}
+  className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
+>
+  <option value="">Select University</option>
+  {universitiesList.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+</select>
+
+<select
+  value={item.schoolId}
+  disabled={!item.universityId}
+  onChange={(e) => loadDepartments(i, e.target.value)}
+  className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition disabled:opacity-40"
+>
+  <option value="">Select School</option>
+  {item.schools.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+</select>
+
+<select
+  value={item.departmentId}
+  disabled={!item.schoolId}
+  onChange={(e) => {
+    const dept = item.departments.find((d) => d.id === e.target.value);
+    loadPrograms(i, e.target.value, dept?.name || "");
+  }}
+  className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition disabled:opacity-40"
+>
+  <option value="">Select Department</option>
+  {item.departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+</select>
+
+<select
+  value={item.programId}
+  disabled={!item.departmentId}
+  onChange={(e) => loadCourses(i, e.target.value)}
+  className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition disabled:opacity-40"
+>
+  <option value="">Select Program</option>
+  {item.programs.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+</select>
+
+{item.programId && (
+  <>
+    <select
+      value={item.courseId}
+      onChange={(e) => {
+        const c = item.courses.find((c) => c.id === e.target.value);
+        if (c) selectExistingCourse(i, c.id, c.code);
+      }}
+      className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
+    >
+      <option value="">Select existing course</option>
+      {item.courses.map((c) => <option key={c.id} value={c.id}>{c.code} — {c.title}</option>)}
+    </select>
+
+    {!item.courseId && (
+      <div className="border border-violet-500/20 rounded-xl p-3 space-y-2 bg-violet-500/5">
+        <p className="text-xs text-ink/40">Course not in the list? Create it:</p>
+        <input
+          type="text"
+          placeholder="Course code e.g. CHM 101"
+          value={item.courseCode}
+          onChange={(e) => updateMeta(i, "courseCode", e.target.value)}
+          className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+        />
+        <input
+          type="text"
+          placeholder="Course title e.g. General Chemistry"
+          value={item.courseTitle}
+          onChange={(e) => updateMeta(i, "courseTitle", e.target.value)}
+          className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+        />
+        <button
+          type="button"
+          onClick={() => createNewCourse(i)}
+          className="w-full py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium transition"
+        >
+          Create course
+        </button>
+      </div>
+    )}
+  </>
+)}
+
+<div className="flex gap-2">
+  <select value={item.level} onChange={(e) => updateMeta(i, "level", e.target.value)} className="flex-1 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
+    <option value="">Level</option>
+    {LEVELS.map(l => <option key={l} value={l}>{l} Level</option>)}
+  </select>
+  <select value={item.semester} onChange={(e) => updateMeta(i, "semester", e.target.value)} className="flex-1 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
+    <option value="">Semester</option>
+    <option value="first">1st Semester</option>
+    <option value="second">2nd Semester</option>
+  </select>
+</div>
                         <textarea placeholder="Description (optional)" value={item.description} onChange={(e) => updateMeta(i, "description", e.target.value)} rows={2} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition" />
                       </div>
                     )}
@@ -488,7 +736,25 @@ const handleZipUpload = async () => {
               <input ref={zipRef} type="file" className="hidden" accept=".zip" onChange={(e) => setZipFile(e.target.files[0] || null)} />
             </div>
 
-            <input type="text" placeholder="Department e.g. MINING ENGINEERING" value={zipMeta.department} onChange={(e) => setZipMeta((m) => ({ ...m, department: e.target.value }))} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition mb-2" />
+           <select value={zipMeta.universityId} onChange={(e) => loadZipSchools(e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition mb-2">
+  <option value="">Select University</option>
+  {universitiesList.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+</select>
+
+<select value={zipMeta.schoolId} disabled={!zipMeta.universityId} onChange={(e) => loadZipDepartments(e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition mb-2 disabled:opacity-40">
+  <option value="">Select School</option>
+  {zipSchools.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+</select>
+
+<select value={zipMeta.departmentId} disabled={!zipMeta.schoolId} onChange={(e) => loadZipPrograms(e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition mb-2 disabled:opacity-40">
+  <option value="">Select Department</option>
+  {zipDepartments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+</select>
+
+<select value={zipMeta.programId} disabled={!zipMeta.departmentId} onChange={(e) => setZipMeta((m) => ({ ...m, programId: e.target.value }))} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition mb-2 disabled:opacity-40">
+  <option value="">Select Program</option>
+  {zipPrograms.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+</select>
 
             <div className="flex gap-2 mb-2">
               <select value={zipMeta.level} onChange={(e) => setZipMeta((m) => ({ ...m, level: e.target.value }))} className="flex-1 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
