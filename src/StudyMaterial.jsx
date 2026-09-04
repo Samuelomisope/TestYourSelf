@@ -7,18 +7,41 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faFileLines, faLock, faVideo, faBox, faFile, faNoteSticky, faUser, faGlobe,
   faHouse, faBook, faRobot, faComments, faStore, faChevronDown, faXmark,
-  faCalculator, faUpload, faGrip, faChevronRight, faFolder, faFolderOpen,
-  faLayerGroup, faBookOpen, faDownload, faCheck, faTrash, faTriangleExclamation,
+  faCalculator, faUpload, faGrip, faChevronRight, faLayerGroup, faPlus,
+ faBookOpen, faDownload, faCheck, faTrash, faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons';
 import { faFile as farFile } from '@fortawesome/free-regular-svg-icons';
 import { UploadModal } from "./UploadModal";
 import { createNotification } from "./notifications";
 import { useOfflineDownload } from "./useOfflineDownload";
 import { listDownloadedMaterials, getOfflineBlobUrl } from "./offlineStorage";
-import { getUniversity } from "./universities";
 import { useParams } from "react-router-dom";
 
 
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+async function apiGet(path) {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`Request failed: ${path}`);
+  return res.json();
+}
+
+async function apiPost(path, body) {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Request failed: ${path}`);
+  }
+  return res.json();
+}
 // TODO: fill in your real contact details — shown on empty faculty cards.
 const DEVELOPER_CONTACT = {
   whatsapp: "https://wa.me/2349056296658",
@@ -195,15 +218,88 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+
+  // Pre-populate the cascade from the file's existing courseRef, if any.
+  const existingCourse = file.courseRef;
+  const existingProgram = existingCourse?.program;
+  const existingDept = existingProgram?.department;
+  const existingSchool = existingDept?.school;
+
   const [form, setForm] = useState({
-  title: file.title || "",
-  faculty: file.faculty || "",
-  department: file.department || "",
-  level: file.level || "",
-  semester: file.semester || "",
-  description: file.description || "",
-  course: file.course || "",
-});
+    title: file.title || "",
+    description: file.description || "",
+    level: file.level || "",
+    semester: file.semester || "",
+    universityId: file.university?.id || "",
+    schoolId: existingSchool?.id || "",
+    departmentId: existingDept?.id || "",
+    departmentName: existingDept?.name || file.department || "",
+    programId: existingProgram?.id || "",
+    courseId: existingCourse?.id || "",
+    courseCode: existingCourse?.code || file.course || "",
+    courseTitle: "",
+  });
+
+  const [schools, setSchools] = useState(existingSchool ? [existingSchool] : []);
+  const [departments, setDepartments] = useState(existingDept ? [existingDept] : []);
+  const [programs, setPrograms] = useState(existingProgram ? [existingProgram] : []);
+  const [courses, setCourses] = useState(existingCourse ? [existingCourse] : []);
+
+  // Load the real lists once edit mode opens, so the dropdowns have full
+  // options beyond just the pre-filled current value.
+  useEffect(() => {
+    if (!editMode) return;
+    if (form.universityId) apiGet(`/schools?universityId=${form.universityId}`).then(setSchools).catch(console.error);
+  }, [editMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadDepartments = async (schoolId) => {
+    setForm((f) => ({ ...f, schoolId, departmentId: "", departmentName: "", programId: "", courseId: "", courseCode: "" }));
+    setPrograms([]);
+    setCourses([]);
+    if (!schoolId) { setDepartments([]); return; }
+    try { setDepartments(await apiGet(`/schools/${schoolId}/departments`)); }
+    catch (err) { console.error(err); }
+  };
+
+  const loadPrograms = async (departmentId, departmentName) => {
+    setForm((f) => ({ ...f, departmentId, departmentName, programId: "", courseId: "", courseCode: "" }));
+    setCourses([]);
+    if (!departmentId) { setPrograms([]); return; }
+    try { setPrograms(await apiGet(`/departments/${departmentId}/programs`)); }
+    catch (err) { console.error(err); }
+  };
+
+  const loadCourses = async (programId) => {
+    setForm((f) => ({ ...f, programId, courseId: "", courseCode: "" }));
+    if (!programId) { setCourses([]); return; }
+    try { setCourses(await apiGet(`/programs/${programId}/courses`)); }
+    catch (err) { console.error(err); }
+  };
+
+  const selectExistingCourse = (courseId, courseCode) => {
+    setForm((f) => ({ ...f, courseId, courseCode }));
+  };
+
+  const createNewCourse = async () => {
+    if (!form.programId || !form.courseCode.trim() || !form.courseTitle.trim()) {
+      setSaveError("Program, course code, and course title are required to create a new course.");
+      return;
+    }
+    try {
+      const course = await apiPost("/courses", {
+        programId: form.programId,
+        code: form.courseCode.trim(),
+        title: form.courseTitle.trim(),
+        level: form.level || undefined,
+        semester: form.semester || undefined,
+      });
+      setForm((f) => ({ ...f, courseId: course.id }));
+      setCourses((prev) => [...prev, course]);
+    } catch (err) {
+      console.error(err);
+      setSaveError(err.message || "Could not create course.");
+    }
+  };
 
   const [resolvedUrl, setResolvedUrl] = useState(file.signedUrl || null);
   const [resolvingUrl, setResolvingUrl] = useState(!file.signedUrl);
@@ -244,7 +340,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
 
   const isOwner = file.user?.displayName === user?.displayName;
 
-  const handleSave = async () => {
+   const handleSave = async () => {
     setSaving(true);
     setSaveError("");
     try {
@@ -257,12 +353,20 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(form),
+          body: JSON.stringify({
+            title: form.title,
+            description: form.description,
+            level: form.level,
+            semester: form.semester,
+            department: form.departmentName,
+            course: form.courseCode,
+            courseId: form.courseId || null,
+          }),
         }
       );
       if (!res.ok) throw new Error("Failed to save");
       setEditMode(false);
-      onUpdated(); // refresh the file list
+      onUpdated();
     } catch (err) {
       console.error(err);
       setSaveError("Could not save changes. Try again.");
@@ -409,50 +513,90 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
           {editMode && (
             <div className="space-y-3">
               {saveError && <p className="text-pink-400 text-sm">{saveError}</p>}
-
               <div>
-                <label className="text-xs text-ink/30 mb-1 block">Title</label>
-                <input
-                  type="text"
-                  value={form.title}
-                  onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                  className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
-                />
-              </div>
+  <label className="text-xs text-ink/30 mb-1 block">School</label>
+  <select
+    value={form.schoolId}
+    onChange={(e) => loadDepartments(e.target.value)}
+    className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
+  >
+    <option value="">Select School</option>
+    {schools.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+  </select>
+</div>
 
-               <div>
-                <label className="text-xs text-ink/30 mb-1 block">Course Code</label>
-                <input
-                  type="text"
-                  placeholder="e.g CHM 101"
-                  value={form.course}
-                  onChange={e => setForm(f => ({ ...f, course: e.target.value }))}
-                  className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
-                />
-              </div>
+<div>
+  <label className="text-xs text-ink/30 mb-1 block">Department</label>
+  <select
+    value={form.departmentId}
+    disabled={!form.schoolId}
+    onChange={(e) => {
+      const dept = departments.find((d) => d.id === e.target.value);
+      loadPrograms(e.target.value, dept?.name || "");
+    }}
+    className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition disabled:opacity-40"
+  >
+    <option value="">Select Department</option>
+    {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+  </select>
+</div>
 
-              <div>
-                <label className="text-xs text-ink/30 mb-1 block">Faculty</label>
-                <input
-                  type="text"
-                  placeholder="e.g ENGINEERING"
-                  value={form.faculty}
-                  onChange={e => setForm(f => ({ ...f, faculty: e.target.value }))}
-                  className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
-                />
-              </div>
+<div>
+  <label className="text-xs text-ink/30 mb-1 block">Program</label>
+  <select
+    value={form.programId}
+    disabled={!form.departmentId}
+    onChange={(e) => loadCourses(e.target.value)}
+    className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition disabled:opacity-40"
+  >
+    <option value="">Select Program</option>
+    {programs.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+  </select>
+</div>
 
-              <div>
-                <label className="text-xs text-ink/30 mb-1 block">Department</label>
-                <input
-                  type="text"
-                  placeholder="e.g. MINING ENGINEERING"
-                  value={form.department}
-                  onChange={e => setForm(f => ({ ...f, department: e.target.value }))}
-                  className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
-                />
-              </div>
+{form.programId && (
+  <div>
+    <label className="text-xs text-ink/30 mb-1 block">Course</label>
+    <select
+      value={form.courseId}
+      onChange={(e) => {
+        const c = courses.find((c) => c.id === e.target.value);
+        if (c) selectExistingCourse(c.id, c.code);
+      }}
+      className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
+    >
+      <option value="">Select existing course</option>
+      {courses.map((c) => <option key={c.id} value={c.id}>{c.code} — {c.title}</option>)}
+    </select>
 
+    {!form.courseId && (
+      <div className="mt-2 border border-violet-500/20 rounded-xl p-3 space-y-2 bg-violet-500/5">
+        <p className="text-xs text-ink/40">Course not in the list? Create it:</p>
+        <input
+          type="text"
+          placeholder="Course code e.g. CHM 101"
+          value={form.courseCode}
+          onChange={(e) => setForm((f) => ({ ...f, courseCode: e.target.value }))}
+          className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+        />
+        <input
+          type="text"
+          placeholder="Course title e.g. General Chemistry"
+          value={form.courseTitle}
+          onChange={(e) => setForm((f) => ({ ...f, courseTitle: e.target.value }))}
+          className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+        />
+        <button
+          type="button"
+          onClick={createNewCourse}
+          className="w-full py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium transition"
+        >
+          Create course
+        </button>
+      </div>
+    )}
+  </div>
+)}
               <div className="flex gap-2">
                 <div className="flex-1">
                   <label className="text-xs text-ink/30 mb-1 block">Level</label>
@@ -650,24 +794,29 @@ function DepartmentBlock({ deptName, programmes, user, onSelect, onDelete, defau
 function ProgrammeBlock({ programmeName, courses, user, onSelect, onDelete, defaultOpen }) {
   const [open, setOpen] = useState(!!defaultOpen);
 
-  // Programme → Level → Semester → Course
+  // Programme → Level → Semester → Course → Files
+  // Each file is grouped by its OWN level/semester (as set at upload/edit),
+  // not the course's — files under the same course code can legitimately
+  // differ (e.g. a resource re-shared a semester later).
   const byLevel = useMemo(() => {
     const l = {};
     Object.entries(courses).forEach(([courseName, files]) => {
-      const level = normalizeLevel(files[0]?.courseRef?.level);
-      const sem   = normalizeSemester(files[0]?.courseRef?.semester);
-      if (!l[level]) l[level] = {};
-      if (!l[level][sem]) l[level][sem] = {};
-      l[level][sem][courseName] = files;
+      files.forEach((file) => {
+        const level = normalizeLevel(file.level);
+        const sem   = normalizeSemester(file.semester);
+        if (!l[level]) l[level] = {};
+        if (!l[level][sem]) l[level][sem] = {};
+        if (!l[level][sem][courseName]) l[level][sem][courseName] = [];
+        l[level][sem][courseName].push(file);
+      });
     });
     return l;
   }, [courses]);
 
- const sortedLevels = Object.keys(byLevel).sort(
-  (a, b) => LEVEL_ORDER.indexOf(a.replace("L", "")) - LEVEL_ORDER.indexOf(b.replace("L", ""))
-);
+  const sortedLevels = Object.keys(byLevel).sort(
+    (a, b) => LEVEL_ORDER.indexOf(a.replace("L", "")) - LEVEL_ORDER.indexOf(b.replace("L", ""))
+  );
   const totalFiles = Object.values(courses).reduce((a, arr) => a + arr.length, 0);
-
   return (
     <div className="pl-2">
       <button
@@ -759,7 +908,7 @@ function FacultyBlock({
   onUploadClick,
   defaultOpen,
 }) {
-    const [open, setOpen] = useState(false);
+   const [open, setOpen] = useState(!!defaultOpen);
   const sortedDepts = Object.keys(departments).sort();
  const totalFiles = Object.values(departments).reduce(
   (a, levelObj) => a + Object.values(levelObj).reduce(
@@ -769,26 +918,49 @@ function FacultyBlock({
 
   return (
     <div className="bg-white/[0.02] border border-white/[0.08] rounded-2xl overflow-hidden">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-4 px-5 py-4 hover:bg-violet-500/5 transition text-left"
-      >
-        <div className="w-10 h-10 bg-violet-500/15 border border-violet-500/25 rounded-2xl flex items-center justify-center shrink-0">
-          <FontAwesomeIcon icon={faBookOpen} className="text-violet-400 text-sm" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-black text-ink truncate">{facultyName}</p>
-          {facultyFullName && facultyFullName !== facultyName && (
-            <p className="text-xs text-ink/30 truncate">{facultyFullName}</p>
-          )}
-            <p className="text-xs text-ink/20">
-  {sortedDepts.length} {sortedDepts.length === 1 ? "department" : "departments"}
-</p>        </div>
-        <FontAwesomeIcon
-          icon={faChevronDown}
-          className={`text-ink/30 text-sm transition-transform ${open ? "rotate-180" : ""}`}
-        />
-      </button>
+<div
+  role="button"
+  tabIndex={0}
+  onClick={() => setOpen(o => !o)}
+  onKeyDown={(e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setOpen(o => !o);
+    }
+  }}
+  className="w-full flex items-center gap-4 px-5 py-4 hover:bg-violet-500/5 transition text-left cursor-pointer"
+>
+  <div className="w-10 h-10 bg-violet-500/15 border border-violet-500/25 rounded-2xl flex items-center justify-center shrink-0">
+    <FontAwesomeIcon icon={faBookOpen} className="text-violet-400 text-sm" />
+  </div>
+  <div className="flex-1 min-w-0">
+    <p className="text-sm font-black text-ink truncate">{facultyName}</p>
+    {facultyFullName && facultyFullName !== facultyName && (
+      <p className="text-xs text-ink/30 truncate">{facultyFullName}</p>
+    )}
+    <p className="text-xs text-ink/20">
+      {sortedDepts.length} {sortedDepts.length === 1 ? "department" : "departments"} · {totalFiles} files
+    </p>
+  </div>
+
+  {onUploadClick && (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onUploadClick(facultyName);
+      }}
+      className="w-8 h-8 flex items-center justify-center rounded-xl text-ink/30 hover:text-violet-400 hover:bg-violet-500/10 transition shrink-0"
+      title={`Upload material to ${facultyName}`}
+    >
+      <FontAwesomeIcon icon={faPlus} className="text-xs" />
+    </button>
+  )}
+
+  <FontAwesomeIcon
+    icon={faChevronDown}
+    className={`text-ink/30 text-sm transition-transform ${open ? "rotate-180" : ""}`}
+  />
+</div>
       {open && (
         <div className="px-6 pb-5 pt-1 flex flex-col gap-1">
          {sortedDepts.map((dept, i) => (
@@ -802,10 +974,10 @@ function FacultyBlock({
     defaultOpen={defaultOpen && i === 0}
   />
 ))}
-        </div>
-      )}
-    </div>
-  );
+ </div>
+ )}
+ </div>
+ );
 }
 
 // ─── Flat Grid Card (for search results) ─────────────────────────
@@ -885,6 +1057,49 @@ function UniversityPicker({ universities }) {
       </div>
       {universities.length === 0 && (
         <p className="text-ink/30 text-sm">No universities available yet.</p>
+      )}
+    </div>
+  );
+}
+
+// ─── Semester Block (inside Level — First/Second Semester, contains courses) ───
+function SemesterBlock({ semesterKey, courses = {}, user, onSelect, onDelete }) {
+  const [open, setOpen] = useState(false);
+  const sortedCourses = Object.keys(courses).sort();
+  const totalFiles = Object.values(courses).reduce((a, arr) => a + arr.length, 0);
+
+  return (
+    <div className="pl-2">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2.5 py-2 group w-full text-left"
+      >
+        <FontAwesomeIcon
+          icon={faChevronRight}
+          className={`text-ink/15 text-[10px] transition-transform ${open ? "rotate-90" : ""}`}
+        />
+        <span className="text-xs font-semibold text-ink/40">{semesterKey}</span>
+        <span className="text-[11px] text-ink/25 ml-auto shrink-0">
+          {sortedCourses.length} {sortedCourses.length === 1 ? "course" : "courses"} · {totalFiles} files
+        </span>
+      </button>
+      {open && (
+        <div className="flex flex-col gap-2 mt-1 mb-2 pl-2">
+          {sortedCourses.length === 0 ? (
+            <p className="text-xs text-ink/30 py-2 pl-1">No materials yet for this semester.</p>
+          ) : (
+            sortedCourses.map(courseName => (
+              <CourseSection
+                key={courseName}
+                courseName={courseName}
+                files={courses[courseName]}
+                user={user}
+                onSelect={onSelect}
+                onDelete={onDelete}
+              />
+            ))
+          )}
+        </div>
       )}
     </div>
   );
