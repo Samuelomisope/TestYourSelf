@@ -11,13 +11,6 @@ import futa1 from "./assets/futa1.jpg";
 import futa2 from "./assets/futa2.jpg";
 import futa3 from "./assets/futa3.jpg";
 
-/**
- * UniversityWelcomePage
- *
- * Generic university welcome page — vision, mission, core values and news.
- * Renders for whichever university's slug is in the route:
- * /schools/:universitySlug
- */
 
 function parseCoreValues(raw) {
   if (!raw) return null;
@@ -188,6 +181,19 @@ export default function UniversityWelcomePage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [news, setNews] = useState([]);
+  const [heroIndex, setHeroIndex] = useState(0);
+  const campusPhotos =
+  university.slug === "futa" ? [futa1, futa2, futa3] : [];
+
+useEffect(() => {
+  if (campusPhotos.length <= 1) return;
+
+  const interval = setInterval(() => {
+    setHeroIndex((i) => (i + 1) % campusPhotos.length);
+  }, 5000); // 5s per photo — tweak as you like
+
+  return () => clearInterval(interval);
+}, [campusPhotos.length]);
 
   // Load university
   useEffect(() => {
@@ -287,11 +293,6 @@ export default function UniversityWelcomePage() {
 
   const coreValues = parseCoreValues(university.coreValues);
 
-  const campusPhotos =
-    university.slug === "futa"
-      ? [futa1, futa2, futa3]
-      : [null, null, null];
-
   const hasSchoolWebsites = university.schools?.some(
     (school) => school.admissionRequirement
   );
@@ -302,55 +303,71 @@ export default function UniversityWelcomePage() {
       <Navbar />
 
       <main className="mx-auto max-w-[960px] px-6 pb-24 pt-32 text-ink">
-        {/* Hero */}
-        <div className="mb-6 flex animate-[fadeUp_0.5s_ease-out_both] items-center gap-2.5 text-xs font-medium uppercase tracking-widest text-accent-hover">
-          <span>{university.name}</span>
+      {/* Hero */}
+<div className="relative mb-[72px] animate-[fadeUp_0.5s_ease-out_both] overflow-hidden rounded-3xl">
+  <div className="relative h-[420px] w-full sm:h-[480px]">
+    {campusPhotos.length > 0 ? (
+      campusPhotos.map((photo, i) => (
+        <img
+          key={photo}
+          src={photo}
+          alt={university.name}
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${
+            i === heroIndex ? "opacity-100" : "opacity-0"
+          }`}
+        />
+      ))
+    ) : (
+      <div className="flex h-full w-full items-center justify-center bg-bg-elevated text-ink/30">
+        <FontAwesomeIcon icon={faCamera} className="text-3xl opacity-40" />
+      </div>
+    )}
+  </div>
 
-          {university.establishedYear && (
-            <>
-              <span className="h-1 w-1 rounded-full bg-ink/30" />
+  {/* Gradient scrim so the text stays legible over any photo */}
+  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
 
-              <span className="text-ink/30">
-                Est. {university.establishedYear}
-              </span>
-            </>
-          )}
-        </div>
+  {/* Overlaid title/kicker/tagline */}
+  <div className="absolute inset-x-0 bottom-0 px-6 pb-8 sm:px-10 sm:pb-10">
+    <div className="mb-3 flex items-center gap-2.5 text-xs font-medium uppercase tracking-widest text-accent-hover">
+      <span>{university.name}</span>
 
-        <h1 className="mb-6 animate-[fadeUp_0.5s_ease-out_both] font-serif text-[clamp(40px,6vw,64px)] font-medium leading-[1.04] tracking-tight text-ink [animation-delay:60ms]">
-          Welcome to{" "}
-          <em className="italic text-accent-hover">
-            {university.name}
-          </em>
-        </h1>
+      {university.establishedYear && (
+        <>
+          <span className="h-1 w-1 rounded-full bg-white/40" />
+          <span className="text-white/50">Est. {university.establishedYear}</span>
+        </>
+      )}
+    </div>
 
-        {university.tagline && (
-          <p className="mb-10 max-w-[640px] animate-[fadeUp_0.5s_ease-out_both] text-[17px] leading-relaxed text-ink/60 [animation-delay:120ms]">
-            {university.tagline}
-          </p>
-        )}
+    <h1 className="mb-3 font-serif text-[clamp(32px,5vw,52px)] font-medium leading-[1.05] tracking-tight text-white">
+      Welcome to <em className="italic text-accent-hover">{university.name}</em>
+    </h1>
 
-        {/* Photo strip */}
-        <div className="mb-[72px] grid grid-cols-[1.4fr_1fr_1fr] gap-3 max-[720px]:grid-cols-1">
-          <PhotoSlot
-            label="Campus photo"
-            src={campusPhotos[0]}
-            wide
-            delay={160}
-          />
+    {university.tagline && (
+      <p className="max-w-[560px] text-[15px] leading-relaxed text-white/70 sm:text-[17px]">
+        {university.tagline}
+      </p>
+    )}
+  </div>
 
-          <PhotoSlot
-            label="Campus photo"
-            src={campusPhotos[1]}
-            delay={200}
-          />
-
-          <PhotoSlot
-            label="Campus photo"
-            src={campusPhotos[2]}
-            delay={240}
-          />
-        </div>
+  {/* Dot indicators */}
+  {campusPhotos.length > 1 && (
+    <div className="absolute right-6 top-6 flex gap-1.5 sm:right-10 sm:top-8">
+      {campusPhotos.map((photo, i) => (
+        <button
+          key={photo}
+          type="button"
+          onClick={() => setHeroIndex(i)}
+          aria-label={`Show photo ${i + 1}`}
+          className={`h-1.5 rounded-full transition-all duration-300 ${
+            i === heroIndex ? "w-6 bg-white" : "w-1.5 bg-white/40 hover:bg-white/60"
+          }`}
+        />
+      ))}
+    </div>
+  )}
+</div>
 
         {/* Browse study materials CTA */}
         <div className="mb-[72px] flex animate-[fadeUp_0.5s_ease-out_both] [animation-delay:280ms]">
