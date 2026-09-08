@@ -25,35 +25,6 @@ function parseCoreValues(raw) {
   }
 }
 
-function PhotoSlot({ label, src, wide = false, delay = 0 }) {
-  return (
-    <div
-      style={{ animationDelay: `${delay}ms` }}
-      className={`group relative flex animate-[fadeUp_0.5s_ease-out_both] flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border border-dashed border-ink/20 bg-bg-elevated text-ink/30 transition-colors duration-200 hover:border-ink/30 ${
-        wide ? "aspect-auto" : "aspect-[4/3]"
-      }`}
-    >
-      {src ? (
-        <img
-          src={src}
-          alt={label}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-        />
-      ) : (
-        <>
-          <FontAwesomeIcon
-            icon={faCamera}
-            className="text-lg opacity-50"
-          />
-          <span className="text-[11px] uppercase tracking-wide">
-            {label}
-          </span>
-        </>
-      )}
-    </div>
-  );
-}
-
 function VisionMissionCard({ kicker, text, delay = 0 }) {
   return (
     <div
@@ -183,7 +154,7 @@ export default function UniversityWelcomePage() {
   const [news, setNews] = useState([]);
   const [heroIndex, setHeroIndex] = useState(0);
   const campusPhotos =
-  university.slug === "futa" ? [futa1, futa2, futa3] : [];
+  university?.slug === "futa" ? [futa1, futa2, futa3] : [];
 
 useEffect(() => {
   if (campusPhotos.length <= 1) return;
