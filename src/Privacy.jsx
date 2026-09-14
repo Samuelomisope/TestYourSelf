@@ -4,7 +4,7 @@ import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
 
 const LAST_UPDATED = "August 1, 2026";
 const APP_NAME = "UniLib";
-const CONTACT_EMAIL = "hello.testyourself@gmail.com"; // update this
+const CONTACT_EMAIL = "unilibng@gmail.com";
 const APP_URL = "https://unilib.com.ng";
 
 const Section = ({ title, children }) => (

@@ -120,3 +120,41 @@ The component checks `localStorage.getItem("testyourself_tour_seen")`.
 - Cleared → tour shows again (useful for testing).
 
 The flag is written when the user clicks "Get started" or skips the tour.
+
+
+
+1st Semester (100 Level)
+
+Code	Course Title
+GNS 101	Use of English I
+MTS 101	Introductory Mathematics I
+CHE 101	Basic General Chemistry I
+CHE 103	General Practical Chemistry I
+PHY 103	General Physics (Properties of Matter)
+PHY 107	Experimental Physics I
+MEE 101	Engineering Drawing
+CVE 105	History and Philosophy of Science and Technology
+
+2nd Semester (100 Level)
+
+Code	Course Title
+GNS 102	Use of English II
+GNS 106	Logic and Philosophy
+MTS 102	Introductory Mathematics II
+MTS 104	Introductory Applied Mathematics II
+CHE 102	General Chemistry II
+CHE 104	Experimental Chemistry II
+PHY 102	General Physics II (Electricity and Magnetism)
+PHY 108	General Practical Physics II
+MEE 102	Workshop Practice
+
+200 Level, 1st Semester (Engineering Faculty-wide common courses)
+
+Code	Course Title	Units
+CHE 205	Physical Chemistry I	2
+CSC 201	Introduction to Fortran Programming	3
+CSP 201	General Agriculture (Theory)	1
+MEE 201	Manufacturing Technology I	2
+MNE 201	Engineer-in-Society	1
+MME 201	Science of Materials	3
+MEE 207	Applied Mechanics	3
