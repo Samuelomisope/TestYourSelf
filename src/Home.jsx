@@ -126,6 +126,56 @@ function LiveClock() {
   );
 }
 
+function TodayStudyCard() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiGet("/ai/study-plan/current")
+      .then(setData)
+      .catch(() => setData(null))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <SkeletonCard />;
+
+  if (!data || !data.plan) {
+    return (
+      <Link to="/ai" className="block bg-white/[0.03] border border-ink/10 rounded-2xl p-5 hover:border-violet-500/30 hover:bg-violet-500/5 transition">
+        <p className="text-xs font-semibold text-violet-400 tracking-widest uppercase mb-2">Study Plan</p>
+        <p className="text-sm text-ink/50">No active study plan yet — create one to get a daily focus here.</p>
+      </Link>
+    );
+  }
+
+  if (!data.todayEntry) {
+    return (
+      <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-5">
+        <p className="text-xs font-semibold text-violet-400 tracking-widest uppercase mb-2">Study Plan</p>
+        <p className="text-sm text-ink/50">Your plan for "{data.plan.subject}" has ended. Time to make a new one.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white/[0.03] border border-violet-500/20 rounded-2xl p-5">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-semibold text-violet-400 tracking-widest uppercase">
+          Today's Focus — Day {data.dayNumber} of {data.plan.daysAvailable}
+        </p>
+      </div>
+      <p className="text-ink font-bold mb-2">{data.todayEntry.focus}</p>
+      <ul className="space-y-1.5">
+        {data.todayEntry.tasks.map((t, i) => (
+          <li key={i} className="text-sm text-ink/60 flex items-start gap-2">
+            <span className="text-violet-400 mt-0.5">•</span>{t}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function Home() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -190,7 +240,6 @@ const QUOTES = [
 
         const statsData = await apiGet("/users/me/stats");
         setStats({ files: statsData.files ?? 0, aiQuestions: 0, products: statsData.products ?? 0, messages: statsData.messages ?? 0 });
-        if (statsData.leaderboardScore > 0) setLeaderboardRank(1);
         setStreak(pgUser.streakCount || 0);
 
         try { const myMaterials = await apiGet("/study-material/my"); if (myMaterials.length > 0) setLastMaterial(myMaterials[0]); } catch { setLastMaterial(null); }
@@ -422,7 +471,9 @@ const timeAgo = (dateStr) => {
           <p className="text-sm italic text-ink/30 mb-1">Study smarter. Learn together. Test yourself daily.</p>
           <LiveClock />
         </div>
-
+            <div className="mb-6">
+          <TodayStudyCard />
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* LEFT COLUMN */}
@@ -434,19 +485,13 @@ const timeAgo = (dateStr) => {
                 <p className="text-2xl font-bold text-violet-400">🔥 {streak}</p>
                 <p className="text-xs text-ink/30 mt-1">Day streak</p>
               </div>
-              {leaderboardRank && (
-                <div className="flex-1 bg-white/[0.03] border border-ink/10 rounded-2xl p-3 text-center">
-                  <p className="text-2xl font-bold text-violet-400">#{leaderboardRank}</p>
-                  <p className="text-xs text-ink/30 mt-1">Leaderboard rank</p>
-                </div>
-              )}
+          
             </div>
 
             {/* Quick Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
                 { label: "Files uploaded", value: stats.files, icon: faFile },
-                { label: "AI questions", value: stats.aiQuestions, icon: faRobot },
                 { label: "Products listed", value: stats.products, icon: faBagShopping },
                 { label: "Messages sent", value: stats.messages, icon: faMessage },
               ].map((stat, i) => (
@@ -562,8 +607,8 @@ const timeAgo = (dateStr) => {
               <h3 className="font-bold text-xs text-ink/30 uppercase tracking-widest mb-4">Company</h3>
               <ul className="space-y-2 text-sm text-ink/50">
                 <li><a href="#" className="hover:text-violet-400 transition">About</a></li>
-                <li><a href="#" className="hover:text-violet-400 transition">Vision</a></li>
-                <li><a href="#" className="hover:text-violet-400 transition">Privacy Policy</a></li>
+                <li><a href="/terms" className="hover:text-violet-400 transition">Vision</a></li>
+                <li><a href="/privacy" className="hover:text-violet-400 transition">Privacy Policy</a></li>
                 <li><a href="#" className="hover:text-violet-400 transition">Contact Us</a></li>
               </ul>
             </div>

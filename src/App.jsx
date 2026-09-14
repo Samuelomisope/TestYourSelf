@@ -60,7 +60,6 @@ function App() {
             <WriterDashboard />
             </WriterRoute>
             </ProtectedRoute>} />
-        <Route path="/schools/:universitySlug" element={<ProtectedRoute><UniversityWelcomePage /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

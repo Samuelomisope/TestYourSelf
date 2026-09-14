@@ -106,6 +106,34 @@ const CARD = "bg-bg-elevated shadow-[0_1px_2px_rgba(0,0,0,0.3),0_8px_24px_-12px_
 const BADGE_NEUTRAL = "px-2.5 py-1 bg-ink/[0.06] text-ink/50 rounded-full text-xs font-medium";
 const BADGE_ACCENT = "px-2.5 py-1 bg-violet-500/10 text-violet-400 rounded-full text-xs font-medium";
 
+function evaluateMath(expression) {
+  const tokens = expression.match(/(?:\d+(?:\.\d+)?|\.\d+|sin|cos|tan|sqrt|log|ln|π|[()+\-*/^])/g);
+  if (!tokens || tokens.join("") !== expression.replace(/\s/g, "")) throw new Error("Invalid expression");
+  let index = 0;
+  const peek = () => tokens[index];
+  const take = () => tokens[index++];
+  const requireToken = (token) => { if (take() !== token) throw new Error("Invalid expression"); };
+  const primary = () => {
+    const token = take();
+    if (token === "(") { const value = sum(); requireToken(")"); return value; }
+    if (token === "π") return Math.PI;
+    if (["sin", "cos", "tan", "sqrt", "log", "ln"].includes(token)) {
+      requireToken("("); const value = sum(); requireToken(")");
+      return ({ sin: Math.sin, cos: Math.cos, tan: Math.tan, sqrt: Math.sqrt, log: Math.log10, ln: Math.log }[token])(value);
+    }
+    const value = Number(token);
+    if (!Number.isFinite(value)) throw new Error("Invalid expression");
+    return value;
+  };
+  const unary = () => peek() === "+" ? (take(), unary()) : peek() === "-" ? (take(), -unary()) : primary();
+  const power = () => { const left = unary(); return peek() === "^" ? (take(), left ** power()) : left; };
+  const product = () => { let value = power(); while (["*", "/"].includes(peek())) { const op = take(); const right = power(); value = op === "*" ? value * right : value / right; } return value; };
+  const sum = () => { let value = product(); while (["+", "-"].includes(peek())) { const op = take(); const right = product(); value = op === "+" ? value + right : value - right; } return value; };
+  const result = sum();
+  if (index !== tokens.length || !Number.isFinite(result)) throw new Error("Invalid expression");
+  return result;
+}
+
 // ─── Scientific Calculator ─────────────────────────────────────────
 function Calculator({ onClose }) {
   const [display, setDisplay] = useState("0");
@@ -123,12 +151,8 @@ function Calculator({ onClose }) {
     if (val === "%") { setDisplay(d => String(parseFloat(d) / 100)); return; }
     if (val === "=") {
       try {
-        let expr = equation + display;
-        expr = expr.replace(/×/g,"*").replace(/÷/g,"/").replace(/−/g,"-")
-          .replace(/π/g,Math.PI).replace(/sin\(/g,"Math.sin(").replace(/cos\(/g,"Math.cos(")
-          .replace(/tan\(/g,"Math.tan(").replace(/√\(/g,"Math.sqrt(")
-          .replace(/log\(/g,"Math.log10(").replace(/ln\(/g,"Math.log(").replace(/\^/g,"**");
-        setDisplay(String(parseFloat(eval(expr).toFixed(10))));
+        const expr = (equation + display).replace(/×/g,"*").replace(/÷/g,"/").replace(/−/g,"-").replace(/√/g,"sqrt");
+        setDisplay(String(Number(evaluateMath(expr).toFixed(10))));
         setEquation(""); setJustCalculated(true);
       } catch { setDisplay("Error"); }
       return;
