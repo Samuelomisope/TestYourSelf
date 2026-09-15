@@ -13,7 +13,7 @@ import {
   faRobot, faBookOpen, faCartShopping, faComments, faBookmark,
   faCamera, faBagShopping, faMessage, faFile,
   faHouse, faBook, faStore, faBell, faSearch, faBars, faXmark,
-  faLayerGroup,
+  faLayerGroup, faCalendarCheck,
 } from '@fortawesome/free-solid-svg-icons';
 import AppTour from "./components/AppTour/AppTour";
 import ThemeToggle from "./components/ThemeToggle";
@@ -126,6 +126,16 @@ function LiveClock() {
   );
 }
 
+function computePlanProgress(plan) {
+  if (!plan) return 0;
+  const entries = plan.entries || [];
+  const totalTasks = entries.reduce((sum, e) => sum + (e.tasks?.length || 0), 0);
+  if (totalTasks === 0) return 0;
+  const completed = plan.completedTasks || {};
+  const completedCount = Object.values(completed).reduce((sum, arr) => sum + (arr?.length || 0), 0);
+  return Math.round((completedCount / totalTasks) * 100);
+}
+
 function TodayStudyCard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -157,12 +167,21 @@ function TodayStudyCard() {
     );
   }
 
-  return (
+   return (
     <div className="bg-white/[0.03] border border-violet-500/20 rounded-2xl p-5">
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs font-semibold text-violet-400 tracking-widest uppercase">
-          Today's Focus — Day {data.dayNumber} of {data.plan.daysAvailable}
+          {data.plan.subject} — Day {data.dayNumber} of {data.plan.daysAvailable}
         </p>
+        <Link to="/study-plan" className="text-xs text-violet-400 hover:text-violet-300 font-medium transition">
+          View Full Study Plan →
+        </Link>
+      </div>
+      <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden mb-3">
+        <div
+          className="h-full bg-violet-500 rounded-full transition-all"
+          style={{ width: `${computePlanProgress(data.plan)}%` }}
+        />
       </div>
       <p className="text-ink font-bold mb-2">{data.todayEntry.focus}</p>
       <ul className="space-y-1.5">
@@ -320,14 +339,14 @@ const timeAgo = (dateStr) => {
   ];
 
   const sidebarLinks = [
-    { name: "Home", href: "/home", icon: faHouse },
-    { name: "Library", href: "/study-material", icon: faBook },
-    { name: "Flashcards", href: "/flashcards", icon: faLayerGroup },
-    { name: "AI Assistant", href: "/ai", icon: faRobot },
-    { name: "Chat", href: "/chat", icon: faComments },
-    { name: "Marketplace", href: "/marketplace", icon: faStore },
-  ];
- 
+  { name: "Home", href: "/home", icon: faHouse },
+  { name: "Library", href: "/study-material", icon: faBook },
+  { name: "Study Plan", href: "/study-plan", icon: faCalendarCheck },
+  { name: "Flashcards", href: "/flashcards", icon: faLayerGroup },
+  { name: "AI Assistant", href: "/ai", icon: faRobot },
+  { name: "Chat", href: "/chat", icon: faComments },
+  { name: "Marketplace", href: "/marketplace", icon: faStore },
+];
   return (
     <div className="min-h-screen bg-bg text-ink">
 

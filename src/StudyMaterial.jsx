@@ -1274,29 +1274,38 @@ useEffect(() => {
   // ── Build hierarchy: Faculty → Department → Course → Files ──
   // (Level and Semester are handled as filters above, not folder depth —
   // keeps the tree shallow so users reach a course in 2 taps instead of 4.)
- const grouped = useMemo(() => {
+const grouped = useMemo(() => {
   const g = {};
-  filtered.forEach(file => {
-    // Real chain: courseRef -> program -> department -> school.
-    // (Program.schoolId was dropped in Phase 3 — school now only
-    // reachable via department.) Materials with no courseRef (legacy,
-    // pre-migration, or needsReview) are excluded from the browse tree
-    // entirely — surfacing their raw `faculty` string as a fake school
-    // (e.g. "SEET") is misleading. They're still visible in the admin
-    // NeedsReviewPanel.
-    const school = file.courseRef?.program?.department?.school?.name;
-    if (!school) return; // skip legacy/needsReview materials
 
-    const department = file.courseRef?.program?.department?.name || "Uncategorized Department";
-    const programme  = file.courseRef?.program?.name              || "Uncategorized Programme";
-    const course      = file.courseRef?.code                      || "Uncategorized Course";
-
+  const pushInto = (school, department, programme, course, file) => {
     if (!g[school]) g[school] = {};
     if (!g[school][department]) g[school][department] = {};
     if (!g[school][department][programme]) g[school][department][programme] = {};
     if (!g[school][department][programme][course]) g[school][department][programme][course] = [];
     g[school][department][programme][course].push(file);
+  };
+
+  filtered.forEach(file => {
+    const homeSchool = file.courseRef?.program?.department?.school?.name;
+    if (!homeSchool) return; // skip legacy/needsReview materials
+
+    const homeDepartment = file.courseRef?.program?.department?.name || "Uncategorized Department";
+    const homeProgramme  = file.courseRef?.program?.name              || "Uncategorized Programme";
+    const course          = file.courseRef?.code                      || "Uncategorized Course";
+
+    // Home branch — unchanged behavior
+    pushInto(homeSchool, homeDepartment, homeProgramme, course, file);
+
+    // NEW: also push into every cross-listed program's branch
+    (file.courseRef?.crossListedIn || []).forEach(pc => {
+      const clSchool = pc.program?.department?.school?.name;
+      if (!clSchool) return;
+      const clDepartment = pc.program?.department?.name || "Uncategorized Department";
+      const clProgramme  = pc.program?.name              || "Uncategorized Programme";
+      pushInto(clSchool, clDepartment, clProgramme, course, file);
+    });
   });
+
   return g;
 }, [filtered]);
 
