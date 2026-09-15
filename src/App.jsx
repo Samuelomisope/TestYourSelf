@@ -25,6 +25,7 @@ import NovelDetail from "./NovelDetail";
 import EpisodeReader from "./EpisodeReader";
 import WriterRoute from "./WriterRoute";
 import UniversityWelcomePage from "./UniversityWelcomePage";
+import StudyPlan from "./StudyPlan";
 
 function App() {
   return (
@@ -53,6 +54,7 @@ function App() {
         <Route path="/novels/become-writer" element={<ProtectedRoute><BecomeWriter /></ProtectedRoute>} />
         <Route path="/novels/:id" element={<ProtectedRoute><NovelDetail /></ProtectedRoute>} />
         <Route path="/episodes/:id" element={<ProtectedRoute><EpisodeReader /></ProtectedRoute>} />
+        <Route path="/study-plan" element={<ProtectedRoute><StudyPlan /></ProtectedRoute>} />
         <Route path="/writer/dashboard" 
         element={
         <ProtectedRoute>
