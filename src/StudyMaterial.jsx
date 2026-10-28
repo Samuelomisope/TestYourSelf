@@ -8,7 +8,7 @@ import {
   faFileLines, faLock, faVideo, faBox, faFile, faNoteSticky, faUser, faGlobe,
   faHouse, faBook, faRobot, faComments, faStore, faChevronDown, faXmark,
   faCalculator, faUpload, faGrip, faChevronRight, faLayerGroup, faPlus,
- faBookOpen, faDownload, faCheck, faTrash, faTriangleExclamation,
+ faBookOpen, faDownload, faCheck, faTrash, faTriangleExclamation, faShareNodes,
 } from '@fortawesome/free-solid-svg-icons';
 import { faFile as farFile } from '@fortawesome/free-regular-svg-icons';
 import { UploadModal } from "./UploadModal";
@@ -735,7 +735,25 @@ function FileRow({ file, user, onSelect, onDelete }) {
 // ─── Course Section (collapsible) ─────────────────────────────────
 function CourseSection({ courseName, files, user, onSelect, onDelete }) {
   const [open, setOpen] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   const sorted = [...files];
+  const shareFile = files.find((file) => file.courseId && file.university?.slug);
+
+  const copyCourseLink = async (event) => {
+    event.stopPropagation();
+    if (!shareFile) return;
+    const url = new URL('/study-material', window.location.origin);
+    url.searchParams.set('university', shareFile.university.slug);
+    url.searchParams.set('courseId', shareFile.courseId);
+    try {
+      await navigator.clipboard.writeText(url.toString());
+      setShareCopied(true);
+      window.setTimeout(() => setShareCopied(false), 2500);
+    } catch (error) {
+      console.error('Could not copy course link:', error);
+      window.prompt('Copy this course link:', url.toString());
+    }
+  };
 
   return (
   <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl overflow-hidden shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-violet-500/5 hover:-translate-y-0.5 transition-all duration-200">
@@ -768,6 +786,19 @@ function CourseSection({ courseName, files, user, onSelect, onDelete }) {
       </button>
       {open && (
         <div className="border-t border-white/[0.05] bg-white/[0.01] py-1">
+          {shareFile && (
+            <div className="flex justify-end px-4 py-2">
+              <button
+                type="button"
+                onClick={copyCourseLink}
+                className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 px-3 py-1.5 text-xs font-medium text-violet-300 hover:bg-violet-500/10 transition"
+                aria-label={`Copy link to ${courseName} materials`}
+              >
+                <FontAwesomeIcon icon={faShareNodes} />
+                {shareCopied ? 'Link copied' : `Share ${courseName} materials`}
+              </button>
+            </div>
+          )}
           {sorted.map(file => (
             <FileRow key={file.id} file={file} user={user} onSelect={onSelect} onDelete={onDelete} />
           ))}
@@ -1150,8 +1181,9 @@ function StudyMaterial() {
   const [successMessage, setSuccessMessage] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const { id } = useParams();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const universitySlugParam = searchParams.get("university");
+  const courseIdParam = searchParams.get("courseId");
 
  // ── Offline state ──
 const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
@@ -1200,7 +1232,8 @@ useEffect(() => {
       try {
         const token = getAccessToken();
         const params = new URLSearchParams({ search: debouncedSearch });
-if (universitySlugParam) params.set("university", universitySlugParam);
+        if (universitySlugParam) params.set("university", universitySlugParam);
+        if (courseIdParam) params.set("courseId", courseIdParam);
 const res = await fetch(
   `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material?${params}`,
   { headers: { Authorization: `Bearer ${token}` } }
@@ -1221,7 +1254,7 @@ const res = await fetch(
       }
     };
     fetchFiles();
-  }, [user, debouncedSearch, refreshKey, isOnline, universitySlugParam]);
+  }, [user, debouncedSearch, refreshKey, isOnline, universitySlugParam, courseIdParam]);
 
   useEffect(() => {
     const load = async () => {
@@ -1239,7 +1272,7 @@ const res = await fetch(
   // Default Level/Semester filters to the user's own, once, on first load —
   // gets them straight to their own materials with zero taps.
   useEffect(() => {
-    if (!user) return;
+    if (!user || courseIdParam) return;
     if (user.level && LEVEL_ORDER.includes(String(user.level))) {
       setLevelFilter(String(user.level));
     }
@@ -1247,7 +1280,7 @@ const res = await fetch(
       setSemesterFilter(user.semester);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, courseIdParam]);
 
   // If we arrived here from a university's welcome page (?university=slug),
 // pre-select that university's chip once the universities list has loaded.
@@ -1272,6 +1305,7 @@ useEffect(() => {
 
   // Filter by university / level / semester / downloaded-only
   const filtered = useMemo(() => files.filter(f => {
+    if (courseIdParam && f.courseId !== courseIdParam) return false;
     if (universityFilter !== "All") {
       const matchesUni = f.university?.shortName === universityFilter || f.university?.name === universityFilter;
       if (!matchesUni) return false;
@@ -1280,7 +1314,7 @@ useEffect(() => {
     if (semesterFilter !== "All" && f.semester !== semesterFilter) return false;
     if (showDownloadedOnly && !downloadedIds.has(f.id)) return false;
     return true;
-  }), [files, universityFilter, levelFilter, semesterFilter, showDownloadedOnly, downloadedIds]);
+  }), [files, courseIdParam, universityFilter, levelFilter, semesterFilter, showDownloadedOnly, downloadedIds]);
 
   // ── Build hierarchy: Faculty → Department → Course → Files ──
   // (Level and Semester are handled as filters above, not folder depth —
@@ -1327,7 +1361,13 @@ const grouped = useMemo(() => {
 
   const sortedFaculties = Object.keys(grouped).sort();
   const isSearching = debouncedSearch.trim().length > 0;
-  const hasActiveFilters = universityFilter !== "All" || levelFilter !== "All" || semesterFilter !== "All";
+  const hasActiveFilters = Boolean(courseIdParam) || universityFilter !== "All" || levelFilter !== "All" || semesterFilter !== "All";
+
+  const clearCourseFilter = () => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('courseId');
+    setSearchParams(nextParams);
+  };
 
   // When a specific university is selected, show its FULL faculty roster
   // (from universities.js) — including faculties with zero files, which
@@ -1506,6 +1546,19 @@ const rosterFaculties = useMemo(
                 </button>
               ))}
             </div>
+
+            {courseIdParam && (
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-violet-500/20 bg-violet-500/5 px-4 py-3 mb-4">
+                <p className="text-sm text-violet-200">Showing materials for this course only.</p>
+                <button
+                  type="button"
+                  onClick={clearCourseFilter}
+                  className="shrink-0 text-xs font-semibold text-violet-300 hover:text-violet-200"
+                >
+                  Show full library
+                </button>
+              </div>
+            )}
 
             {/* Stats bar */}
             <div className="flex items-center justify-between mb-6">
