@@ -16,6 +16,7 @@ import { createNotification } from "./notifications";
 import { useOfflineDownload } from "./useOfflineDownload";
 import { listDownloadedMaterials, getOfflineBlobUrl } from "./offlineStorage";
 import { useParams } from "react-router-dom";
+import { trackEvent } from "./api";
 
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
@@ -38,6 +39,7 @@ async function apiPost(path, body) {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
+    if (res.status === 403) throw new Error("Only administrators can add courses to the shared list. You can still enter the course code and upload your material.");
     throw new Error(err.message || `Request failed: ${path}`);
   }
   return res.json();
@@ -1258,6 +1260,15 @@ useEffect(() => {
   const handleDownloadChange = useCallback(() => {
     refreshDownloads();
   }, [refreshDownloads]);
+
+  // Track a view each time a student opens a material
+  useEffect(() => {
+    if (!selectedFile?.id) return;
+    trackEvent("student_viewed_material", {
+      materialId: selectedFile.id,
+      courseId: selectedFile.courseRef?.id,
+    });
+  }, [selectedFile?.id]);
 
   // Filter by university / level / semester / downloaded-only
   const filtered = useMemo(() => files.filter(f => {

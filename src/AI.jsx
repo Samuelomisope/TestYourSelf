@@ -1,7 +1,6 @@
 import { getAccessToken } from "./token";
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { auth } from "./firebase";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faHouse,
@@ -31,7 +30,7 @@ import {
   faChevronDown,
   faClockRotateLeft,
 } from "@fortawesome/free-solid-svg-icons";
-import { apiGet, apiPost } from "./api";
+import { apiGet, apiPost, trackEvent } from "./api";
 import "katex/dist/katex.min.css";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -291,6 +290,19 @@ function QuizTab() {
   const [selectedMaterial, setSelectedMaterial] = useState(null); // full material object
 
 const fileInputRef = useRef(null);
+const quizCtxRef = useRef(null); // timing + ids for the quiz in progress
+
+function beginQuiz(qs, ctx = {}) {
+  setQuestions(qs);
+  setAnswers({});
+  const now = Date.now();
+  quizCtxRef.current = { ...ctx, startedAt: now, lastAt: now };
+  trackEvent("student_started_quiz", {
+    materialId: ctx.materialId,
+    courseId: ctx.courseId,
+    payload: { count: qs.length, difficulty: ctx.difficulty },
+  });
+}
 
 // Load library materials when mode switches to "library"
 useEffect(() => {
@@ -359,7 +371,11 @@ useEffect(() => {
         });
       }
 
-      setQuestions(data.questions);
+     beginQuiz(data.questions, {
+        difficulty,
+        materialId: mode === "library" ? selectedMaterial?.id : undefined,
+         courseId: mode === "library" ? selectedMaterial?.courseRef?.id : undefined,
+      });
     } catch {
       setError("Failed to generate quiz. Please try again.");
     } finally {
@@ -369,8 +385,35 @@ useEffect(() => {
 
   function answer(qi, opt) {
     if (answers[qi] !== undefined) return;
-    setAnswers((prev) => ({ ...prev, [qi]: opt }));
+    const next = { ...answers, [qi]: opt };
+  setAnswers(next);
+
+  const ctx = quizCtxRef.current;
+  if (!ctx) return;
+  const now = Date.now();
+  trackEvent("student_answered_question", {
+    materialId: ctx.materialId,
+    courseId: ctx.courseId,
+    payload: {
+      correct: opt === questions[qi].answer,
+      duration_seconds: Math.round((now - ctx.lastAt) / 1000),
+    },
+  });
+  ctx.lastAt = now;
+
+  if (Object.keys(next).length === questions.length) {
+    const correctCount = questions.filter((q, i) => next[i] === q.answer).length;
+    trackEvent("student_completed_quiz", {
+      materialId: ctx.materialId,
+      courseId: ctx.courseId,
+      payload: {
+        score: Math.round((correctCount / questions.length) * 100) / 100,
+        duration_seconds: Math.round((now - ctx.startedAt) / 1000),
+      },
+    });
   }
+ }
+
 
   const score = questions.filter((q, i) => answers[i] === q.answer).length;
   const allDone = questions.length > 0 && Object.keys(answers).length === questions.length;
@@ -398,7 +441,7 @@ useEffect(() => {
     </label>
     <GenerationHistory
       tool="quiz"
-      onSelect={(gen) => { setQuestions(gen.result.questions); setAnswers({}); }}
+    onSelect={(gen) => beginQuiz(gen.result.questions)}
     />
   </div>
   <div className="flex gap-2 flex-wrap">

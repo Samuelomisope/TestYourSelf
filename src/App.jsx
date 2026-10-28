@@ -14,7 +14,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import Search from "./Search";
 import Admin from "./Admin";
 import Profile from "./Profile";
-import FeedbackWidget from "./FeedbackWidget";
+import Feedback from "./Feedback";
 import Privacy from "./Privacy";
 import Terms from "./Terms";
 import Flashcards from "./Flashcards";
@@ -30,7 +30,6 @@ import StudyPlan from "./StudyPlan";
 function App() {
   return (
     <BrowserRouter>
-     <FeedbackWidget />
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
@@ -47,6 +46,7 @@ function App() {
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         <Route path="/schools/:universitySlug" element={<ProtectedRoute><UniversityWelcomePage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/feedback" element={<ProtectedRoute><Feedback /></ProtectedRoute>} />
         <Route path="/privacy" element={<ProtectedRoute><Privacy /></ProtectedRoute>} />
         <Route path="/terms" element={<ProtectedRoute><Terms /></ProtectedRoute>} />
         <Route path="/flashcards" element={<ProtectedRoute><Flashcards /></ProtectedRoute>} />

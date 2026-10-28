@@ -12,6 +12,7 @@ import {
   faRobot, faBookOpen, faComments, faCamera,
   faHouse, faBook, faStore, faBell, faSearch, faBars, faXmark,
   faLayerGroup,
+  faCommentDots,
 } from "@fortawesome/free-solid-svg-icons";
 
 // ─── Shared Nav Links ──────────────────────────────────────────────
@@ -32,6 +33,7 @@ const sidebarLinks = [
   { name: "AI Assistant", href: "/ai", icon: faRobot },
   { name: "Chat", href: "/chat", icon: faComments },
   { name: "Marketplace", href: "/marketplace", icon: faStore },
+  { name: "Feedback", href: "/feedback", icon: faCommentDots },
 ];
 
 export default function Navbar() {

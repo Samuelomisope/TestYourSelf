@@ -53,6 +53,10 @@ export async function apiGet(path) {
   return request(path);
 }
 
+export async function apiFetch(path, options = {}) {
+  return request(path, options);
+}
+
 export async function apiPost(path, body) {
   return request(path, { method: "POST", body: JSON.stringify(body) });
 }
@@ -103,4 +107,52 @@ export async function updateUniversityNews(universityId, newsId, data) {
 
 export async function deleteUniversityNews(universityId, newsId) {
   return apiDelete(`/universities/${universityId}/news/${newsId}`);
+}
+
+// ─── Activity tracking ───────────────────────────────────────────
+// Batched and fire-and-forget: tracking must never block or break the UI.
+const eventQueue = [];
+let flushTimer = null;
+const FLUSH_INTERVAL_MS = 5000;
+const MAX_BATCH = 50; // matches the server limit
+const MAX_QUEUE = 200;
+
+export function trackEvent(eventType, { courseId, topicId, materialId, payload } = {}) {
+  try {
+    if (!getAccessToken()) return; // not logged in, nothing to attribute
+    eventQueue.push({
+      eventType,
+      idempotencyKey: crypto.randomUUID(),
+      courseId, topicId, materialId, payload,
+    });
+    if (eventQueue.length > MAX_QUEUE) eventQueue.splice(0, eventQueue.length - MAX_QUEUE);
+    if (eventQueue.length >= 20) return void flushEvents();
+    if (!flushTimer) flushTimer = setTimeout(flushEvents, FLUSH_INTERVAL_MS);
+  } catch {
+    /* never let tracking throw */
+  }
+}
+
+async function flushEvents() {
+  clearTimeout(flushTimer);
+  flushTimer = null;
+  if (eventQueue.length === 0) return;
+
+  const batch = eventQueue.splice(0, MAX_BATCH);
+  try {
+    await apiPost("/activity/events", { events: batch });
+  } catch (err) {
+    // 4xx = the batch itself is bad, drop it. Anything else (network, 5xx):
+    // requeue, at most 3 tries per event. Safe to retry because of idempotency keys.
+    const isClientError = /API error: 4\d\d/.test(err?.message || "");
+    if (!isClientError) {
+      const retryable = batch
+        .map((e) => ({ ...e, _tries: (e._tries || 0) + 1 }))
+        .filter((e) => e._tries <= 3);
+      eventQueue.unshift(...retryable);
+    }
+  }
+  if (eventQueue.length > 0 && !flushTimer) {
+    flushTimer = setTimeout(flushEvents, FLUSH_INTERVAL_MS);
+  }
 }
