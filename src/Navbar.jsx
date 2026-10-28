@@ -142,7 +142,7 @@ export default function Navbar() {
       {menuOpen && <div className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />}
 
       {/* SIDEBAR DRAWER */}
-      <aside className={`fixed top-0 left-0 h-full w-72 z-50 bg-bg-elevated border-r border-ink/5 shadow-2xl transform transition-transform duration-300 ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed top-0 left-0 h-full w-72 z-50 overflow-y-auto overscroll-contain bg-bg-elevated border-r border-ink/5 shadow-2xl transform transition-transform duration-300 ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-ink/5">
           <div className="flex items-center gap-3">
             <label className="relative cursor-pointer group">
@@ -164,7 +164,7 @@ export default function Navbar() {
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
-        <nav className="flex flex-col px-4 py-4 gap-1">
+        <nav className="flex flex-col px-4 py-4 pb-28 gap-1">
           {sidebarLinks.map((link) => (
             <Link key={link.name} to={link.href} onClick={() => setMenuOpen(false)}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${location.pathname === link.href ? "bg-violet-500/15 text-violet-400 border border-violet-500/20" : "text-ink/50 hover:bg-white/5 hover:text-ink"}`}>
