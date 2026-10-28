@@ -19,7 +19,7 @@ async function authFetch(path, options = {}) {
   return res.json();
 }
 
-function ReviewRow({ file, schools, onResolved, onDismissed }) {
+function ReviewRow({ file, schools, onResolved, onDismissed, onMarkedDuplicate }) {
   const [departments, setDepartments] = useState([]);
   const [programs, setPrograms] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -31,6 +31,7 @@ function ReviewRow({ file, schools, onResolved, onDismissed }) {
 
   const [saving, setSaving] = useState(false);
   const [dismissing, setDismissing] = useState(false);
+  const [markingDuplicate, setMarkingDuplicate] = useState(false);
   const [error, setError] = useState("");
 
   // Cascade: school -> departments
@@ -98,6 +99,20 @@ function ReviewRow({ file, schools, onResolved, onDismissed }) {
     }
   };
 
+  const handleConfirmDuplicate = async () => {
+    setMarkingDuplicate(true);
+    setError("");
+    try {
+      await authFetch(`/admin/materials/${file.id}/confirm-duplicate`, { method: "PATCH" });
+      onMarkedDuplicate(file.id);
+    } catch (err) {
+      console.error(err);
+      setError("Could not confirm this duplicate. Try again.");
+    } finally {
+      setMarkingDuplicate(false);
+    }
+  };
+
   const selectClass =
     "bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition disabled:opacity-30 disabled:cursor-not-allowed";
 
@@ -122,6 +137,31 @@ function ReviewRow({ file, schools, onResolved, onDismissed }) {
           Needs review
         </span>
       </div>
+
+      {(file.classificationReason || file.classificationConfidence != null) && (
+        <div className="mb-3 rounded-xl border border-amber-500/15 bg-amber-500/[0.06] px-3 py-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold text-amber-300">
+              {file.classificationMethod === "AI" ? "AI suggestion — confirm below" : "Why this needs review"}
+            </p>
+            {file.classificationConfidence != null && (
+              <span className="text-[11px] text-ink/50">
+                {Math.round(file.classificationConfidence)}% confidence
+              </span>
+            )}
+          </div>
+          {file.classificationReason && (
+            <p className="mt-1 text-xs leading-relaxed text-ink/55">{file.classificationReason}</p>
+          )}
+        </div>
+      )}
+
+      {file.duplicateOf && (
+        <div className="mb-3 rounded-xl border border-orange-500/15 bg-orange-500/[0.06] px-3 py-2">
+          <p className="text-xs font-semibold text-orange-300">Possible duplicate</p>
+          <p className="mt-1 text-xs text-ink/55">Similar to “{file.duplicateOf.title}”. Review the match before confirming.</p>
+        </div>
+      )}
 
       {error && <p className="text-pink-400 text-xs mb-2">{error}</p>}
 
@@ -173,7 +213,7 @@ function ReviewRow({ file, schools, onResolved, onDismissed }) {
       <div className="flex gap-2">
         <button
           onClick={handleSave}
-          disabled={!canSave || saving || dismissing}
+          disabled={!canSave || saving || dismissing || markingDuplicate}
           className="flex-1 py-2 bg-violet-500 hover:bg-violet-400 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-xl text-sm font-medium transition flex items-center justify-center gap-2"
         >
           <FontAwesomeIcon icon={saving ? faSpinner : faCheck} className={saving ? "animate-spin" : ""} />
@@ -182,12 +222,22 @@ function ReviewRow({ file, schools, onResolved, onDismissed }) {
 
         <button
           onClick={handleDismiss}
-          disabled={saving || dismissing}
+          disabled={saving || dismissing || markingDuplicate}
           className="py-2 px-4 bg-white/[0.05] hover:bg-white/[0.08] disabled:opacity-30 disabled:cursor-not-allowed text-ink/60 border border-ink/10 rounded-xl text-sm font-medium transition flex items-center justify-center gap-2"
         >
           <FontAwesomeIcon icon={dismissing ? faSpinner : faXmark} className={dismissing ? "animate-spin" : ""} />
           {dismissing ? "…" : "Dismiss"}
         </button>
+
+        {file.duplicateOf && (
+          <button
+            onClick={handleConfirmDuplicate}
+            disabled={saving || dismissing || markingDuplicate}
+            className="py-2 px-3 bg-orange-500/15 hover:bg-orange-500/25 disabled:opacity-30 disabled:cursor-not-allowed text-orange-300 border border-orange-500/20 rounded-xl text-xs font-medium transition"
+          >
+            {markingDuplicate ? "Saving…" : "Confirm duplicate"}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -198,13 +248,20 @@ export default function NeedsReviewPanel() {
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [classificationJob, setClassificationJob] = useState(null);
+  const [startingJob, setStartingJob] = useState(false);
+  const [jobError, setJobError] = useState("");
 
   const load = async () => {
     setLoading(true);
     setError("");
     try {
-      const data = await authFetch(`/admin/materials/needs-review`);
+      const [data, activeJob] = await Promise.all([
+        authFetch(`/admin/materials/needs-review`),
+        authFetch(`/admin/classification/jobs/latest`).catch(() => null),
+      ]);
       setFiles(data);
+      setClassificationJob(activeJob);
 
       // Fetch schools once, using the first material's universityId
       // (safe assumption: all flagged materials share the same university for now)
@@ -222,11 +279,38 @@ export default function NeedsReviewPanel() {
 
   useEffect(() => { load(); }, []);
 
+  useEffect(() => {
+    if (!classificationJob?.id || !["QUEUED", "PROCESSING"].includes(classificationJob.status)) return;
+    const timer = setInterval(() => {
+      authFetch(`/admin/classification/jobs/${classificationJob.id}`)
+        .then(setClassificationJob)
+        .catch((err) => setJobError(err.message || "Could not refresh job progress."));
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [classificationJob?.id, classificationJob?.status]);
+
+  const startClassification = async () => {
+    setStartingJob(true);
+    setJobError("");
+    try {
+      const job = await authFetch(`/admin/classification/jobs`, { method: "POST" });
+      setClassificationJob(job);
+    } catch (err) {
+      setJobError(err.message || "Could not start classification.");
+    } finally {
+      setStartingJob(false);
+    }
+  };
+
   const handleResolved = (id) => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
   const handleDismissed = (id) => {
+    setFiles((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  const handleMarkedDuplicate = (id) => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
@@ -236,8 +320,44 @@ export default function NeedsReviewPanel() {
         <h2 className="text-sm font-bold text-ink/80 uppercase tracking-wide">
           Needs Review
         </h2>
-        <span className="text-xs text-ink/30">{files.length} flagged</span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-ink/30">{files.length} flagged</span>
+          <button
+            onClick={startClassification}
+            disabled={startingJob || ["QUEUED", "PROCESSING"].includes(classificationJob?.status)}
+            className="px-3 py-2 rounded-xl bg-violet-500/15 hover:bg-violet-500/25 disabled:opacity-40 disabled:cursor-not-allowed text-violet-300 border border-violet-500/20 text-xs font-semibold transition"
+          >
+            {startingJob ? "Starting…" : "Organize pending materials"}
+          </button>
+        </div>
       </div>
+
+      {jobError && <p className="text-pink-400 text-xs mb-3">{jobError}</p>}
+      {classificationJob && (
+        <div className="mb-4 rounded-2xl border border-violet-500/15 bg-violet-500/[0.05] p-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold text-ink/70">
+              Classification job · {classificationJob.status.toLowerCase().replaceAll("_", " ")}
+            </p>
+            <span className="text-xs text-ink/45">
+              {classificationJob.processed} / {classificationJob.totalItems} processed
+            </span>
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/5">
+            <div
+              className="h-full rounded-full bg-violet-400 transition-all"
+              style={{ width: `${classificationJob.progressPercent}%` }}
+            />
+          </div>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-ink/40">
+            <span>{classificationJob.outcomes?.autoOrganized || 0} organized</span>
+            <span>{classificationJob.outcomes?.needsReview || 0} need review</span>
+            <span>{classificationJob.outcomes?.unableToClassify || 0} unresolved</span>
+            <span>{classificationJob.outcomes?.duplicates || 0} duplicates</span>
+            <span>{classificationJob.itemStates?.failed || 0} failed after retries</span>
+          </div>
+        </div>
+      )}
 
       {loading && <p className="text-ink/30 text-sm">Loading…</p>}
       {error && <p className="text-pink-400 text-sm">{error}</p>}
@@ -250,7 +370,7 @@ export default function NeedsReviewPanel() {
 
       <div className="flex flex-col gap-3">
         {files.map((file) => (
-          <ReviewRow key={file.id} file={file} schools={schools} onResolved={handleResolved} onDismissed={handleDismissed} />
+          <ReviewRow key={file.id} file={file} schools={schools} onResolved={handleResolved} onDismissed={handleDismissed} onMarkedDuplicate={handleMarkedDuplicate} />
         ))}
       </div>
     </div>
