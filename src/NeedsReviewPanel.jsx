@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { getAccessToken } from "./token";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTriangleExclamation, faCheck, faSpinner, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faTriangleExclamation, faCheck, faSpinner, faXmark, faRotate } from "@fortawesome/free-solid-svg-icons";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
@@ -19,7 +19,7 @@ async function authFetch(path, options = {}) {
   return res.json();
 }
 
-function ReviewRow({ file, schools, onResolved, onDismissed, onMarkedDuplicate }) {
+function ReviewRow({ file, schools, onResolved, onDismissed, onMarkedDuplicate, onReclassify, reclassifying }) {
   const [departments, setDepartments] = useState([]);
   const [programs, setPrograms] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -32,6 +32,7 @@ function ReviewRow({ file, schools, onResolved, onDismissed, onMarkedDuplicate }
   const [saving, setSaving] = useState(false);
   const [dismissing, setDismissing] = useState(false);
   const [markingDuplicate, setMarkingDuplicate] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const [error, setError] = useState("");
 
   // Cascade: school -> departments
@@ -110,6 +111,19 @@ function ReviewRow({ file, schools, onResolved, onDismissed, onMarkedDuplicate }
       setError("Could not confirm this duplicate. Try again.");
     } finally {
       setMarkingDuplicate(false);
+    }
+  };
+
+  const handleReclassify = async () => {
+    setRetrying(true);
+    setError("");
+    try {
+      await onReclassify(file.id);
+    } catch (err) {
+      console.error(err);
+      setError("Could not retry classification. Try again after checking the service status.");
+    } finally {
+      setRetrying(false);
     }
   };
 
@@ -213,7 +227,7 @@ function ReviewRow({ file, schools, onResolved, onDismissed, onMarkedDuplicate }
       <div className="flex gap-2">
         <button
           onClick={handleSave}
-          disabled={!canSave || saving || dismissing || markingDuplicate}
+          disabled={!canSave || saving || dismissing || markingDuplicate || reclassifying}
           className="flex-1 py-2 bg-violet-500 hover:bg-violet-400 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-xl text-sm font-medium transition flex items-center justify-center gap-2"
         >
           <FontAwesomeIcon icon={saving ? faSpinner : faCheck} className={saving ? "animate-spin" : ""} />
@@ -222,7 +236,7 @@ function ReviewRow({ file, schools, onResolved, onDismissed, onMarkedDuplicate }
 
         <button
           onClick={handleDismiss}
-          disabled={saving || dismissing || markingDuplicate}
+          disabled={saving || dismissing || markingDuplicate || reclassifying}
           className="py-2 px-4 bg-white/[0.05] hover:bg-white/[0.08] disabled:opacity-30 disabled:cursor-not-allowed text-ink/60 border border-ink/10 rounded-xl text-sm font-medium transition flex items-center justify-center gap-2"
         >
           <FontAwesomeIcon icon={dismissing ? faSpinner : faXmark} className={dismissing ? "animate-spin" : ""} />
@@ -232,10 +246,22 @@ function ReviewRow({ file, schools, onResolved, onDismissed, onMarkedDuplicate }
         {file.duplicateOf && (
           <button
             onClick={handleConfirmDuplicate}
-            disabled={saving || dismissing || markingDuplicate}
+            disabled={saving || dismissing || markingDuplicate || reclassifying}
             className="py-2 px-3 bg-orange-500/15 hover:bg-orange-500/25 disabled:opacity-30 disabled:cursor-not-allowed text-orange-300 border border-orange-500/20 rounded-xl text-xs font-medium transition"
           >
             {markingDuplicate ? "Saving…" : "Confirm duplicate"}
+          </button>
+        )}
+
+        {file.classificationStatus === "UNABLE_TO_CLASSIFY" && (
+          <button
+            onClick={handleReclassify}
+            disabled={saving || dismissing || markingDuplicate || retrying || reclassifying}
+            className="py-2 px-3 bg-sky-500/15 hover:bg-sky-500/25 disabled:opacity-30 disabled:cursor-not-allowed text-sky-300 border border-sky-500/20 rounded-xl text-xs font-medium transition flex items-center justify-center gap-2"
+            title="Re-download and classify this one file. Only one retry runs at a time."
+          >
+            <FontAwesomeIcon icon={retrying ? faSpinner : faRotate} className={retrying ? "animate-spin" : ""} />
+            {retrying ? "Retrying…" : "Retry classification"}
           </button>
         )}
       </div>
@@ -251,6 +277,7 @@ export default function NeedsReviewPanel() {
   const [classificationJob, setClassificationJob] = useState(null);
   const [startingJob, setStartingJob] = useState(false);
   const [jobError, setJobError] = useState("");
+  const [reclassifyingId, setReclassifyingId] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -299,6 +326,17 @@ export default function NeedsReviewPanel() {
       setJobError(err.message || "Could not start classification.");
     } finally {
       setStartingJob(false);
+    }
+  };
+
+  const reclassifyOne = async (id) => {
+    if (reclassifyingId || ["QUEUED", "PROCESSING"].includes(classificationJob?.status)) return;
+    setReclassifyingId(id);
+    try {
+      await authFetch(`/admin/classification/${id}`, { method: "POST" });
+      await load();
+    } finally {
+      setReclassifyingId("");
     }
   };
 
@@ -370,7 +408,7 @@ export default function NeedsReviewPanel() {
 
       <div className="flex flex-col gap-3">
         {files.map((file) => (
-          <ReviewRow key={file.id} file={file} schools={schools} onResolved={handleResolved} onDismissed={handleDismissed} onMarkedDuplicate={handleMarkedDuplicate} />
+          <ReviewRow key={file.id} file={file} schools={schools} onResolved={handleResolved} onDismissed={handleDismissed} onMarkedDuplicate={handleMarkedDuplicate} onReclassify={reclassifyOne} reclassifying={!!reclassifyingId || ["QUEUED", "PROCESSING"].includes(classificationJob?.status)} />
         ))}
       </div>
     </div>
