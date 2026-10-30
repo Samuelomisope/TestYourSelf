@@ -13,6 +13,7 @@ import {
   faHouse, faBook, faStore, faBell, faSearch, faBars, faXmark,
   faLayerGroup,
   faCommentDots,
+  faCrown,
 } from "@fortawesome/free-solid-svg-icons";
 
 // ─── Shared Nav Links ──────────────────────────────────────────────
@@ -31,6 +32,7 @@ const sidebarLinks = [
   { name: "Library", href: "/study-material", icon: faBook },
   { name: "Flashcards", href: "/flashcards", icon: faLayerGroup },
   { name: "AI Assistant", href: "/ai", icon: faRobot },
+  { name: "Premium", href: "/premium", icon: faCrown },
   { name: "Chat", href: "/chat", icon: faComments },
   { name: "Marketplace", href: "/marketplace", icon: faStore },
   { name: "Feedback", href: "/feedback", icon: faCommentDots },
