@@ -1549,7 +1549,14 @@ const rosterFaculties = useMemo(
 
             {courseIdParam && (
               <div className="flex items-center justify-between gap-3 rounded-xl border border-violet-500/20 bg-violet-500/5 px-4 py-3 mb-4">
-                <p className="text-sm text-violet-200">Showing materials for this course only.</p>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-violet-300/70">Course materials</p>
+                  <p className="mt-1 truncate text-base font-bold text-violet-100">
+                    {filtered[0]?.courseRef?.code || "Selected course"}
+                    {filtered[0]?.courseRef?.title ? ` · ${filtered[0].courseRef.title}` : ""}
+                  </p>
+                  <p className="mt-0.5 text-xs text-violet-200/60">{filtered.length} {filtered.length === 1 ? "material" : "materials"}</p>
+                </div>
                 <button
                   type="button"
                   onClick={clearCourseFilter}
@@ -1619,7 +1626,21 @@ const rosterFaculties = useMemo(
                 Only schools that actually have matching files are shown; empty
                 schools with zero materials don't render (see note on the roster
                 fallback removal in the grouping logic). */}
-            {!loading && filtered.length > 0 && (viewMode === "hierarchy" || !isSearching) && viewMode !== "grid" && (
+            {!loading && courseIdParam && filtered.length > 0 && (
+              <section className="mb-6 overflow-hidden rounded-2xl border border-ink/10 bg-white/[0.02]" aria-label="Course materials">
+                {filtered.map((file) => (
+                  <FileRow
+                    key={file.id}
+                    file={file}
+                    user={user}
+                    onSelect={setSelectedFile}
+                    onDelete={() => setRefreshKey((key) => key + 1)}
+                  />
+                ))}
+              </section>
+            )}
+
+            {!loading && !courseIdParam && filtered.length > 0 && (viewMode === "hierarchy" || !isSearching) && viewMode !== "grid" && (
               <div className="flex flex-col gap-4">
                 {rosterFaculties.map((f, i) => (
                   <FacultyBlock
@@ -1638,7 +1659,7 @@ const rosterFaculties = useMemo(
             )}
 
             {/* ── GRID VIEW (when toggled or searching) ── */}
-            {!loading && filtered.length > 0 && (viewMode === "grid" || isSearching) && (
+            {!loading && !courseIdParam && filtered.length > 0 && (viewMode === "grid" || isSearching) && (
               <>
                 {isSearching && viewMode !== "grid" && (
                   <p className="text-xs text-ink/30 mb-4">Showing flat results for search. Switch to grid or clear search to return to hierarchy.</p>

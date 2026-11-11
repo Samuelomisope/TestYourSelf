@@ -1046,9 +1046,12 @@ if (data.sessionId) setSessionId(data.sessionId);
                       <li key={source.materialId} className="text-xs text-ink/60">
                         <span className="mr-1.5 text-emerald-300">[{source.number || sourceIndex + 1}]</span>
                         {source.courseId ? (
-                          <Link to={`/study-material?courseId=${encodeURIComponent(source.courseId)}`} className="underline decoration-ink/20 underline-offset-2 hover:text-emerald-300">
-                            {source.title}
-                          </Link>
+                          <>
+                            <Link to={`/study-material?courseId=${encodeURIComponent(source.courseId)}`} className="font-semibold text-emerald-200 underline decoration-ink/20 underline-offset-2 hover:text-emerald-100">
+                              {source.courseCode || "Open course"}
+                            </Link>
+                            <span className="ml-2 text-ink/55">{source.title}</span>
+                          </>
                         ) : <span>{source.title}</span>}
                       </li>
                     ))}
