@@ -712,6 +712,7 @@ function AskTab({ preloadedFile, restoreChatItem, onOpenTool }) {
     },
   ]);
   const [input, setInput] = useState("");
+  const [useLibraryMaterials, setUseLibraryMaterials] = useState(false);
   const [loading, setLoading] = useState(false);
   const [attachedFile, setAttachedFile] = useState(null);
   const [showCamera, setShowCamera] = useState(false);
@@ -831,7 +832,7 @@ async function send() {
   setLoading(true);
 
   try {
-    let aiText, meta = null;
+    let aiText, meta = null, sources = [];
 
     if (isImage) {
       const data = await askUniLibImage(fileToSend, msg);
@@ -842,6 +843,11 @@ async function send() {
         isUncertain: data.isUncertain,
         extractedText: data.extractedText,
       };
+    } else if (useLibraryMaterials && !fileToSend) {
+      const data = await apiPost("/search/ask", { question: msg });
+      aiText = data.answer;
+      sources = data.sources || [];
+      meta = { isUncertain: data.isUncertain, retrieval: data.retrieval };
     } else {
       const question = msg || (
         fileToSend?.type === "application/pdf" ? "Please summarize and explain this PDF." :
@@ -853,7 +859,7 @@ aiText = data.answer;
 if (data.sessionId) setSessionId(data.sessionId);
     }
 
-    setMessages((prev) => [...prev, { role: "ai", text: aiText, meta }]);
+    setMessages((prev) => [...prev, { role: "ai", text: aiText, meta, sources }]);
     await logActivity("ai", msg.slice(0, 80) || fileToSend?.name || "AI conversation", "/ai");
 
     if (ttsEnabled) {
@@ -1031,6 +1037,23 @@ if (data.sessionId) setSessionId(data.sessionId);
                   )}
                 </div>
               )}
+              {m.role === "ai" && m.sources?.length > 0 && (
+                <div className="mt-1 rounded-xl border border-emerald-500/15 bg-emerald-500/[0.04] p-3">
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-emerald-300/80">UniLib sources</p>
+                  <ul className="space-y-1.5">
+                    {m.sources.map((source, sourceIndex) => (
+                      <li key={source.materialId} className="text-xs text-ink/60">
+                        <span className="mr-1.5 text-emerald-300">[{source.number || sourceIndex + 1}]</span>
+                        {source.courseId ? (
+                          <Link to={`/study-material?courseId=${encodeURIComponent(source.courseId)}`} className="underline decoration-ink/20 underline-offset-2 hover:text-emerald-300">
+                            {source.title}
+                          </Link>
+                        ) : <span>{source.title}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -1062,6 +1085,20 @@ if (data.sessionId) setSessionId(data.sessionId);
 
       {/* Input bar */}
       <div className="flex flex-col gap-2 pt-2 border-t border-ink/5">
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setUseLibraryMaterials((enabled) => !enabled)}
+            disabled={Boolean(attachedFile) || loading}
+            aria-pressed={useLibraryMaterials}
+            className={`rounded-full border px-3 py-1.5 text-xs transition disabled:opacity-40 ${useLibraryMaterials ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300" : "border-ink/10 text-ink/40 hover:text-ink/70"}`}
+            title={attachedFile ? "Remove the attachment to ask using library materials" : "Ground the answer in approved UniLib library materials"}
+          >
+            <FontAwesomeIcon icon={faBookOpen} className="mr-1.5" />
+            {useLibraryMaterials ? "Using UniLib materials" : "Use UniLib materials"}
+          </button>
+          {useLibraryMaterials && <span className="text-[11px] text-ink/30">Answers are based on approved library materials</span>}
+        </div>
         <div className="flex items-center gap-2">
            <div className="relative">
       <button
