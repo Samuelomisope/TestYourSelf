@@ -1009,14 +1009,14 @@ if (data.sessionId) setSessionId(data.sessionId);
                  
                 </div>
               )}
-              {m.role === "ai" && m.meta && (
+              {m.role === "ai" && m.meta && (m.meta.contentType || m.meta.isUncertain) && (
                 <div className="flex flex-col gap-2 mt-1 px-1">
                   <div className="flex items-center gap-2">
-                    <ConfidenceBadge contentType={m.meta.contentType} confidence={m.meta.confidence} />
+                    {m.meta.contentType && <ConfidenceBadge contentType={m.meta.contentType} confidence={m.meta.confidence} />}
                     {m.meta.isUncertain && (
                       <span className="text-[11px] text-amber-400 flex items-center gap-1">
                         <FontAwesomeIcon icon={faTriangleExclamation} />
-                        Low confidence
+                        {m.meta.retrieval ? "Not enough evidence in UniLib materials" : "Low confidence"}
                       </span>
                     )}
                   </div>
