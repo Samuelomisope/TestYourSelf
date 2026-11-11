@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faHouse,
   faBook,
+  faBookOpen,
   faRobot,
   faComments,
   faStore,
