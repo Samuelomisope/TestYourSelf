@@ -299,7 +299,7 @@ useEffect(() => {
       const token = getAccessToken();
       const formData = new FormData();
       formData.append("file", file);
-      const uploadRes = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/upload/single?folder=profile`, {
+      const uploadRes = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/upload/single?folder=profile-pictures`, {
         method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData,
       });
       const uploadData = await uploadRes.json();

@@ -60,7 +60,7 @@ export default function Navbar() {
       const formData = new FormData();
       formData.append("file", file);
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
-      const uploadRes = await fetch(`${apiUrl}/upload/single?folder=profile`, {
+      const uploadRes = await fetch(`${apiUrl}/upload/single?folder=profile-pictures`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
