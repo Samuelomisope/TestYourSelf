@@ -1,12 +1,7 @@
-import { db } from "./firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { apiPost } from "./api";
 
-export async function createNotification(userId, { type, message }) {
-  await addDoc(collection(db, "notifications"), {
-    userId,
-    type,
-    message,
-    read: false,
-    createdAt: serverTimestamp(),
-  });
+// Notifications belong to the signed-in database user, so the backend derives
+// the recipient from the access token instead of trusting a client-supplied ID.
+export async function createNotification(_userId, { type, message }) {
+  return apiPost("/notifications", { type, message });
 }

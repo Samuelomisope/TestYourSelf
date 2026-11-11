@@ -45,6 +45,7 @@ async function apiPost(path, body) {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
+    if (res.status === 403) throw new Error("Only administrators can add courses to the shared list. You can still enter the course code and upload your material.");
     throw new Error(err.message || `Request failed: ${path}`);
   }
   return res.json();

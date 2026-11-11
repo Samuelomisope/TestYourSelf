@@ -624,6 +624,7 @@ const toggleBan = async (id) => {
 
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [missingOnly, setMissingOnly] = useState(false); // quick filter for the "mix of both" cleanup
+  const [showDuplicates, setShowDuplicates] = useState(false);
   const [bulkSaving, setBulkSaving] = useState(false);
 
   useEffect(() => { apiFetch("/admin/materials").then(setMaterials).catch(console.error).finally(() => setLoading(false)); }, []);
@@ -633,7 +634,20 @@ const toggleBan = async (id) => {
     catch (err) { console.error(err); }
   };
 
+  const restoreDuplicate = async (id) => {
+    try {
+      await apiFetch(`/admin/materials/${id}/restore-duplicate`, { method: "PATCH" });
+      setMaterials(items => items.map(item => item.id === id ? {
+        ...item,
+        classificationStatus: item.courseId ? "AUTO_ORGANIZED" : "NEEDS_REVIEW",
+        duplicateOfId: null,
+        needsReview: !item.courseId,
+      } : item));
+    } catch (err) { console.error(err); }
+  };
+
   const filtered = materials.filter(m => {
+    if ((m.classificationStatus === "DUPLICATE") !== showDuplicates) return false;
     const matchesSearch = m.title?.toLowerCase().includes(search.toLowerCase()) || m.faculty?.toLowerCase().includes(search.toLowerCase());
     if (!matchesSearch) return false;
     if (missingOnly) return !m.faculty || !m.department || !m.course || !m.level || !m.semester;
@@ -680,6 +694,12 @@ const toggleBan = async (id) => {
         >
           Missing metadata only
         </button>
+        <button
+          onClick={() => { setShowDuplicates(value => !value); setMissingOnly(false); setSelectedIds(new Set()); setPage(1); }}
+          className={`px-3.5 py-2.5 rounded-xl text-xs font-medium whitespace-nowrap transition ${showDuplicates ? "bg-amber-500 text-white" : "bg-white/5 text-ink/40 hover:text-amber-400"}`}
+        >
+          {showDuplicates ? "Showing confirmed duplicates" : "Confirmed duplicates"}
+        </button>
       </div>
       {loading ? <p className="text-ink/20 text-sm text-center py-10">Loading...</p> : (
         <>
@@ -692,12 +712,18 @@ const toggleBan = async (id) => {
                 {paginated.map(m => (
                   <tr key={m.id} className={`hover:bg-white/[0.02] transition ${selectedIds.has(m.id) ? "bg-violet-500/[0.05]" : ""}`}>
                     <td className="px-4 py-3"><input type="checkbox" checked={selectedIds.has(m.id)} onChange={() => toggleSelect(m.id)} /></td>
-                    <td className="px-4 py-3 font-medium text-ink text-sm max-w-[180px] truncate">{m.title}</td>
+                    <td className="px-4 py-3 font-medium text-ink text-sm max-w-[220px] truncate">
+                      {m.title}
+                      {m.classificationStatus === "DUPLICATE" && <span className="ml-2 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-300">Duplicate</span>}
+                    </td>
                     <td className={tdCls}>{m.user?.displayName || "—"}</td>
                     <td className={tdCls}>{m.faculty || "—"}</td>
                     <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${m.isPublic ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-ink/30"}`}>{m.isPublic ? "Public" : "Private"}</span></td>
                     <td className="px-4 py-3 text-xs text-ink/30">{new Date(m.createdAt).toLocaleDateString()}</td>
-                    <td className="px-4 py-3"><button onClick={() => setConfirm({ id: m.id, name: m.title })} className="text-pink-400 hover:text-pink-300 text-xs font-medium transition">Delete</button></td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {m.classificationStatus === "DUPLICATE" && <button onClick={() => restoreDuplicate(m.id)} className="mr-3 text-violet-300 hover:text-violet-200 text-xs font-medium transition">Restore</button>}
+                      <button onClick={() => setConfirm({ id: m.id, name: m.title })} className="text-pink-400 hover:text-pink-300 text-xs font-medium transition">Delete</button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

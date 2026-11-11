@@ -1,11 +1,11 @@
 import { getAccessToken } from "./token";
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { auth } from "./firebase";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faHouse,
   faBook,
+  faBookOpen,
   faRobot,
   faComments,
   faStore,
@@ -31,7 +31,7 @@ import {
   faChevronDown,
   faClockRotateLeft,
 } from "@fortawesome/free-solid-svg-icons";
-import { apiGet, apiPost } from "./api";
+import { apiGet, apiPost, trackEvent } from "./api";
 import "katex/dist/katex.min.css";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -291,6 +291,19 @@ function QuizTab() {
   const [selectedMaterial, setSelectedMaterial] = useState(null); // full material object
 
 const fileInputRef = useRef(null);
+const quizCtxRef = useRef(null); // timing + ids for the quiz in progress
+
+function beginQuiz(qs, ctx = {}) {
+  setQuestions(qs);
+  setAnswers({});
+  const now = Date.now();
+  quizCtxRef.current = { ...ctx, startedAt: now, lastAt: now };
+  trackEvent("student_started_quiz", {
+    materialId: ctx.materialId,
+    courseId: ctx.courseId,
+    payload: { count: qs.length, difficulty: ctx.difficulty },
+  });
+}
 
 // Load library materials when mode switches to "library"
 useEffect(() => {
@@ -359,7 +372,11 @@ useEffect(() => {
         });
       }
 
-      setQuestions(data.questions);
+     beginQuiz(data.questions, {
+        difficulty,
+        materialId: mode === "library" ? selectedMaterial?.id : undefined,
+         courseId: mode === "library" ? selectedMaterial?.courseRef?.id : undefined,
+      });
     } catch {
       setError("Failed to generate quiz. Please try again.");
     } finally {
@@ -369,8 +386,35 @@ useEffect(() => {
 
   function answer(qi, opt) {
     if (answers[qi] !== undefined) return;
-    setAnswers((prev) => ({ ...prev, [qi]: opt }));
+    const next = { ...answers, [qi]: opt };
+  setAnswers(next);
+
+  const ctx = quizCtxRef.current;
+  if (!ctx) return;
+  const now = Date.now();
+  trackEvent("student_answered_question", {
+    materialId: ctx.materialId,
+    courseId: ctx.courseId,
+    payload: {
+      correct: opt === questions[qi].answer,
+      duration_seconds: Math.round((now - ctx.lastAt) / 1000),
+    },
+  });
+  ctx.lastAt = now;
+
+  if (Object.keys(next).length === questions.length) {
+    const correctCount = questions.filter((q, i) => next[i] === q.answer).length;
+    trackEvent("student_completed_quiz", {
+      materialId: ctx.materialId,
+      courseId: ctx.courseId,
+      payload: {
+        score: Math.round((correctCount / questions.length) * 100) / 100,
+        duration_seconds: Math.round((now - ctx.startedAt) / 1000),
+      },
+    });
   }
+ }
+
 
   const score = questions.filter((q, i) => answers[i] === q.answer).length;
   const allDone = questions.length > 0 && Object.keys(answers).length === questions.length;
@@ -398,7 +442,7 @@ useEffect(() => {
     </label>
     <GenerationHistory
       tool="quiz"
-      onSelect={(gen) => { setQuestions(gen.result.questions); setAnswers({}); }}
+    onSelect={(gen) => beginQuiz(gen.result.questions)}
     />
   </div>
   <div className="flex gap-2 flex-wrap">
@@ -669,6 +713,7 @@ function AskTab({ preloadedFile, restoreChatItem, onOpenTool }) {
     },
   ]);
   const [input, setInput] = useState("");
+  const [useLibraryMaterials, setUseLibraryMaterials] = useState(false);
   const [loading, setLoading] = useState(false);
   const [attachedFile, setAttachedFile] = useState(null);
   const [showCamera, setShowCamera] = useState(false);
@@ -788,7 +833,7 @@ async function send() {
   setLoading(true);
 
   try {
-    let aiText, meta = null;
+    let aiText, meta = null, sources = [];
 
     if (isImage) {
       const data = await askUniLibImage(fileToSend, msg);
@@ -799,6 +844,11 @@ async function send() {
         isUncertain: data.isUncertain,
         extractedText: data.extractedText,
       };
+    } else if (useLibraryMaterials && !fileToSend) {
+      const data = await apiPost("/search/ask", { question: msg });
+      aiText = data.answer;
+      sources = data.sources || [];
+      meta = { isUncertain: data.isUncertain, retrieval: data.retrieval };
     } else {
       const question = msg || (
         fileToSend?.type === "application/pdf" ? "Please summarize and explain this PDF." :
@@ -810,7 +860,7 @@ aiText = data.answer;
 if (data.sessionId) setSessionId(data.sessionId);
     }
 
-    setMessages((prev) => [...prev, { role: "ai", text: aiText, meta }]);
+    setMessages((prev) => [...prev, { role: "ai", text: aiText, meta, sources }]);
     await logActivity("ai", msg.slice(0, 80) || fileToSend?.name || "AI conversation", "/ai");
 
     if (ttsEnabled) {
@@ -959,14 +1009,14 @@ if (data.sessionId) setSessionId(data.sessionId);
                  
                 </div>
               )}
-              {m.role === "ai" && m.meta && (
+              {m.role === "ai" && m.meta && (m.meta.contentType || m.meta.isUncertain) && (
                 <div className="flex flex-col gap-2 mt-1 px-1">
                   <div className="flex items-center gap-2">
-                    <ConfidenceBadge contentType={m.meta.contentType} confidence={m.meta.confidence} />
+                    {m.meta.contentType && <ConfidenceBadge contentType={m.meta.contentType} confidence={m.meta.confidence} />}
                     {m.meta.isUncertain && (
                       <span className="text-[11px] text-amber-400 flex items-center gap-1">
                         <FontAwesomeIcon icon={faTriangleExclamation} />
-                        Low confidence
+                        {m.meta.retrieval ? "Not enough evidence in UniLib materials" : "Low confidence"}
                       </span>
                     )}
                   </div>
@@ -986,6 +1036,26 @@ if (data.sessionId) setSessionId(data.sessionId);
                       )}
                     </div>
                   )}
+                </div>
+              )}
+              {m.role === "ai" && m.sources?.length > 0 && (
+                <div className="mt-1 rounded-xl border border-emerald-500/15 bg-emerald-500/[0.04] p-3">
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-emerald-300/80">UniLib sources</p>
+                  <ul className="space-y-1.5">
+                    {m.sources.map((source, sourceIndex) => (
+                      <li key={source.materialId} className="text-xs text-ink/60">
+                        <span className="mr-1.5 text-emerald-300">[{source.number || sourceIndex + 1}]</span>
+                        {source.courseId ? (
+                          <>
+                            <Link to={`/study-material?courseId=${encodeURIComponent(source.courseId)}`} className="font-semibold text-emerald-200 underline decoration-ink/20 underline-offset-2 hover:text-emerald-100">
+                              {source.courseCode || "Open course"}
+                            </Link>
+                            <span className="ml-2 text-ink/55">{source.title}</span>
+                          </>
+                        ) : <span>{source.title}</span>}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </div>
@@ -1019,6 +1089,20 @@ if (data.sessionId) setSessionId(data.sessionId);
 
       {/* Input bar */}
       <div className="flex flex-col gap-2 pt-2 border-t border-ink/5">
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setUseLibraryMaterials((enabled) => !enabled)}
+            disabled={Boolean(attachedFile) || loading}
+            aria-pressed={useLibraryMaterials}
+            className={`rounded-full border px-3 py-1.5 text-xs transition disabled:opacity-40 ${useLibraryMaterials ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300" : "border-ink/10 text-ink/40 hover:text-ink/70"}`}
+            title={attachedFile ? "Remove the attachment to ask using library materials" : "Ground the answer in approved UniLib library materials"}
+          >
+            <FontAwesomeIcon icon={faBookOpen} className="mr-1.5" />
+            {useLibraryMaterials ? "Using UniLib materials" : "Use UniLib materials"}
+          </button>
+          {useLibraryMaterials && <span className="text-[11px] text-ink/30">Answers are based on approved library materials</span>}
+        </div>
         <div className="flex items-center gap-2">
            <div className="relative">
       <button

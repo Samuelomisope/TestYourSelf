@@ -13,7 +13,7 @@ import {
   faRobot, faBookOpen, faCartShopping, faComments, faBookmark,
   faCamera, faBagShopping, faMessage, faFile,
   faHouse, faBook, faStore, faBell, faSearch, faBars, faXmark,
-  faLayerGroup, faCalendarCheck,
+  faLayerGroup, faCalendarCheck, faCrown, faCommentDots,
 } from '@fortawesome/free-solid-svg-icons';
 import AppTour from "./components/AppTour/AppTour";
 import ThemeToggle from "./components/ThemeToggle";
@@ -344,8 +344,10 @@ const timeAgo = (dateStr) => {
   { name: "Study Plan", href: "/study-plan", icon: faCalendarCheck },
   { name: "Flashcards", href: "/flashcards", icon: faLayerGroup },
   { name: "AI Assistant", href: "/ai", icon: faRobot },
+  { name: "Premium", href: "/premium", icon: faCrown },
   { name: "Chat", href: "/chat", icon: faComments },
   { name: "Marketplace", href: "/marketplace", icon: faStore },
+  { name: "Feedback", href: "/feedback", icon: faCommentDots },
 ];
   return (
     <div className="min-h-screen bg-bg text-ink">

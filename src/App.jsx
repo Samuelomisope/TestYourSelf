@@ -14,7 +14,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import Search from "./Search";
 import Admin from "./Admin";
 import Profile from "./Profile";
-import FeedbackWidget from "./FeedbackWidget";
+import Feedback from "./Feedback";
 import Privacy from "./Privacy";
 import Terms from "./Terms";
 import Flashcards from "./Flashcards";
@@ -26,11 +26,11 @@ import EpisodeReader from "./EpisodeReader";
 import WriterRoute from "./WriterRoute";
 import UniversityWelcomePage from "./UniversityWelcomePage";
 import StudyPlan from "./StudyPlan";
+import Premium from "./Premium";
 
 function App() {
   return (
     <BrowserRouter>
-     <FeedbackWidget />
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
@@ -47,6 +47,7 @@ function App() {
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         <Route path="/schools/:universitySlug" element={<ProtectedRoute><UniversityWelcomePage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/feedback" element={<ProtectedRoute><Feedback /></ProtectedRoute>} />
         <Route path="/privacy" element={<ProtectedRoute><Privacy /></ProtectedRoute>} />
         <Route path="/terms" element={<ProtectedRoute><Terms /></ProtectedRoute>} />
         <Route path="/flashcards" element={<ProtectedRoute><Flashcards /></ProtectedRoute>} />
@@ -55,6 +56,7 @@ function App() {
         <Route path="/novels/:id" element={<ProtectedRoute><NovelDetail /></ProtectedRoute>} />
         <Route path="/episodes/:id" element={<ProtectedRoute><EpisodeReader /></ProtectedRoute>} />
         <Route path="/study-plan" element={<ProtectedRoute><StudyPlan /></ProtectedRoute>} />
+        <Route path="/premium" element={<ProtectedRoute><Premium /></ProtectedRoute>} />
         <Route path="/writer/dashboard" 
         element={
         <ProtectedRoute>

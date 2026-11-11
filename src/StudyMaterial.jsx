@@ -8,7 +8,7 @@ import {
   faFileLines, faLock, faVideo, faBox, faFile, faNoteSticky, faUser, faGlobe,
   faHouse, faBook, faRobot, faComments, faStore, faChevronDown, faXmark,
   faCalculator, faUpload, faGrip, faChevronRight, faLayerGroup, faPlus,
- faBookOpen, faDownload, faCheck, faTrash, faTriangleExclamation,
+ faBookOpen, faDownload, faCheck, faTrash, faTriangleExclamation, faShareNodes,
 } from '@fortawesome/free-solid-svg-icons';
 import { faFile as farFile } from '@fortawesome/free-regular-svg-icons';
 import { UploadModal } from "./UploadModal";
@@ -16,6 +16,7 @@ import { createNotification } from "./notifications";
 import { useOfflineDownload } from "./useOfflineDownload";
 import { listDownloadedMaterials, getOfflineBlobUrl } from "./offlineStorage";
 import { useParams } from "react-router-dom";
+import { trackEvent } from "./api";
 
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
@@ -38,6 +39,7 @@ async function apiPost(path, body) {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
+    if (res.status === 403) throw new Error("Only administrators can add courses to the shared list. You can still enter the course code and upload your material.");
     throw new Error(err.message || `Request failed: ${path}`);
   }
   return res.json();
@@ -733,7 +735,25 @@ function FileRow({ file, user, onSelect, onDelete }) {
 // ─── Course Section (collapsible) ─────────────────────────────────
 function CourseSection({ courseName, files, user, onSelect, onDelete }) {
   const [open, setOpen] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   const sorted = [...files];
+  const shareFile = files.find((file) => file.courseId && file.university?.slug);
+
+  const copyCourseLink = async (event) => {
+    event.stopPropagation();
+    if (!shareFile) return;
+    const url = new URL('/study-material', window.location.origin);
+    url.searchParams.set('university', shareFile.university.slug);
+    url.searchParams.set('courseId', shareFile.courseId);
+    try {
+      await navigator.clipboard.writeText(url.toString());
+      setShareCopied(true);
+      window.setTimeout(() => setShareCopied(false), 2500);
+    } catch (error) {
+      console.error('Could not copy course link:', error);
+      window.prompt('Copy this course link:', url.toString());
+    }
+  };
 
   return (
   <div className="bg-white/[0.03] border border-white/[0.08] rounded-2xl overflow-hidden shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-violet-500/5 hover:-translate-y-0.5 transition-all duration-200">
@@ -766,6 +786,19 @@ function CourseSection({ courseName, files, user, onSelect, onDelete }) {
       </button>
       {open && (
         <div className="border-t border-white/[0.05] bg-white/[0.01] py-1">
+          {shareFile && (
+            <div className="flex justify-end px-4 py-2">
+              <button
+                type="button"
+                onClick={copyCourseLink}
+                className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 px-3 py-1.5 text-xs font-medium text-violet-300 hover:bg-violet-500/10 transition"
+                aria-label={`Copy link to ${courseName} materials`}
+              >
+                <FontAwesomeIcon icon={faShareNodes} />
+                {shareCopied ? 'Link copied' : `Share ${courseName} materials`}
+              </button>
+            </div>
+          )}
           {sorted.map(file => (
             <FileRow key={file.id} file={file} user={user} onSelect={onSelect} onDelete={onDelete} />
           ))}
@@ -1148,8 +1181,9 @@ function StudyMaterial() {
   const [successMessage, setSuccessMessage] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const { id } = useParams();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const universitySlugParam = searchParams.get("university");
+  const courseIdParam = searchParams.get("courseId");
 
  // ── Offline state ──
 const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
@@ -1198,7 +1232,8 @@ useEffect(() => {
       try {
         const token = getAccessToken();
         const params = new URLSearchParams({ search: debouncedSearch });
-if (universitySlugParam) params.set("university", universitySlugParam);
+        if (universitySlugParam) params.set("university", universitySlugParam);
+        if (courseIdParam) params.set("courseId", courseIdParam);
 const res = await fetch(
   `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material?${params}`,
   { headers: { Authorization: `Bearer ${token}` } }
@@ -1219,7 +1254,7 @@ const res = await fetch(
       }
     };
     fetchFiles();
-  }, [user, debouncedSearch, refreshKey, isOnline, universitySlugParam]);
+  }, [user, debouncedSearch, refreshKey, isOnline, universitySlugParam, courseIdParam]);
 
   useEffect(() => {
     const load = async () => {
@@ -1237,7 +1272,7 @@ const res = await fetch(
   // Default Level/Semester filters to the user's own, once, on first load —
   // gets them straight to their own materials with zero taps.
   useEffect(() => {
-    if (!user) return;
+    if (!user || courseIdParam) return;
     if (user.level && LEVEL_ORDER.includes(String(user.level))) {
       setLevelFilter(String(user.level));
     }
@@ -1245,7 +1280,7 @@ const res = await fetch(
       setSemesterFilter(user.semester);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, courseIdParam]);
 
   // If we arrived here from a university's welcome page (?university=slug),
 // pre-select that university's chip once the universities list has loaded.
@@ -1259,8 +1294,18 @@ useEffect(() => {
     refreshDownloads();
   }, [refreshDownloads]);
 
+  // Track a view each time a student opens a material
+  useEffect(() => {
+    if (!selectedFile?.id) return;
+    trackEvent("student_viewed_material", {
+      materialId: selectedFile.id,
+      courseId: selectedFile.courseRef?.id,
+    });
+  }, [selectedFile?.id]);
+
   // Filter by university / level / semester / downloaded-only
   const filtered = useMemo(() => files.filter(f => {
+    if (courseIdParam && f.courseId !== courseIdParam) return false;
     if (universityFilter !== "All") {
       const matchesUni = f.university?.shortName === universityFilter || f.university?.name === universityFilter;
       if (!matchesUni) return false;
@@ -1269,7 +1314,7 @@ useEffect(() => {
     if (semesterFilter !== "All" && f.semester !== semesterFilter) return false;
     if (showDownloadedOnly && !downloadedIds.has(f.id)) return false;
     return true;
-  }), [files, universityFilter, levelFilter, semesterFilter, showDownloadedOnly, downloadedIds]);
+  }), [files, courseIdParam, universityFilter, levelFilter, semesterFilter, showDownloadedOnly, downloadedIds]);
 
   // ── Build hierarchy: Faculty → Department → Course → Files ──
   // (Level and Semester are handled as filters above, not folder depth —
@@ -1316,7 +1361,13 @@ const grouped = useMemo(() => {
 
   const sortedFaculties = Object.keys(grouped).sort();
   const isSearching = debouncedSearch.trim().length > 0;
-  const hasActiveFilters = universityFilter !== "All" || levelFilter !== "All" || semesterFilter !== "All";
+  const hasActiveFilters = Boolean(courseIdParam) || universityFilter !== "All" || levelFilter !== "All" || semesterFilter !== "All";
+
+  const clearCourseFilter = () => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('courseId');
+    setSearchParams(nextParams);
+  };
 
   // When a specific university is selected, show its FULL faculty roster
   // (from universities.js) — including faculties with zero files, which
@@ -1496,6 +1547,26 @@ const rosterFaculties = useMemo(
               ))}
             </div>
 
+            {courseIdParam && (
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-violet-500/20 bg-violet-500/5 px-4 py-3 mb-4">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-violet-300/70">Course materials</p>
+                  <p className="mt-1 truncate text-base font-bold text-violet-100">
+                    {filtered[0]?.courseRef?.code || "Selected course"}
+                    {filtered[0]?.courseRef?.title ? ` · ${filtered[0].courseRef.title}` : ""}
+                  </p>
+                  <p className="mt-0.5 text-xs text-violet-200/60">{filtered.length} {filtered.length === 1 ? "material" : "materials"}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={clearCourseFilter}
+                  className="shrink-0 text-xs font-semibold text-violet-300 hover:text-violet-200"
+                >
+                  Show full library
+                </button>
+              </div>
+            )}
+
             {/* Stats bar */}
             <div className="flex items-center justify-between mb-6">
               <p className="text-xs text-ink/35">
@@ -1555,7 +1626,21 @@ const rosterFaculties = useMemo(
                 Only schools that actually have matching files are shown; empty
                 schools with zero materials don't render (see note on the roster
                 fallback removal in the grouping logic). */}
-            {!loading && filtered.length > 0 && (viewMode === "hierarchy" || !isSearching) && viewMode !== "grid" && (
+            {!loading && courseIdParam && filtered.length > 0 && (
+              <section className="mb-6 overflow-hidden rounded-2xl border border-ink/10 bg-white/[0.02]" aria-label="Course materials">
+                {filtered.map((file) => (
+                  <FileRow
+                    key={file.id}
+                    file={file}
+                    user={user}
+                    onSelect={setSelectedFile}
+                    onDelete={() => setRefreshKey((key) => key + 1)}
+                  />
+                ))}
+              </section>
+            )}
+
+            {!loading && !courseIdParam && filtered.length > 0 && (viewMode === "hierarchy" || !isSearching) && viewMode !== "grid" && (
               <div className="flex flex-col gap-4">
                 {rosterFaculties.map((f, i) => (
                   <FacultyBlock
@@ -1574,7 +1659,7 @@ const rosterFaculties = useMemo(
             )}
 
             {/* ── GRID VIEW (when toggled or searching) ── */}
-            {!loading && filtered.length > 0 && (viewMode === "grid" || isSearching) && (
+            {!loading && !courseIdParam && filtered.length > 0 && (viewMode === "grid" || isSearching) && (
               <>
                 {isSearching && viewMode !== "grid" && (
                   <p className="text-xs text-ink/30 mb-4">Showing flat results for search. Switch to grid or clear search to return to hierarchy.</p>

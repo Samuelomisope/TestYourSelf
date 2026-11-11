@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 
 import { getUniversityBySlug, getUniversityNews } from "./api";
 import Navbar from "./Navbar";
@@ -147,6 +147,8 @@ function coreValueGridClass(count) {
 
 export default function UniversityWelcomePage() {
   const { universitySlug } = useParams();
+  const [searchParams] = useSearchParams();
+  const courseId = searchParams.get("courseId");
 
   const [university, setUniversity] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -343,7 +345,7 @@ useEffect(() => {
         {/* Browse study materials CTA */}
         <div className="mb-[72px] flex animate-[fadeUp_0.5s_ease-out_both] [animation-delay:280ms]">
           <Link
-            to={`/study-material?university=${university.slug}`}
+            to={`/study-material?university=${encodeURIComponent(university.slug)}${courseId ? `&courseId=${encodeURIComponent(courseId)}` : ""}`}
             className="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3.5 text-sm font-medium text-white transition hover:bg-accent-hover"
           >
             Browse {university.name} study materials

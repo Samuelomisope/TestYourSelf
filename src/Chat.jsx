@@ -16,22 +16,9 @@ import {
 import { encryptMessage, decryptMessage } from "./crypto";
 import { uploadSingle } from "./useUpload";
 import { API } from "./config";
+import { apiFetch } from "./api";
 
 // ── Helpers ────────────────────────────────────────────────────────
-async function apiFetch(path, options = {}) {
-  const token = getAccessToken();
-  const res = await fetch(`${API}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...(options.headers || {}),
-    },
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
-
 function safeAvatar(url, seed) {
   const fallback = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(seed || "?")}`;
   if (!url || url.startsWith("blob:")) return fallback;
@@ -788,14 +775,15 @@ function ChatRoom({ room, dbUserId, onBack, onOpenWallpaper, onlineUsers }) {
         streamRef.current = null;
         if (audioChunksRef.current.length === 0) { setUploadError("No audio captured."); return; }
         const actualMime = mimeType || "audio/webm";
-        const ext = actualMime.includes("mp4") ? "m4a" : actualMime.includes("ogg") ? "ogg" : "webm";
+        const fileMime = actualMime.split(";")[0];
+        const ext = fileMime.includes("mp4") ? "m4a" : fileMime.includes("ogg") ? "ogg" : "webm";
         const blob = new Blob(audioChunksRef.current, { type: actualMime });
         if (blob.size < 500) { setUploadError("Recording too short."); return; }
-        const file = new File([blob], `voice-note-${Date.now()}.${ext}`, { type: actualMime });
+        const file = new File([blob], `voice-note-${Date.now()}.${ext}`, { type: fileMime });
         setUploading(true); setUploadError(null);
         try {
-          const url = await uploadSingle(file, "chat/audio");
-          sendMessage({ mediaUrl: url, mediaType: actualMime, type: "audio", text: "" });
+          const url = await uploadSingle(file, "chat-audio");
+          sendMessage({ mediaUrl: url, mediaType: fileMime, type: "audio", text: "" });
         } catch { setUploadError("Voice upload failed."); }
         finally { setUploading(false); }
       };
@@ -1040,7 +1028,7 @@ function StatusCreator({ onClose, onPosted }) {
       let body = { type: mode };
       if (mode === "text") { body.text = text; body.bgColor = bgColor; }
       else {
-        const folder = mode === "video" ? "chat/status/video" : "chat/status/image";
+        const folder = mode === "video" ? "chat-status-video" : "chat-status-image";
         const url = await uploadSingle(mediaFile, folder);
         body.mediaUrl = url; body.mediaType = mediaFile.type;
         if (text.trim()) body.text = text;
@@ -1256,7 +1244,7 @@ function Chat() {
   const token = getAccessToken();
   const presenceSocket = io(`${API}/chat`, {
     transports: ["websocket"],
-    auth: { token, userId: dbUser.id },
+    auth: { token },
   });
 
   presenceSocket.on("userOnline", ({ userId }) => {
