@@ -14,6 +14,7 @@ import {
   faLayerGroup,
   faCommentDots,
   faCrown,
+  faChalkboard,
 } from "@fortawesome/free-solid-svg-icons";
 
 // ─── Shared Nav Links ──────────────────────────────────────────────
@@ -22,6 +23,7 @@ const TAB_LINKS = [
   { href: "/home",           label: "Home",   icon: faHouse },
   { href: "/study-material", label: "Library",  icon: faBook,     tour: "nav-study" },
   { href: "/ai",             label: "AI",     icon: faRobot,    tour: "nav-ai" },
+  { href: "/classroom",      label: "Classroom", icon: faChalkboard },
   { href: "/novels",         label: "Novels", icon: faBookOpen },
   { href: "/chat",           label: "Chat",   icon: faComments, tour: "nav-chat" },
   { href: "/marketplace",    label: "Market", icon: faStore,    tour: "nav-market" },
@@ -32,6 +34,7 @@ const sidebarLinks = [
   { name: "Library", href: "/study-material", icon: faBook },
   { name: "Flashcards", href: "/flashcards", icon: faLayerGroup },
   { name: "AI Assistant", href: "/ai", icon: faRobot },
+  { name: "AI Classroom", href: "/classroom", icon: faChalkboard },
   { name: "Premium", href: "/premium", icon: faCrown },
   { name: "Chat", href: "/chat", icon: faComments },
   { name: "Marketplace", href: "/marketplace", icon: faStore },
