@@ -31,7 +31,9 @@ function getAuthHeaders() {
 }
 
 async function request(path, options = {}, retried = false) {
-  const headers = { ...getAuthHeaders(), ...(options.headers || {}) };
+  const authHeaders = getAuthHeaders();
+  if (typeof FormData !== "undefined" && options.body instanceof FormData) delete authHeaders["Content-Type"];
+  const headers = { ...authHeaders, ...(options.headers || {}) };
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
     headers,
@@ -59,6 +61,10 @@ export async function apiFetch(path, options = {}) {
 
 export async function apiPost(path, body) {
   return request(path, { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function apiPostForm(path, formData) {
+  return request(path, { method: "POST", body: formData });
 }
 
 export async function apiPatch(path, body) {
