@@ -47,7 +47,13 @@ async function request(path, options = {}, retried = false) {
     }
   }
 
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  if (!res.ok) {
+    // The message text is unchanged, so existing callers behave as before. status and serverMessage are additive,
+    // letting a page show the server's own explanation (for example "Daily classroom turn quota reached.").
+    const body = await res.json().catch(() => null);
+    const serverMessage = Array.isArray(body?.message) ? body.message.join(" ") : typeof body?.message === "string" ? body.message : "";
+    throw Object.assign(new Error(`API error: ${res.status}`), { status: res.status, serverMessage });
+  }
   return res.json();
 }
 
