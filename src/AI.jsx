@@ -30,6 +30,7 @@ import {
   faFile,
   faChevronDown,
   faClockRotateLeft,
+  faChalkboard,
 } from "@fortawesome/free-solid-svg-icons";
 import { apiGet, apiPost, trackEvent } from "./api";
 import "katex/dist/katex.min.css";
@@ -163,11 +164,13 @@ function stopSpeaking() {
 }
 
 const TAB_LINKS = [
-  { href: "/home", label: "Home", icon: faHouse },
-  { href: "/study-material", label: "Study", icon: faBook },
-  { href: "/ai", label: "AI", icon: faRobot },
-  { href: "/chat", label: "Chat", icon: faComments },
-  { href: "/marketplace", label: "Market", icon: faStore },
+  { href: "/home",           label: "Home",   icon: faHouse },
+  { href: "/study-material", label: "Library",  icon: faBook,     tour: "nav-study" },
+  { href: "/ai",             label: "AI",     icon: faRobot,    tour: "nav-ai" },
+  { href: "/classroom",      label: "Classroom", icon: faChalkboard },
+  { href: "/novels",         label: "Novels", icon: faBookOpen },
+  { href: "/chat",           label: "Chat",   icon: faComments, tour: "nav-chat" },
+  /*{ href: "/marketplace",    label: "Market", icon: faStore,    tour: "nav-market" },*/
 ];
 
 // ─── Spinner ──────────────────────────────────────────────────────────────────

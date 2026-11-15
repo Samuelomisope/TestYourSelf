@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faFileLines, faLock, faVideo, faBox, faFile, faNoteSticky, faUser, faGlobe,
   faHouse, faBook, faRobot, faComments, faStore, faChevronDown, faXmark,
-  faCalculator, faUpload, faGrip, faChevronRight, faLayerGroup, faPlus,
+  faCalculator, faUpload, faGrip, faChevronRight, faLayerGroup, faPlus, faChalkboard,
  faBookOpen, faDownload, faCheck, faTrash, faTriangleExclamation, faShareNodes,
 } from '@fortawesome/free-solid-svg-icons';
 import { faFile as farFile } from '@fortawesome/free-regular-svg-icons';
@@ -93,17 +93,15 @@ const formatBytes = (bytes) => {
 
 const TAB_LINKS = [
   { href: "/home",           label: "Home",   icon: faHouse },
-  { href: "/study-material", label: "Library",  icon: faBook },
-  { href: "/ai",             label: "AI",     icon: faRobot },
-  { href: "/chat",           label: "Chat",   icon: faComments },
-  { href: "/marketplace",    label: "Market", icon: faStore },
+  { href: "/study-material", label: "Library",  icon: faBook,     tour: "nav-study" },
+  { href: "/ai",             label: "AI",     icon: faRobot,    tour: "nav-ai" },
+  { href: "/classroom",      label: "Classroom", icon: faChalkboard },
+  { href: "/novels",         label: "Novels", icon: faBookOpen },
+  { href: "/chat",           label: "Chat",   icon: faComments, tour: "nav-chat" },
+  /*{ href: "/marketplace",    label: "Market", icon: faStore,    tour: "nav-market" },*/
 ];
-
 const OfflineContext = createContext({ downloadedIds: new Set() });
 
-// Shared visual primitives so every surface in this file reads as one
-// system: one accent (violet), neutral badges, soft shadow instead of
-// hard borders, consistent 12–16px radii.
 const CARD = "bg-bg-elevated shadow-[0_1px_2px_rgba(0,0,0,0.3),0_8px_24px_-12px_rgba(0,0,0,0.5)] rounded-2xl";
 const BADGE_NEUTRAL = "px-2.5 py-1 bg-ink/[0.06] text-ink/50 rounded-full text-xs font-medium";
 const BADGE_ACCENT = "px-2.5 py-1 bg-violet-500/10 text-violet-400 rounded-full text-xs font-medium";
