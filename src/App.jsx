@@ -27,6 +27,7 @@ import WriterRoute from "./WriterRoute";
 import UniversityWelcomePage from "./UniversityWelcomePage";
 import StudyPlan from "./StudyPlan";
 import Premium from "./Premium";
+import Classroom from "./Classroom";
 
 function App() {
   return (
@@ -36,6 +37,8 @@ function App() {
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/study-material" element={<ProtectedRoute><StudyMaterial /></ProtectedRoute>} />        
         <Route path="/ai" element={<ProtectedRoute><AI /></ProtectedRoute>} />
+        <Route path="/classroom" element={<ProtectedRoute><Classroom /></ProtectedRoute>} />
+        <Route path="/classroom/:sessionId" element={<ProtectedRoute><Classroom /></ProtectedRoute>} />
         <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
         <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
         <Route path="/marketplace/create" element={<ProtectedRoute><CreateListing /></ProtectedRoute>} />

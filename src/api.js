@@ -31,7 +31,9 @@ function getAuthHeaders() {
 }
 
 async function request(path, options = {}, retried = false) {
-  const headers = { ...getAuthHeaders(), ...(options.headers || {}) };
+  const authHeaders = getAuthHeaders();
+  if (typeof FormData !== "undefined" && options.body instanceof FormData) delete authHeaders["Content-Type"];
+  const headers = { ...authHeaders, ...(options.headers || {}) };
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
     headers,
@@ -45,7 +47,13 @@ async function request(path, options = {}, retried = false) {
     }
   }
 
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  if (!res.ok) {
+    // The message text is unchanged, so existing callers behave as before. status and serverMessage are additive,
+    // letting a page show the server's own explanation (for example "Daily classroom turn quota reached.").
+    const body = await res.json().catch(() => null);
+    const serverMessage = Array.isArray(body?.message) ? body.message.join(" ") : typeof body?.message === "string" ? body.message : "";
+    throw Object.assign(new Error(`API error: ${res.status}`), { status: res.status, serverMessage });
+  }
   return res.json();
 }
 
@@ -59,6 +67,10 @@ export async function apiFetch(path, options = {}) {
 
 export async function apiPost(path, body) {
   return request(path, { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function apiPostForm(path, formData) {
+  return request(path, { method: "POST", body: formData });
 }
 
 export async function apiPatch(path, body) {
