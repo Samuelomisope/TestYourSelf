@@ -26,7 +26,7 @@ const TAB_LINKS = [
   { href: "/classroom",      label: "Classroom", icon: faChalkboard },
   { href: "/novels",         label: "Novels", icon: faBookOpen },
   { href: "/chat",           label: "Chat",   icon: faComments, tour: "nav-chat" },
-  { href: "/marketplace",    label: "Market", icon: faStore,    tour: "nav-market" },
+  /*{ href: "/marketplace",    label: "Market", icon: faStore,    tour: "nav-market" },*/
 ];
 
 const sidebarLinks = [
@@ -37,7 +37,7 @@ const sidebarLinks = [
   { name: "AI Classroom", href: "/classroom", icon: faChalkboard },
   { name: "Premium", href: "/premium", icon: faCrown },
   { name: "Chat", href: "/chat", icon: faComments },
-  { name: "Marketplace", href: "/marketplace", icon: faStore },
+  /*{ name: "Marketplace", href: "/marketplace", icon: faStore },*/
   { name: "Feedback", href: "/feedback", icon: faCommentDots },
 ];
 

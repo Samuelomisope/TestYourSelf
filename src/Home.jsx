@@ -11,9 +11,9 @@ import { doc, getDoc } from "firebase/firestore";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faRobot, faBookOpen, faCartShopping, faComments, faBookmark,
-  faCamera, faBagShopping, faMessage, faFile,
+  faCamera, faBagShopping, faMessage, faFile, faChalkboard,
   faHouse, faBook, faStore, faBell, faSearch, faBars, faXmark,
-  faLayerGroup, faCalendarCheck, faCrown, faCommentDots,
+  faLayerGroup, faCrown, faCommentDots,
 } from '@fortawesome/free-solid-svg-icons';
 import AppTour from "./components/AppTour/AppTour";
 import ThemeToggle from "./components/ThemeToggle";
@@ -23,10 +23,11 @@ const TAB_LINKS = [
   { href: "/home",           label: "Home",   icon: faHouse },
   { href: "/study-material", label: "Library",  icon: faBook,     tour: "nav-study" },
   { href: "/ai",             label: "AI",     icon: faRobot,    tour: "nav-ai" },
-   { href: "/novels",         label: "Novels", icon: faBookOpen },
+  { href: "/classroom",      label: "Classroom", icon: faChalkboard },
+  { href: "/novels",         label: "Novels", icon: faBookOpen },
   { href: "/chat",           label: "Chat",   icon: faComments, tour: "nav-chat" },
-  { href: "/marketplace",    label: "Market", icon: faStore,    tour: "nav-market" },
-];
+  /*{ href: "/marketplace",    label: "Market", icon: faStore,    tour: "nav-market" },
+*/];
 
 function Toast({ message, onClose }) {
   return (
@@ -338,17 +339,17 @@ const timeAgo = (dateStr) => {
     { title: "Flashcards", icon: <FontAwesomeIcon icon={faLayerGroup} className="text-violet-400 text-2xl" />, href: "/flashcards", content: "Create and study with flashcards." },
   ];
 
-  const sidebarLinks = [
-  { name: "Home", href: "/home", icon: faHouse },
-  { name: "Library", href: "/study-material", icon: faBook },
-  { name: "Study Plan", href: "/study-plan", icon: faCalendarCheck },
-  { name: "Flashcards", href: "/flashcards", icon: faLayerGroup },
-  { name: "AI Assistant", href: "/ai", icon: faRobot },
-  { name: "Premium", href: "/premium", icon: faCrown },
-  { name: "Chat", href: "/chat", icon: faComments },
-  { name: "Marketplace", href: "/marketplace", icon: faStore },
-  { name: "Feedback", href: "/feedback", icon: faCommentDots },
-];
+ const sidebarLinks = [
+   { name: "Home", href: "/home", icon: faHouse },
+   { name: "Library", href: "/study-material", icon: faBook },
+   { name: "Flashcards", href: "/flashcards", icon: faLayerGroup },
+   { name: "AI Assistant", href: "/ai", icon: faRobot },
+   { name: "AI Classroom", href: "/classroom", icon: faChalkboard },
+   { name: "Premium", href: "/premium", icon: faCrown },
+   { name: "Chat", href: "/chat", icon: faComments },
+   { name: "Marketplace", href: "/marketplace", icon: faStore },
+   { name: "Feedback", href: "/feedback", icon: faCommentDots },
+ ];
   return (
     <div className="min-h-screen bg-bg text-ink">
 
