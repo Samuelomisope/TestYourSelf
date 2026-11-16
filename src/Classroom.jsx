@@ -6,7 +6,9 @@ import Dialog from "./classroom/Dialog";
 import LessonView from "./classroom/LessonView";
 import Md from "./classroom/Markdown";
 import OutlinePanel from "./classroom/OutlinePanel";
+import PageNav from "./classroom/PageNav";
 import SetupWizard from "./classroom/SetupWizard";
+import { buildBoard } from "./classroom/lessonEvents";
 import { DOC_STATUS, MODE_LABEL, currentStep, describeError, readObjectives, readOutline, shouldKeepRequestKey, sleep, isScan, pickDocuments, truncationNote } from "./classroom/classroomUtils";
 
 const card = "rounded-2xl border border-ink/10 bg-bg-elevated p-5 shadow-sm";
@@ -282,6 +284,8 @@ function ClassroomInner({ sessionId }) {
     finally { setBusy(false); }
   }
 
+  // Whiteboard pages rebuilt from the stored lesson events, so they are the same after a reload.
+  const boardPages = buildBoard(turns);
   const outline = readOutline(session);
   const objectives = readObjectives(session);
   const hasPlan = outline.length > 0;
@@ -357,9 +361,10 @@ function ClassroomInner({ sessionId }) {
             {showPlanCard ? (
               <PreparePlan session={session} readyDocs={readyDocs} processingDocs={processingDocs} planning={planning} onPrepare={preparePlan} />
             ) : <>
+              <PageNav key={boardPages.length} pages={boardPages} />
               <div ref={listRef} className="mb-4 max-h-[60vh] min-h-[30vh] flex-1 space-y-5 overflow-y-auto pr-1">
                 {loading ? <p className="text-sm text-ink/50">Loading lesson…</p> : turns.length ? turns.map((turn) => (
-                  <article key={turn.id} className={`rounded-2xl p-4 ${turn.role === "STUDENT" ? "ml-8 bg-violet-500/10" : "mr-4 bg-ink/[0.035]"}`}>
+                  <article key={turn.id} id={`turn-${turn.id}`} className={`scroll-mt-2 rounded-2xl p-4 ${turn.role === "STUDENT" ? "ml-8 bg-violet-500/10" : "mr-4 bg-ink/[0.035]"}`}>
                     <p className="text-xs font-bold uppercase tracking-wider text-ink/50">{turn.role === "STUDENT" ? "You" : "UniLib Tutor"}</p>
                     {turn.role === "TUTOR"
                       ? (turn.structuredLesson
