@@ -7,9 +7,7 @@ import LessonView from "./classroom/LessonView";
 import Md from "./classroom/Markdown";
 import OutlinePanel from "./classroom/OutlinePanel";
 import SetupWizard from "./classroom/SetupWizard";
-import {
-  DOC_STATUS, MODE_LABEL, currentStep, describeError, readObjectives, readOutline, shouldKeepRequestKey, sleep,
-} from "./classroom/classroomUtils";
+import { DOC_STATUS, MODE_LABEL, currentStep, describeError, readObjectives, readOutline, shouldKeepRequestKey, sleep, isScan, pickDocuments, truncationNote } from "./classroom/classroomUtils";
 
 const card = "rounded-2xl border border-ink/10 bg-bg-elevated p-5 shadow-sm";
 const primary = "rounded-xl bg-violet-600 px-5 py-3 font-semibold text-white transition hover:bg-violet-500 disabled:opacity-50";
@@ -82,6 +80,8 @@ function ClassroomInner({ sessionId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [dialog, setDialog] = useState(null);
+  // Documents the student switched off for tutor answers. Empty means every ready document is used.
+  const [excluded, setExcluded] = useState([]);
   // The idempotency key of a send whose outcome we don't know yet, so a retry can't be charged as a second turn.
   const pendingSend = useRef(null);
   const alive = useRef(true);
@@ -174,15 +174,25 @@ function ClassroomInner({ sessionId }) {
     return result;
   }
 
+  function toggleDocument(id) {
+    setExcluded((current) => {
+      if (current.includes(id)) return current.filter((other) => other !== id);
+      // Keep at least one document on.
+      return pickDocuments(documents, current).ids.length <= 1 ? current : [...current, id];
+    });
+  }
+
   async function sendTurn(message, action = "ASK") {
     const text = message.trim();
     if (!text || sending) return false;
-    const signature = `${action}\n${text}`;
+    const { ids, narrowed } = pickDocuments(documents, excluded);
+    // The selection is part of the request, so changing it is a new send (new key), while retrying the same one reuses the key.
+    const signature = `${action}\n${text}\n${narrowed ? ids.join(",") : ""}`;
     if (pendingSend.current?.signature !== signature) pendingSend.current = { signature, key: crypto.randomUUID() };
     setSending(true); setError("");
     try {
       const first = await apiPost(`/classroom/sessions/${sessionId}/turns`, {
-        message: text, idempotencyKey: pendingSend.current.key, ...(action === "ASK" ? {} : { action }),
+        message: text, idempotencyKey: pendingSend.current.key, ...(action === "ASK" ? {} : { action }), ...(narrowed ? { documentIds: ids } : {}),
       });
       const result = await waitForReply(first);
       const status = result?.request?.status;
@@ -281,6 +291,8 @@ function ClassroomInner({ sessionId }) {
   const current = currentStep(session, outline.length);
   const atLastStep = hasPlan && current >= outline.length - 1;
   const readyDocs = documents.filter((doc) => doc.status === "READY").length;
+  const selection = pickDocuments(documents, excluded);
+  const choosingDocs = selection.ready.length > 1;
   const processingDocs = documents.filter((doc) => doc.status === "PROCESSING").length;
   const showPlanCard = needsPlan && !turns.length && !loading;
   const labelFor = (lesson) => {
@@ -403,9 +415,23 @@ function ClassroomInner({ sessionId }) {
                       <p className="truncate text-sm font-medium">{doc.originalName}</p>
                       <p className="text-xs text-ink/55">
                         {DOC_STATUS[doc.status] ?? doc.status}
-                        {doc.extractedChars ? ` · ${doc.extractedChars.toLocaleString()} chars` : ""}
-                        {doc.truncated ? " · only the start is used" : ""}
+                        {doc.extractedChars && !(doc.truncated && doc.totalChars) ? ` · ${doc.extractedChars.toLocaleString()} chars` : ""}
+                        {doc.truncated ? ` · ${truncationNote(doc)}` : ""}
                       </p>
+                      {doc.status === "READY" && isScan(doc) && (
+                        <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-300">Read from a scan. Equations and handwriting may be misread.</p>
+                      )}
+                      {choosingDocs && doc.status === "READY" && (
+                        <label className="mt-1.5 flex cursor-pointer items-center gap-2 text-xs text-ink/65 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-violet-500">
+                          <input
+                            type="checkbox" className="h-4 w-4 accent-violet-600"
+                            checked={selection.ids.includes(doc.id)}
+                            disabled={selection.ids.length === 1 && selection.ids.includes(doc.id)}
+                            onChange={() => toggleDocument(doc.id)}
+                          />
+                          Use in lesson
+                        </label>
+                      )}
                       {["FAILED", "DELETE_FAILED", "DELETE_PENDING"].includes(doc.status) && (
                         <button disabled={busy} onClick={() => retryDocument(doc.id)} className="mt-1 text-xs font-semibold text-amber-800 dark:text-amber-300">{doc.status === "FAILED" ? "Retry processing" : "Retry deletion"}</button>
                       )}
@@ -414,6 +440,7 @@ function ClassroomInner({ sessionId }) {
                   </div>
                 ))}
               </div>
+              {choosingDocs && <p className="mt-2 text-xs text-ink/50">The tutor answers from the ticked documents. The lesson plan is built from all of them.</p>}
             </section>
             <section className={card}>
               <h2 className="font-bold">Link UniLib material</h2>
