@@ -2,7 +2,7 @@
 // Storage can be missing, full or blocked, and a stored value can be damaged, so every read is validated.
 
 export const VOICE_KEY = "unilib.classroom.voice";
-export const DEFAULT_VOICE_PREFS = { autoSpeak: false, rate: 1, voiceName: "" };
+export const DEFAULT_VOICE_PREFS = { autoSpeak: false, rate: 1, voiceName: "", showTutor: true };
 const RATES = [0.75, 1, 1.25, 1.5];
 
 export function sanitizeVoicePrefs(value) {
@@ -11,6 +11,7 @@ export function sanitizeVoicePrefs(value) {
     autoSpeak: v.autoSpeak === true,
     rate: RATES.includes(v.rate) ? v.rate : DEFAULT_VOICE_PREFS.rate,
     voiceName: typeof v.voiceName === "string" ? v.voiceName.slice(0, 200) : "",
+    showTutor: v.showTutor !== false,
   };
 }
 

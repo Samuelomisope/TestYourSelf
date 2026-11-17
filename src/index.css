@@ -60,3 +60,22 @@ html[data-theme="sepia"] body { background-color: #f4ecd8; }
   #board-print .board-print-block { margin: 0.6rem 0; break-inside: avoid; }
   #board-print table { border-collapse: collapse; }
 }
+
+/* Animated tutor (Phase F). Everything that moves is here and is off for students who prefer reduced motion. */
+.tutor-blink, .tutor-talk, .tutor-sway, .tutor-dot, .tutor-sparkle, .tutor-waves, .tutor-cheer { transform-box: fill-box; transform-origin: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .tutor-blink { animation: tutor-blink 4.2s infinite; }
+  .tutor-talk { animation: tutor-talk .32s ease-in-out infinite alternate; }
+  .tutor-sway { animation: tutor-sway 4.5s ease-in-out infinite; }
+  .tutor-dot { animation: tutor-dot 1s ease-in-out infinite; }
+  .tutor-sparkle { animation: tutor-sparkle 1.1s ease-in-out infinite alternate; }
+  .tutor-waves { animation: tutor-waves 1.2s ease-in-out infinite; }
+  .tutor-cheer { animation: tutor-cheer .6s ease-in-out infinite alternate; }
+}
+@keyframes tutor-blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
+@keyframes tutor-talk { from { transform: scaleY(.35); } to { transform: scaleY(1.1); } }
+@keyframes tutor-sway { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(2px); } }
+@keyframes tutor-dot { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+@keyframes tutor-sparkle { from { transform: scale(.8); opacity: .6; } to { transform: scale(1.15); opacity: 1; } }
+@keyframes tutor-waves { 0%, 100% { opacity: .4; } 50% { opacity: 1; } }
+@keyframes tutor-cheer { from { transform: translateY(2px); } to { transform: translateY(-3px); } }
