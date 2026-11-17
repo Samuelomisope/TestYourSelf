@@ -194,6 +194,7 @@ function ClassroomInner({ sessionId }) {
     setBusy(true); setError("");
     try {
       const created = await apiPost("/classroom/sessions", { ...values, title: values.topic });
+      setVoicePrefs(loadVoicePrefs(browserStorage())); // the setup form may have changed the voice choice
       navigate(`/classroom/${created.id}`);
     } catch (err) { setError(describeError(err, "Could not create a lesson.")); setBusy(false); }
   }
