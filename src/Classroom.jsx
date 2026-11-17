@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { Mic, Square, X } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import Navbar from "./Navbar";
 import { apiDelete, apiGet, apiPatch, apiPost, apiPostForm } from "./api";
@@ -15,6 +15,8 @@ import PageNav from "./classroom/PageNav";
 import SetupWizard from "./classroom/SetupWizard";
 import { buildBoard, pageIndexOf, readEvents } from "./classroom/lessonEvents";
 import useLessonVoice from "./classroom/useLessonVoice";
+import useSpeechInput from "./classroom/useSpeechInput";
+import { appendDictation } from "./classroom/speechInput";
 import VoiceBar from "./classroom/VoiceBar";
 import { tutorState } from "./classroom/tutorState";
 import { browserStorage, loadVoicePrefs, saveVoicePrefs } from "./classroom/voicePrefs";
@@ -120,6 +122,11 @@ function ClassroomInner({ sessionId }) {
       const index = pageIndexOf(pagesRef.current, playingTurn.current, event.id);
       if (index >= 0) setPageChoice({ count: pagesRef.current.length, index });
     },
+  });
+  // Dictation fills the question box (the student reads it and presses Send); starting it silences the tutor.
+  const speechInput = useSpeechInput({
+    onStart: () => voice.controls.stop(),
+    onText: (words) => setQuestion((current) => appendDictation(current, words)),
   });
   function changeVoicePrefs(patch) {
     setVoicePrefs((current) => { const next = { ...current, ...patch }; saveVoicePrefs(browserStorage(), next); return next; });
@@ -269,6 +276,7 @@ function ClassroomInner({ sessionId }) {
 
   async function submitQuestion(e) {
     e.preventDefault();
+    speechInput.cancel();
     if (await sendTurn(question, "ASK", askAbout)) { setQuestion(""); setAskAbout(null); }
   }
 
@@ -441,7 +449,7 @@ function ClassroomInner({ sessionId }) {
             ) : <>
               {voice.supported && isClassroom && started && replyEvents.length > 0 && (
                 <VoiceBar
-                  state={tutorState({ sending, playerStatus: voice.player.status, speaking: voice.speaking })}
+                  state={tutorState({ sending, listening: speechInput.listening, playerStatus: voice.player.status, speaking: voice.speaking })}
                   status={voice.player.status} caption={caption} error={voice.error} canListen={!sending}
                   rate={voicePrefs.rate} onRate={(rate) => changeVoicePrefs({ rate })}
                   voices={voice.voices} voice={voice.voice} voiceName={voicePrefs.voiceName} onVoice={(voiceName) => changeVoicePrefs({ voiceName })}
@@ -493,8 +501,18 @@ function ClassroomInner({ sessionId }) {
               )}
               <form onSubmit={submitQuestion} className="flex gap-2 border-t border-ink/10 pt-4">
                 <input ref={questionInput} aria-label="Ask your tutor a question" value={question} onChange={(e) => setQuestion(e.target.value)} maxLength={4000} placeholder="Ask your tutor a question…" className="min-w-0 flex-1 rounded-xl border border-ink/10 bg-bg px-4 py-3 outline-none focus:border-violet-500" />
+                {speechInput.supported && (
+                  <button type="button" onClick={speechInput.listening ? speechInput.stop : speechInput.start} disabled={sending} aria-pressed={speechInput.listening}
+                    aria-label={speechInput.listening ? "Stop voice input" : "Ask with your voice"} title={speechInput.listening ? "Stop voice input" : "Ask with your voice"}
+                    className={`inline-flex w-12 items-center justify-center rounded-xl border transition focus-visible:outline-2 focus-visible:outline-violet-500 disabled:opacity-50 ${speechInput.listening ? "border-violet-500 bg-violet-500/15 text-violet-700 dark:text-violet-200 motion-safe:animate-pulse" : "border-ink/10 hover:bg-ink/5"}`}>
+                    {speechInput.listening ? <Square aria-hidden="true" className="h-4 w-4" /> : <Mic aria-hidden="true" className="h-5 w-5" />}
+                  </button>
+                )}
                 <button disabled={sending || !question.trim()} className="rounded-xl bg-violet-600 px-5 font-semibold text-white transition hover:bg-violet-500 disabled:opacity-50">{sending ? "…" : "Send"}</button>
               </form>
+              {speechInput.listening && <p role="status" className="mt-2 text-xs text-ink/60">Listening{speechInput.interim ? `: ${speechInput.interim}` : "…"}</p>}
+              {speechInput.error && <p role="alert" className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">{speechInput.error}</p>}
+              {speechInput.supported && !speechInput.listening && !speechInput.error && <p className="mt-2 text-xs text-ink/45">Voice input uses your browser’s speech service, which may send your audio to the browser’s provider.</p>}
             </>}
           </section>
           </div>
