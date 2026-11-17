@@ -60,3 +60,8 @@ export function buildBoard(turns) {
 
 /** The transcript lines (SAY events) of one reply, for reading along and, later, for speech. */
 export const transcriptOf = (events) => events.filter((event) => event.type === "SAY");
+
+/** Index of the whiteboard page that a BOARD_PAGE event of a turn opened, or -1. Lets playback turn the board to the page being explained. */
+export function pageIndexOf(pages, turnId, eventId) {
+  return Array.isArray(pages) ? pages.findIndex((page) => page.key === `${turnId}:${eventId}`) : -1;
+}
