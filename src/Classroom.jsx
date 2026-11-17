@@ -18,6 +18,7 @@ import useLessonVoice from "./classroom/useLessonVoice";
 import useSpeechInput from "./classroom/useSpeechInput";
 import { appendDictation } from "./classroom/speechInput";
 import VoiceBar from "./classroom/VoiceBar";
+import TutorStage from "./classroom/TutorStage";
 import { tutorState } from "./classroom/tutorState";
 import { browserStorage, loadVoicePrefs, saveVoicePrefs } from "./classroom/voicePrefs";
 import { DOC_STATUS, MODE_LABEL, currentStep, describeError, readObjectives, readOutline, shouldKeepRequestKey, sleep, isScan, pickDocuments, truncationNote } from "./classroom/classroomUtils";
@@ -430,6 +431,12 @@ function ClassroomInner({ sessionId }) {
         <ErrorLine>{error}</ErrorLine>
         <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className="min-w-0 space-y-4">
+          {isClassroom && (
+            <TutorStage
+              state={tutorState({ sending, listening: speechInput.listening, playerStatus: voice.player.status, speaking: voice.speaking })}
+              variant={session?.tutorVoice} visible={voicePrefs.showTutor} onToggle={() => changeVoicePrefs({ showTutor: !voicePrefs.showTutor })}
+            />
+          )}
           <PageNav pages={boardPages} index={pageIndex} onChange={(index) => setPageChoice({ count: boardPages.length, index })} />
           {hasBoard && (
             <div role="group" aria-label="Show" className="grid grid-cols-2 gap-1 rounded-xl bg-ink/5 p-1 text-sm font-semibold lg:hidden">
