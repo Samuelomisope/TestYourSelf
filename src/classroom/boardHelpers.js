@@ -71,6 +71,14 @@ export function formulaMarkdown(latex) {
  * alternative is dropped, because a picture that a screen reader cannot describe is not on the board.
  */
 export function normalizeBlock(block) {
+  const clean = normalizeKind(block);
+  if (!clean) return null;
+  // Where the block came from, so the student can ask about it. Added only when present.
+  if (typeof block.turnId === "string" && typeof block.eventId === "string") { clean.turnId = block.turnId; clean.eventId = block.eventId; }
+  return clean;
+}
+
+function normalizeKind(block) {
   if (!block || typeof block !== "object") return null;
   const key = typeof block.key === "string" ? block.key : undefined;
   switch (block.kind) {
@@ -109,3 +117,18 @@ export function normalizeBlock(block) {
 
 /** The blocks of one page that can be drawn, in order. */
 export const drawableBlocks = (page) => (Array.isArray(page?.blocks) ? page.blocks.map(normalizeBlock).filter(Boolean) : []);
+
+const KIND_LABEL = { TEXT: "Note", LIST: "List", FORMULA: "Formula", TABLE: "Table", DIAGRAM: "Diagram", CHART: "Chart" };
+
+/** A short label for a block ("Formula: a^2 + b^2"), used in the "Asking about" chip. */
+export function blockSummary(block) {
+  if (!block) return "";
+  const detail = block.kind === "TEXT" ? block.text
+    : block.kind === "LIST" ? block.items?.[0]
+    : block.kind === "FORMULA" ? (block.caption || block.markdown?.replace(/^\$\$\n?|\n?\$\$$/g, ""))
+    : block.kind === "TABLE" ? (block.caption || block.headers?.join(", "))
+    : block.alt;
+  const label = KIND_LABEL[block.kind] ?? "Item";
+  const text = String(detail ?? "").replace(/\s+/g, " ").trim();
+  return text ? `${label}: ${text.length > 50 ? `${text.slice(0, 49)}…` : text}` : label;
+}

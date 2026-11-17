@@ -51,7 +51,7 @@ export function buildBoard(turns) {
         pages.push({ key: `${turn.id}:${event.id}`, turnId: turn.id, stepIndex: event.stepIndex, title: event.title, blocks: [] });
       } else if (event.type === "BOARD_BLOCK") {
         if (!pages.length) pages.push({ key: `${turn.id}:start`, turnId: turn.id, stepIndex: null, title: "", blocks: [] });
-        pages[pages.length - 1].blocks.push({ key: `${turn.id}:${event.id}`, ...event.block });
+        pages[pages.length - 1].blocks.push({ key: `${turn.id}:${event.id}`, turnId: turn.id, eventId: event.id, ...event.block });
       }
     }
   }

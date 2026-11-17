@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { clampZoom, drawableBlocks, formulaMarkdown, normalizeBlock, normalizeChart, normalizeDiagram, pinchZoom, stepZoom, zoomLabel } from "./boardHelpers.js";
+import { blockSummary, clampZoom, drawableBlocks, formulaMarkdown, normalizeBlock, normalizeChart, normalizeDiagram, pinchZoom, stepZoom, zoomLabel } from "./boardHelpers.js";
 
 describe("zoom", () => {
   it("clamps to the supported range and recovers from bad numbers", () => {
@@ -138,5 +138,30 @@ describe("normalizeChart", () => {
     const big = normalizeChart({ chart: "line", labels: Array.from({ length: 20 }, (_, i) => `l${i}`), series: Array.from({ length: 5 }, (_, i) => ({ name: `s${i}`, values: Array(12).fill(i) })) });
     assert.equal(big.labels.length, 12);
     assert.equal(big.series.length, 3);
+  });
+});
+
+describe("block references", () => {
+  it("keeps where a block came from, only when both ids are present", () => {
+    const kept = normalizeBlock({ key: "k", kind: "TEXT", text: "hi", turnId: "t1", eventId: "e2" });
+    assert.equal(kept.turnId, "t1");
+    assert.equal(kept.eventId, "e2");
+    assert.equal("turnId" in normalizeBlock({ kind: "TEXT", text: "hi", turnId: "t1" }), false);
+    assert.equal("eventId" in normalizeBlock({ kind: "TEXT", text: "hi", eventId: 5, turnId: "t" }), false);
+  });
+});
+
+describe("blockSummary", () => {
+  it("labels each kind briefly", () => {
+    assert.equal(blockSummary(normalizeBlock({ kind: "FORMULA", latex: "a^2+b^2" })), "Formula: a^2+b^2");
+    assert.equal(blockSummary(normalizeBlock({ kind: "TABLE", headers: ["x", "y"], rows: [["1", "2"]] })), "Table: x, y");
+    assert.equal(blockSummary(normalizeBlock({ kind: "LIST", items: ["first", "second"] })), "List: first");
+    assert.equal(blockSummary(normalizeBlock({ kind: "DIAGRAM", alt: "A flow", nodes: [] })), "Diagram: A flow");
+    assert.equal(blockSummary(normalizeBlock({ kind: "CHART", alt: "Rising" })), "Chart: Rising");
+  });
+  it("shortens long text and copes with nothing", () => {
+    assert.ok(blockSummary({ kind: "TEXT", text: "w ".repeat(100) }).length <= 57);
+    assert.equal(blockSummary(null), "");
+    assert.equal(blockSummary({ kind: "NOPE" }), "Item");
   });
 });

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import Navbar from "./Navbar";
 import { apiDelete, apiGet, apiPatch, apiPost, apiPostForm } from "./api";
@@ -7,6 +8,9 @@ import LessonView from "./classroom/LessonView";
 import Md from "./classroom/Markdown";
 import OutlinePanel from "./classroom/OutlinePanel";
 import BoardPanel from "./classroom/BoardPanel";
+import BoardPrint from "./classroom/BoardPrint";
+import { blockSummary, normalizeBlock } from "./classroom/boardHelpers";
+import { boardFilename, boardToMarkdown, downloadText } from "./classroom/boardExport";
 import PageNav from "./classroom/PageNav";
 import SetupWizard from "./classroom/SetupWizard";
 import { buildBoard } from "./classroom/lessonEvents";
@@ -93,6 +97,10 @@ function ClassroomInner({ sessionId }) {
   const [pageChoice, setPageChoice] = useState({ count: 0, index: null });
   // On small screens the board and the lesson take turns; on large screens both are shown.
   const [view, setView] = useState("lesson");
+  // The whiteboard block the next question is about ({ turnId, eventId, label }), and whether the print view is open.
+  const [askAbout, setAskAbout] = useState(null);
+  const [printing, setPrinting] = useState(false);
+  const questionInput = useRef(null);
 
   useEffect(() => {
     alive.current = true;
@@ -189,17 +197,17 @@ function ClassroomInner({ sessionId }) {
     });
   }
 
-  async function sendTurn(message, action = "ASK") {
+  async function sendTurn(message, action = "ASK", boardRef = null) {
     const text = message.trim();
     if (!text || sending) return false;
     const { ids, narrowed } = pickDocuments(documents, excluded);
     // The selection is part of the request, so changing it is a new send (new key), while retrying the same one reuses the key.
-    const signature = `${action}\n${text}\n${narrowed ? ids.join(",") : ""}`;
+    const signature = `${action}\n${text}\n${narrowed ? ids.join(",") : ""}\n${boardRef ? `${boardRef.turnId}:${boardRef.eventId}` : ""}`;
     if (pendingSend.current?.signature !== signature) pendingSend.current = { signature, key: crypto.randomUUID() };
     setSending(true); setError("");
     try {
       const first = await apiPost(`/classroom/sessions/${sessionId}/turns`, {
-        message: text, idempotencyKey: pendingSend.current.key, ...(action === "ASK" ? {} : { action }), ...(narrowed ? { documentIds: ids } : {}),
+        message: text, idempotencyKey: pendingSend.current.key, ...(action === "ASK" ? {} : { action }), ...(narrowed ? { documentIds: ids } : {}), ...(boardRef && action === "ASK" ? { boardRef: { turnId: boardRef.turnId, eventId: boardRef.eventId } } : {}),
       });
       const result = await waitForReply(first);
       const status = result?.request?.status;
@@ -220,9 +228,24 @@ function ClassroomInner({ sessionId }) {
     } finally { if (alive.current) setSending(false); }
   }
 
+  function askAboutBlock(block) {
+    const clean = normalizeBlock(block);
+    if (!clean?.turnId || !clean.eventId) return;
+    setAskAbout({ turnId: clean.turnId, eventId: clean.eventId, label: blockSummary(clean) });
+    setView("lesson");
+    // The lesson column may have been hidden on a phone; focus once it is showing.
+    window.setTimeout(() => questionInput.current?.focus(), 0);
+  }
+
+  const boardTitle = session?.title || session?.topic || "";
+  function downloadBoard() {
+    const markdown = boardToMarkdown(boardPages, { title: boardTitle });
+    if (markdown) downloadText(boardFilename(boardTitle), markdown);
+  }
+
   async function submitQuestion(e) {
     e.preventDefault();
-    if (await sendTurn(question, "ASK")) setQuestion("");
+    if (await sendTurn(question, "ASK", askAbout)) { setQuestion(""); setAskAbout(null); }
   }
 
   async function uploadDocument(e) {
@@ -368,7 +391,7 @@ function ClassroomInner({ sessionId }) {
               ))}
             </div>
           )}
-          {hasBoard && <div className={view === "board" ? "" : "hidden lg:block"}><BoardPanel page={boardPages[pageIndex]} /></div>}
+          {hasBoard && <div className={view === "board" ? "" : "hidden lg:block"}><BoardPanel page={boardPages[pageIndex]} onAsk={askAboutBlock} onDownload={downloadBoard} onPrint={() => setPrinting(true)} /></div>}
           <section className={`${card} flex min-h-[60vh] flex-col ${hasBoard && view === "board" ? "hidden lg:flex" : ""}`} aria-label="Lesson">
             {hasPlan && (
               <p className="mb-3 rounded-xl bg-violet-500/10 px-3 py-2 text-xs font-medium text-violet-800 dark:text-violet-200 lg:hidden">
@@ -414,8 +437,14 @@ function ClassroomInner({ sessionId }) {
                   {plural(processingDocs, "document")} still processing. The tutor won’t use {processingDocs === 1 ? "it" : "them"} until {processingDocs === 1 ? "it’s" : "they’re"} ready.
                 </p>
               )}
+              {askAbout && (
+                <p className="mb-2 flex items-center gap-2 rounded-xl bg-violet-500/10 px-3 py-1.5 text-xs text-violet-900 dark:text-violet-100">
+                  <span className="min-w-0 flex-1 truncate">Asking about: {askAbout.label}</span>
+                  <button type="button" onClick={() => setAskAbout(null)} aria-label="Stop asking about this whiteboard item" className="rounded p-0.5 hover:bg-violet-500/20 focus-visible:outline-2 focus-visible:outline-violet-500"><X aria-hidden="true" className="h-3.5 w-3.5" /></button>
+                </p>
+              )}
               <form onSubmit={submitQuestion} className="flex gap-2 border-t border-ink/10 pt-4">
-                <input aria-label="Ask your tutor a question" value={question} onChange={(e) => setQuestion(e.target.value)} maxLength={4000} placeholder="Ask your tutor a question…" className="min-w-0 flex-1 rounded-xl border border-ink/10 bg-bg px-4 py-3 outline-none focus:border-violet-500" />
+                <input ref={questionInput} aria-label="Ask your tutor a question" value={question} onChange={(e) => setQuestion(e.target.value)} maxLength={4000} placeholder="Ask your tutor a question…" className="min-w-0 flex-1 rounded-xl border border-ink/10 bg-bg px-4 py-3 outline-none focus:border-violet-500" />
                 <button disabled={sending || !question.trim()} className="rounded-xl bg-violet-600 px-5 font-semibold text-white transition hover:bg-violet-500 disabled:opacity-50">{sending ? "…" : "Send"}</button>
               </form>
             </>}
@@ -489,6 +518,7 @@ function ClassroomInner({ sessionId }) {
       </>}
     </main>
 
+    {printing && <BoardPrint pages={boardPages} title={boardTitle} onDone={() => setPrinting(false)} />}
     <Dialog open={dialog === "rename"} onClose={() => setDialog(null)} labelledBy="rename-title">
       <RenameForm initial={session?.title || ""} onSave={saveTitle} onCancel={() => setDialog(null)} />
     </Dialog>

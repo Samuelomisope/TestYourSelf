@@ -57,6 +57,7 @@ describe("buildBoard", () => {
     const pages = buildBoard([turn("t1", [page("e1", "A"), block("e2")]), turn("t2", [say("e1"), block("e2", "FORMULA")])]);
     assert.equal(pages.length, 1);
     assert.deepEqual(pages[0].blocks.map((b) => [b.key, b.kind]), [["t1:e2", "TEXT"], ["t2:e2", "FORMULA"]]);
+    assert.deepEqual(pages[0].blocks.map((b) => [b.turnId, b.eventId]), [["t1", "e2"], ["t2", "e2"]]);
   });
 
   it("ignores student turns and replies without events", () => {

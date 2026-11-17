@@ -44,3 +44,19 @@ html[data-theme="sepia"] { color-scheme: light; }
 body { background-color: #ffffff; }
 html.dark body { background-color: #0a0a0f; }
 html[data-theme="sepia"] body { background-color: #f4ecd8; }
+
+/* Whiteboard printing (Phase D5): only #board-print is shown, always in light colours whatever the theme. */
+#board-print { display: none; }
+@media print {
+  html[data-print-board] #root { display: none !important; }
+  html[data-print-board], html[data-print-board] body { background: #fff !important; color-scheme: light; }
+  html[data-print-board] #board-print {
+    display: block; padding: 0;
+    --ink: 10 10 15; --bg: 255 255 255; --bg-elevated: 255 255 255;
+    background: #fff; color: #0a0a0f;
+  }
+  #board-print h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 1rem; }
+  #board-print h2 { font-size: 1.1rem; font-weight: 700; margin: 1.25rem 0 0.5rem; break-after: avoid; }
+  #board-print .board-print-block { margin: 0.6rem 0; break-inside: avoid; }
+  #board-print table { border-collapse: collapse; }
+}
