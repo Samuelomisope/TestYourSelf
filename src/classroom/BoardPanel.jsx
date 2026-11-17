@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Minus, Plus } from "lucide-react";
+import ChartBlock from "./ChartBlock";
+import DiagramBlock from "./DiagramBlock";
 import Md from "./Markdown";
 import { clampZoom, drawableBlocks, pinchZoom, stepZoom, ZOOM_MAX, ZOOM_MIN, zoomLabel } from "./boardHelpers";
 
@@ -31,14 +33,23 @@ function Block({ block }) {
           </table>
         </div>
       );
-    default: // DIAGRAM and CHART are drawn in D4; until then the student gets the text alternative.
-      return (
-        <figure className="rounded-xl border border-dashed border-ink/25 p-3 text-sm text-ink/75">
-          <figcaption className="text-xs font-bold uppercase tracking-wider text-ink/45">{block.kind === "CHART" ? "Chart" : "Diagram"}</figcaption>
-          <p className="mt-1">{block.alt}</p>
-        </figure>
-      );
+    case "DIAGRAM":
+      return block.diagram ? <DiagramBlock alt={block.alt} diagram={block.diagram} /> : <TextAlternative block={block} />;
+    case "CHART":
+      return block.chart ? <ChartBlock alt={block.alt} chart={block.chart} /> : <TextAlternative block={block} />;
+    default:
+      return null;
   }
+}
+
+// A diagram or chart whose data could not be drawn still tells the student what it was meant to show.
+function TextAlternative({ block }) {
+  return (
+    <figure className="rounded-xl border border-dashed border-ink/25 p-3 text-sm text-ink/75">
+      <figcaption className="text-xs font-bold uppercase tracking-wider text-ink/45">{block.kind === "CHART" ? "Chart" : "Diagram"}</figcaption>
+      <p className="mt-1">{block.alt}</p>
+    </figure>
+  );
 }
 
 /**

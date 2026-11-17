@@ -21,6 +21,44 @@ export const pinchZoom = (startZoom, startDistance, distance) =>
   startDistance > 0 && Number.isFinite(distance) ? clampZoom(startZoom * (distance / startDistance)) : clampZoom(startZoom);
 
 const text = (value, max) => (typeof value === "string" ? value.slice(0, max) : "");
+const NODE_ID = /^[A-Za-z0-9_-]{1,20}$/;
+
+/** A drawable diagram (2 to 10 nodes, edges between real nodes), or null. Same limits as the server applies. */
+export function normalizeDiagram(block) {
+  const seen = new Set();
+  const nodes = [];
+  for (const node of (Array.isArray(block.nodes) ? block.nodes : []).slice(0, 10)) {
+    const id = typeof node?.id === "string" ? node.id : "";
+    const label = text(node?.label, 60).trim();
+    if (!NODE_ID.test(id) || !label || seen.has(id)) continue;
+    seen.add(id);
+    nodes.push({ id, label });
+  }
+  if (nodes.length < 2) return null;
+  const edges = [];
+  for (const edge of (Array.isArray(block.edges) ? block.edges : []).slice(0, 20)) {
+    const from = typeof edge?.from === "string" ? edge.from : "";
+    const to = typeof edge?.to === "string" ? edge.to : "";
+    if (!seen.has(from) || !seen.has(to) || from === to) continue;
+    edges.push({ from, to, label: text(edge?.label, 40).trim() });
+  }
+  return { direction: block.direction === "TB" ? "TB" : "LR", nodes, edges };
+}
+
+/** A drawable line or bar chart, or null. Series that do not match the labels one to one are dropped. */
+export function normalizeChart(block) {
+  const labels = (Array.isArray(block.labels) ? block.labels : []).slice(0, 12).map((label) => text(label, 30).trim());
+  if (labels.length < 2 || labels.some((label) => !label)) return null;
+  const series = [];
+  for (const entry of (Array.isArray(block.series) ? block.series : []).slice(0, 3)) {
+    const values = Array.isArray(entry?.values) ? entry.values : [];
+    const name = text(entry?.name, 40).trim();
+    if (!name || values.length !== labels.length || !values.every((v) => typeof v === "number" && Number.isFinite(v) && Math.abs(v) < 1e9)) continue;
+    series.push({ name, values });
+  }
+  if (!series.length) return null;
+  return { chart: block.chart === "bar" ? "bar" : "line", labels, series, xLabel: text(block.xLabel, 40).trim(), yLabel: text(block.yLabel, 40).trim() };
+}
 
 /** A formula as display-math Markdown for KaTeX, or "" when it is empty or too long. Dollar signs are removed. */
 export function formulaMarkdown(latex) {
@@ -60,7 +98,9 @@ export function normalizeBlock(block) {
     case "DIAGRAM":
     case "CHART": {
       const alt = text(block.alt, 400);
-      return alt.trim() ? { kind: block.kind, key, alt } : null;
+      if (!alt.trim()) return null;
+      // A broken spec is not fatal: the block still shows its text alternative, as in D3.
+      return block.kind === "DIAGRAM" ? { kind: "DIAGRAM", key, alt, diagram: normalizeDiagram(block) } : { kind: "CHART", key, alt, chart: normalizeChart(block) };
     }
     default:
       return null;

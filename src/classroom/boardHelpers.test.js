@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { clampZoom, drawableBlocks, formulaMarkdown, normalizeBlock, pinchZoom, stepZoom, zoomLabel } from "./boardHelpers.js";
+import { clampZoom, drawableBlocks, formulaMarkdown, normalizeBlock, normalizeChart, normalizeDiagram, pinchZoom, stepZoom, zoomLabel } from "./boardHelpers.js";
 
 describe("zoom", () => {
   it("clamps to the supported range and recovers from bad numbers", () => {
@@ -80,8 +80,8 @@ describe("normalizeBlock", () => {
   });
 
   it("shows a diagram or chart only with a text alternative", () => {
-    assert.deepEqual(normalizeBlock({ kind: "DIAGRAM", alt: "A leads to B", nodes: [] }), { kind: "DIAGRAM", key: undefined, alt: "A leads to B" });
-    assert.deepEqual(normalizeBlock({ kind: "CHART", alt: "Rising line" }), { kind: "CHART", key: undefined, alt: "Rising line" });
+    assert.deepEqual(normalizeBlock({ kind: "DIAGRAM", alt: "A leads to B", nodes: [] }), { kind: "DIAGRAM", key: undefined, alt: "A leads to B", diagram: null });
+    assert.deepEqual(normalizeBlock({ kind: "CHART", alt: "Rising line" }), { kind: "CHART", key: undefined, alt: "Rising line", chart: null });
     assert.equal(normalizeBlock({ kind: "DIAGRAM", nodes: [] }), null);
     assert.equal(normalizeBlock({ kind: "CHART", alt: "  " }), null);
   });
@@ -91,5 +91,52 @@ describe("drawableBlocks", () => {
   it("filters a page's blocks and copes with a missing page", () => {
     assert.deepEqual(drawableBlocks({ blocks: [{ kind: "TEXT", text: "a" }, { kind: "NOPE" }, null] }).map((b) => b.kind), ["TEXT"]);
     for (const bad of [null, undefined, {}, { blocks: "x" }]) assert.deepEqual(drawableBlocks(bad), []);
+  });
+});
+
+describe("normalizeDiagram", () => {
+  const nodes = [{ id: "a", label: "Start" }, { id: "b", label: "End" }];
+
+  it("keeps a valid diagram and defaults the direction to left to right", () => {
+    assert.deepEqual(normalizeDiagram({ nodes, edges: [{ from: "a", to: "b", label: "then" }] }), { direction: "LR", nodes, edges: [{ from: "a", to: "b", label: "then" }] });
+    assert.equal(normalizeDiagram({ direction: "TB", nodes, edges: [] }).direction, "TB");
+    assert.equal(normalizeDiagram({ direction: "sideways", nodes, edges: [] }).direction, "LR");
+  });
+
+  it("needs two usable nodes", () => {
+    for (const bad of [{}, { nodes: "x" }, { nodes: [nodes[0]] }, { nodes: [nodes[0], { id: "a", label: "dup" }] }, { nodes: [nodes[0], { id: "bad id!", label: "x" }] }, { nodes: [nodes[0], { id: "b", label: "  " }] }]) {
+      assert.equal(normalizeDiagram(bad), null);
+    }
+  });
+
+  it("drops edges to unknown nodes, to itself, and malformed edges; caps the sizes", () => {
+    const d = normalizeDiagram({ nodes, edges: [{ from: "a", to: "zzz" }, { from: "a", to: "a" }, null, "x", { from: "b", to: "a" }] });
+    assert.deepEqual(d.edges, [{ from: "b", to: "a", label: "" }]);
+    const many = normalizeDiagram({ nodes: Array.from({ length: 15 }, (_, i) => ({ id: `n${i}`, label: `Node ${i}` })), edges: Array.from({ length: 40 }, () => ({ from: "n0", to: "n1" })) });
+    assert.equal(many.nodes.length, 10);
+    assert.equal(many.edges.length, 20);
+  });
+});
+
+describe("normalizeChart", () => {
+  const base = { chart: "bar", labels: ["Mon", "Tue", "Wed"], series: [{ name: "Hours", values: [1, 2, 3] }] };
+
+  it("keeps a valid chart and defaults to a line chart", () => {
+    assert.deepEqual(normalizeChart(base), { chart: "bar", labels: ["Mon", "Tue", "Wed"], series: [{ name: "Hours", values: [1, 2, 3] }], xLabel: "", yLabel: "" });
+    assert.equal(normalizeChart({ ...base, chart: "pie" }).chart, "line");
+  });
+
+  it("drops series that do not match the labels or hold non-finite numbers, and needs one left", () => {
+    const c = normalizeChart({ ...base, series: [...base.series, { name: "short", values: [1] }, { name: "nan", values: [1, null, 3] }, { name: "huge", values: [1, 2, 1e12] }, { name: "str", values: ["1", "2", "3"] }] });
+    assert.deepEqual(c.series.map((s) => s.name), ["Hours"]);
+    assert.equal(normalizeChart({ ...base, series: [{ name: "short", values: [1] }] }), null);
+  });
+
+  it("needs two labels, none blank, and caps labels and series", () => {
+    assert.equal(normalizeChart({ ...base, labels: ["only"] }), null);
+    assert.equal(normalizeChart({ ...base, labels: ["a", " ", "c"] }), null);
+    const big = normalizeChart({ chart: "line", labels: Array.from({ length: 20 }, (_, i) => `l${i}`), series: Array.from({ length: 5 }, (_, i) => ({ name: `s${i}`, values: Array(12).fill(i) })) });
+    assert.equal(big.labels.length, 12);
+    assert.equal(big.series.length, 3);
   });
 });
