@@ -6,6 +6,7 @@ import Dialog from "./classroom/Dialog";
 import LessonView from "./classroom/LessonView";
 import Md from "./classroom/Markdown";
 import OutlinePanel from "./classroom/OutlinePanel";
+import BoardPanel from "./classroom/BoardPanel";
 import PageNav from "./classroom/PageNav";
 import SetupWizard from "./classroom/SetupWizard";
 import { buildBoard } from "./classroom/lessonEvents";
@@ -88,6 +89,10 @@ function ClassroomInner({ sessionId }) {
   const pendingSend = useRef(null);
   const alive = useRef(true);
   const listRef = useRef(null);
+  // Which board page is showing. It follows the newest page until the student picks one, and a new page resets it.
+  const [pageChoice, setPageChoice] = useState({ count: 0, index: null });
+  // On small screens the board and the lesson take turns; on large screens both are shown.
+  const [view, setView] = useState("lesson");
 
   useEffect(() => {
     alive.current = true;
@@ -286,6 +291,8 @@ function ClassroomInner({ sessionId }) {
 
   // Whiteboard pages rebuilt from the stored lesson events, so they are the same after a reload.
   const boardPages = buildBoard(turns);
+  const hasBoard = boardPages.length > 0;
+  const pageIndex = pageChoice.count === boardPages.length && pageChoice.index !== null ? Math.min(pageChoice.index, boardPages.length - 1) : boardPages.length - 1;
   const outline = readOutline(session);
   const objectives = readObjectives(session);
   const hasPlan = outline.length > 0;
@@ -352,7 +359,17 @@ function ClassroomInner({ sessionId }) {
         </div>
         <ErrorLine>{error}</ErrorLine>
         <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <section className={`${card} flex min-h-[60vh] flex-col`} aria-label="Lesson">
+          <div className="min-w-0 space-y-4">
+          <PageNav pages={boardPages} index={pageIndex} onChange={(index) => setPageChoice({ count: boardPages.length, index })} />
+          {hasBoard && (
+            <div role="group" aria-label="Show" className="grid grid-cols-2 gap-1 rounded-xl bg-ink/5 p-1 text-sm font-semibold lg:hidden">
+              {[["lesson", "Lesson"], ["board", "Board"]].map(([id, label]) => (
+                <button key={id} type="button" onClick={() => setView(id)} aria-pressed={view === id} className={`rounded-lg px-3 py-1.5 transition focus-visible:outline-2 focus-visible:outline-violet-500 ${view === id ? "bg-bg-elevated text-ink shadow-sm" : "text-ink/60"}`}>{label}</button>
+              ))}
+            </div>
+          )}
+          {hasBoard && <div className={view === "board" ? "" : "hidden lg:block"}><BoardPanel page={boardPages[pageIndex]} /></div>}
+          <section className={`${card} flex min-h-[60vh] flex-col ${hasBoard && view === "board" ? "hidden lg:flex" : ""}`} aria-label="Lesson">
             {hasPlan && (
               <p className="mb-3 rounded-xl bg-violet-500/10 px-3 py-2 text-xs font-medium text-violet-800 dark:text-violet-200 lg:hidden">
                 {started ? `Step ${current + 1} of ${outline.length}: ${outline[current].title}` : `${plural(outline.length, "step")} · ready to start`}
@@ -361,7 +378,6 @@ function ClassroomInner({ sessionId }) {
             {showPlanCard ? (
               <PreparePlan session={session} readyDocs={readyDocs} processingDocs={processingDocs} planning={planning} onPrepare={preparePlan} />
             ) : <>
-              <PageNav key={boardPages.length} pages={boardPages} />
               <div ref={listRef} className="mb-4 max-h-[60vh] min-h-[30vh] flex-1 space-y-5 overflow-y-auto pr-1">
                 {loading ? <p className="text-sm text-ink/50">Loading lesson…</p> : turns.length ? turns.map((turn) => (
                   <article key={turn.id} id={`turn-${turn.id}`} className={`scroll-mt-2 rounded-2xl p-4 ${turn.role === "STUDENT" ? "ml-8 bg-violet-500/10" : "mr-4 bg-ink/[0.035]"}`}>
@@ -404,6 +420,7 @@ function ClassroomInner({ sessionId }) {
               </form>
             </>}
           </section>
+          </div>
 
           <aside className="space-y-4">
             {hasPlan && <OutlinePanel objectives={objectives} outline={outline} current={current} started={started} />}
