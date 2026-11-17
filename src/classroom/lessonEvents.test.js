@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildBoard, readEvents, transcriptOf } from "./lessonEvents.js";
+import { buildBoard, pageIndexOf, readEvents, transcriptOf } from "./lessonEvents.js";
 import { currentEvent, initialPlayer, pagePosition, pageStarts, playedEvents, playerReducer } from "./lessonPlayer.js";
 
 const page = (id, title, stepIndex = 0) => ({ id, type: "BOARD_PAGE", stepIndex, title });
@@ -166,5 +166,15 @@ describe("playerReducer", () => {
   it("returns the same state for unknown actions", () => {
     const state = started();
     assert.equal(playerReducer(state, { type: "dance" }), state);
+  });
+});
+
+describe("pageIndexOf", () => {
+  it("finds the page a BOARD_PAGE event opened, and -1 otherwise", () => {
+    const pages = [{ key: "t1:e1" }, { key: "t1:e4" }, { key: "t2:e1" }];
+    assert.equal(pageIndexOf(pages, "t1", "e4"), 1);
+    assert.equal(pageIndexOf(pages, "t2", "e1"), 2);
+    assert.equal(pageIndexOf(pages, "t2", "e9"), -1);
+    for (const bad of [null, undefined, "x", {}]) assert.equal(pageIndexOf(bad, "t1", "e1"), -1);
   });
 });

@@ -13,7 +13,11 @@ import { blockSummary, normalizeBlock } from "./classroom/boardHelpers";
 import { boardFilename, boardToMarkdown, downloadText } from "./classroom/boardExport";
 import PageNav from "./classroom/PageNav";
 import SetupWizard from "./classroom/SetupWizard";
-import { buildBoard } from "./classroom/lessonEvents";
+import { buildBoard, pageIndexOf, readEvents } from "./classroom/lessonEvents";
+import useLessonVoice from "./classroom/useLessonVoice";
+import VoiceBar from "./classroom/VoiceBar";
+import { tutorState } from "./classroom/tutorState";
+import { browserStorage, loadVoicePrefs, saveVoicePrefs } from "./classroom/voicePrefs";
 import { DOC_STATUS, MODE_LABEL, currentStep, describeError, readObjectives, readOutline, shouldKeepRequestKey, sleep, isScan, pickDocuments, truncationNote } from "./classroom/classroomUtils";
 
 const card = "rounded-2xl border border-ink/10 bg-bg-elevated p-5 shadow-sm";
@@ -101,6 +105,25 @@ function ClassroomInner({ sessionId }) {
   const [askAbout, setAskAbout] = useState(null);
   const [printing, setPrinting] = useState(false);
   const questionInput = useRef(null);
+  // Voice (Phase E): settings live in this browser; playback follows the latest tutor reply.
+  const [voicePrefs, setVoicePrefs] = useState(() => loadVoicePrefs(browserStorage()));
+  const pagesRef = useRef([]);
+  const playingTurn = useRef(null);
+  const seenReply = useRef(undefined); // undefined until the lesson has loaded, so opening a lesson never starts speaking
+  const voice = useLessonVoice({
+    rate: voicePrefs.rate,
+    voiceName: voicePrefs.voiceName,
+    gender: session?.tutorVoice,
+    // As the tutor starts a board page, turn the whiteboard to it.
+    onEvent: (event) => {
+      if (event.type !== "BOARD_PAGE") return;
+      const index = pageIndexOf(pagesRef.current, playingTurn.current, event.id);
+      if (index >= 0) setPageChoice({ count: pagesRef.current.length, index });
+    },
+  });
+  function changeVoicePrefs(patch) {
+    setVoicePrefs((current) => { const next = { ...current, ...patch }; saveVoicePrefs(browserStorage(), next); return next; });
+  }
 
   useEffect(() => {
     alive.current = true;
@@ -200,6 +223,7 @@ function ClassroomInner({ sessionId }) {
   async function sendTurn(message, action = "ASK", boardRef = null) {
     const text = message.trim();
     if (!text || sending) return false;
+    voice.controls.stop(); // the tutor stops talking when the student speaks up
     const { ids, narrowed } = pickDocuments(documents, excluded);
     // The selection is part of the request, so changing it is a new send (new key), while retrying the same one reuses the key.
     const signature = `${action}\n${text}\n${narrowed ? ids.join(",") : ""}\n${boardRef ? `${boardRef.turnId}:${boardRef.eventId}` : ""}`;
@@ -315,6 +339,20 @@ function ClassroomInner({ sessionId }) {
   // Whiteboard pages rebuilt from the stored lesson events, so they are the same after a reload.
   const boardPages = buildBoard(turns);
   const hasBoard = boardPages.length > 0;
+  const latestReply = [...turns].reverse().find((turn) => turn.role === "TUTOR");
+  const replyEvents = readEvents(latestReply?.structuredLesson);
+  const { play: playReply } = voice.controls;
+  useEffect(() => {
+    pagesRef.current = boardPages;
+    if (loading) return;
+    const id = latestReply?.id ?? null;
+    if (seenReply.current === undefined) { seenReply.current = id; return; }
+    if (id === seenReply.current) return;
+    seenReply.current = id;
+    if (id && voicePrefs.autoSpeak && voice.supported && replyEvents.length) { playingTurn.current = id; playReply(replyEvents); }
+  });
+  const listen = () => { if (!latestReply || !replyEvents.length) return; playingTurn.current = latestReply.id; playReply(replyEvents); };
+  const caption = voice.event?.type === "SAY" ? voice.event.text : voice.event?.type === "CHECK" ? voice.event.question : "";
   const pageIndex = pageChoice.count === boardPages.length && pageChoice.index !== null ? Math.min(pageChoice.index, boardPages.length - 1) : boardPages.length - 1;
   const outline = readOutline(session);
   const objectives = readObjectives(session);
@@ -401,6 +439,16 @@ function ClassroomInner({ sessionId }) {
             {showPlanCard ? (
               <PreparePlan session={session} readyDocs={readyDocs} processingDocs={processingDocs} planning={planning} onPrepare={preparePlan} />
             ) : <>
+              {voice.supported && isClassroom && started && replyEvents.length > 0 && (
+                <VoiceBar
+                  state={tutorState({ sending, playerStatus: voice.player.status, speaking: voice.speaking })}
+                  status={voice.player.status} caption={caption} error={voice.error} canListen={!sending}
+                  rate={voicePrefs.rate} onRate={(rate) => changeVoicePrefs({ rate })}
+                  voices={voice.voices} voice={voice.voice} voiceName={voicePrefs.voiceName} onVoice={(voiceName) => changeVoicePrefs({ voiceName })}
+                  autoSpeak={voicePrefs.autoSpeak} onAutoSpeak={(autoSpeak) => changeVoicePrefs({ autoSpeak })}
+                  controls={voice.controls} onListen={listen}
+                />
+              )}
               <div ref={listRef} className="mb-4 max-h-[60vh] min-h-[30vh] flex-1 space-y-5 overflow-y-auto pr-1">
                 {loading ? <p className="text-sm text-ink/50">Loading lesson…</p> : turns.length ? turns.map((turn) => (
                   <article key={turn.id} id={`turn-${turn.id}`} className={`scroll-mt-2 rounded-2xl p-4 ${turn.role === "STUDENT" ? "ml-8 bg-violet-500/10" : "mr-4 bg-ink/[0.035]"}`}>
