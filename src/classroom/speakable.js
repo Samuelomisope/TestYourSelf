@@ -76,7 +76,7 @@ export function latexToSpeech(latex) {
   return spoken === null ? FALLBACK : spoken.replace(/\s+/g, " ").trim() || FALLBACK;
 }
 
-const EMOJI = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu;
+const EMOJI = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]|\u{FE0F}/gu;
 
 /** Plain text for speech: no Markdown, no citation markers, formulas spoken as words. Returns "" for nothing to say. */
 export function speakable(text) {
