@@ -19,6 +19,7 @@ import useSpeechInput from "./classroom/useSpeechInput";
 import { appendDictation } from "./classroom/speechInput";
 import VoiceBar from "./classroom/VoiceBar";
 import TutorStage from "./classroom/TutorStage";
+import useRendererChoice from "./classroom/useRendererChoice";
 import { tutorState } from "./classroom/tutorState";
 import { browserStorage, loadVoicePrefs, saveVoicePrefs } from "./classroom/voicePrefs";
 import { DOC_STATUS, MODE_LABEL, currentStep, describeError, readObjectives, readOutline, shouldKeepRequestKey, sleep, isScan, pickDocuments, truncationNote } from "./classroom/classroomUtils";
@@ -129,6 +130,14 @@ function ClassroomInner({ sessionId }) {
     onStart: () => voice.controls.stop(),
     onText: (words) => setQuestion((current) => appendDictation(current, words)),
   });
+  // The 3D tutor is a premium feature; the account's status comes from the billing endpoint (a failure just means 2D).
+  const [premium, setPremium] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    apiGet("/billing/status").then((status) => { if (!cancelled) setPremium(status?.isPremium === true); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+  const renderer = useRendererChoice({ premium, preference: voicePrefs.tutorView });
   function changeVoicePrefs(patch) {
     setVoicePrefs((current) => { const next = { ...current, ...patch }; saveVoicePrefs(browserStorage(), next); return next; });
   }
@@ -435,6 +444,7 @@ function ClassroomInner({ sessionId }) {
             <TutorStage
               state={tutorState({ sending, listening: speechInput.listening, playerStatus: voice.player.status, speaking: voice.speaking })}
               variant={session?.tutorVoice} visible={voicePrefs.showTutor} onToggle={() => changeVoicePrefs({ showTutor: !voicePrefs.showTutor })}
+              mode={renderer.mode} canChoose={renderer.canChoose} onView={(tutorView) => changeVoicePrefs({ tutorView })} onFail={renderer.fail}
             />
           )}
           <PageNav pages={boardPages} index={pageIndex} onChange={(index) => setPageChoice({ count: boardPages.length, index })} />
