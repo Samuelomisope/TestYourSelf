@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState, useSyncE
 import { currentEvent, initialPlayer, playerReducer } from "./lessonPlayer";
 import { createBrowserSpeech, pickVoice } from "./speechOutput";
 import { eventSpeech } from "./speakable";
+import { mouthCues, visemeForWord, wordAt } from "./lipSync";
 
 // One speech engine for the page; the browser has a single speech queue anyway.
 const speech = createBrowserSpeech();
@@ -46,7 +47,12 @@ export default function useLessonVoice({ rate = 1, voiceName = "", gender = "", 
       queueMicrotask(() => dispatch({ type: "finished", id: event.id }));
       return undefined;
     }
-    const handle = speech.speak(text, { voice, rate, onStart: () => setSpeaking(true) });
+    const handle = speech.speak(text, {
+      voice, rate,
+      onStart: () => setSpeaking(true),
+      // Each word the voice reports opens the animated tutor's mouth in that word's shape.
+      onBoundary: ({ charIndex }) => mouthCues.push(visemeForWord(wordAt(text, charIndex)), performance.now() / 1000),
+    });
     active.current = { id: event.id, handle };
     handle.done.then((result) => {
       if (active.current?.handle !== handle) return; // replaced or stopped meanwhile

@@ -3,8 +3,12 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
 import { modelAvailable, modelUrl } from "./avatarModel";
-import { initialMotion, stepMotion } from "./tutorMotion";
+import { initialMotion, stepMotion, talkRhythm } from "./tutorMotion";
+import { driveMouth, frameInterval, mouthCues, shouldDraw } from "./lipSync";
 import { armAngles, EXPRESSION_NAMES, expressionTargets } from "./vrmMotion";
+
+// What the mouth should do now: it follows the words the voice reports, or a talking rhythm when it reports none.
+const mouthFor = (state, seconds) => driveMouth(mouthCues, performance.now() / 1000, state === "speaking" || state === "explaining", 0.1 + 0.6 * talkRhythm(seconds));
 
 // The 3D tutor (Phase F). This file, and Three.js with it, is loaded only when a 3D tutor is shown. The character is
 // built from simple shapes for now; a modelled character replaces <Character> without changing anything around it.
@@ -23,7 +27,7 @@ function Character({ state, variant }) {
   const female = variant !== "MALE";
 
   useFrame(({ clock }, delta) => {
-    const v = stepMotion(now.current, state, delta, clock.elapsedTime);
+    const v = stepMotion(now.current, state, delta, clock.elapsedTime, mouthFor(state, clock.elapsedTime).amount);
     root.current.position.y = v.bob;
     head.current.rotation.z = v.headTilt;
     armLeft.current.rotation.z = v.armLeft * Math.PI * 0.95;
@@ -90,7 +94,8 @@ function VrmCharacter({ url, state, onReady, onError }) {
 
   useFrame(({ clock }, delta) => {
     if (!vrm) return;
-    const v = stepMotion(now.current, state, delta, clock.elapsedTime);
+    const mouthNow = mouthFor(state, clock.elapsedTime);
+    const v = stepMotion(now.current, state, delta, clock.elapsedTime, mouthNow.amount);
     const bone = (name) => vrm.humanoid?.getNormalizedBoneNode(name);
     const head = bone("head");
     if (head) head.rotation.z = v.headTilt;
@@ -99,7 +104,7 @@ function VrmCharacter({ url, state, onReady, onError }) {
     const right = bone("rightUpperArm");
     if (left) left.rotation.z = arms.left;
     if (right) right.rotation.z = arms.right;
-    const weights = expressionTargets(state, v.mouth, 1 - v.blink);
+    const weights = expressionTargets(state, v.mouth, 1 - v.blink, mouthNow.viseme);
     for (const name of EXPRESSION_NAMES) vrm.expressionManager?.setValue(name, weights[name] ?? 0);
     vrm.update(delta);
   });
@@ -111,10 +116,26 @@ function VrmCharacter({ url, state, onReady, onError }) {
 function Framing({ modelled }) {
   const camera = useThree((state) => state.camera);
   useEffect(() => {
-    if (modelled) { camera.position.set(0, 1.3, 2.3); camera.lookAt(0, 1.22, 0); }
+    if (modelled) { camera.position.set(0, 1.3, 1.9); camera.lookAt(0, 1.18, 0); }
     else { camera.position.set(0, 0.85, 6.4); camera.lookAt(0, 0.85, 0); }
     camera.updateProjectionMatrix();
   }, [camera, modelled]);
+  return null;
+}
+
+// Draws about 30 frames a second, and none while the tab is hidden or the tutor is scrolled out of view, so an idle
+// lesson does not drain a phone. The canvas only redraws when asked (frameloop="demand").
+function FrameLimiter({ fps = 30 }) {
+  const invalidate = useThree((state) => state.invalidate);
+  const element = useThree((state) => state.gl.domElement);
+  useEffect(() => {
+    let onScreen = true;
+    const observer = typeof IntersectionObserver === "function" ? new IntersectionObserver(([entry]) => { onScreen = entry.isIntersecting; }) : null;
+    observer?.observe(element);
+    const timer = window.setInterval(() => { if (shouldDraw({ hidden: document.hidden, onScreen })) invalidate(); }, frameInterval(fps));
+    invalidate();
+    return () => { window.clearInterval(timer); observer?.disconnect(); };
+  }, [fps, invalidate, element]);
   return null;
 }
 
@@ -132,6 +153,7 @@ export default function Tutor3DScene({ state, variant, onFail }) {
   const modelled = !!url && ready && !broken;
   return (
     <Canvas
+      frameloop="demand"
       dpr={[1, 1.5]}
       camera={{ position: [0, 0.85, 6.4], fov: 30 }}
       gl={{ antialias: true, powerPreference: "low-power" }}
@@ -143,6 +165,7 @@ export default function Tutor3DScene({ state, variant, onFail }) {
     >
       <ambientLight intensity={0.9} />
       <directionalLight position={[2, 3, 4]} intensity={1.6} />
+      <FrameLimiter />
       <Framing modelled={modelled} />
       {!modelled && <Character state={state} variant={variant} />}
       {url && !broken && <VrmCharacter key={url} url={url} state={state} onReady={() => setReady(true)} onError={() => setBroken(true)} />}

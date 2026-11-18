@@ -34,15 +34,17 @@ export const initialMotion = () => ({ headTilt: 0, armLeft: 0, armRight: 0, mout
 
 /**
  * One animation step for a character, shared by every renderer: moves `values` towards what `state` asks for.
- * `seconds` is the clock, `delta` the frame time. Returns `values` (changed in place) for convenience.
+ * `seconds` is the clock, `delta` the frame time. `mouthAmount` (0 to 1) overrides the talking rhythm while the tutor
+ * talks, so the mouth can follow the words. Returns `values` (changed in place) for convenience.
  */
-export function stepMotion(values, state, delta, seconds) {
+export function stepMotion(values, state, delta, seconds, mouthAmount = null) {
   const target = motionTargets(state);
   values.headTilt = approach(values.headTilt, target.headTilt, delta);
   values.armLeft = approach(values.armLeft, target.armLeft, delta, 6);
   values.armRight = approach(values.armRight, target.armRight, delta, 6);
   values.eyes = approach(values.eyes, target.eyes, delta, 14);
-  values.mouth = approach(values.mouth, target.talking ? 0.1 + 0.6 * talkRhythm(seconds) : target.mouth, delta, 18);
+  const talkingMouth = Number.isFinite(mouthAmount) ? mouthAmount : 0.1 + 0.6 * talkRhythm(seconds);
+  values.mouth = approach(values.mouth, target.talking ? talkingMouth : target.mouth, delta, 18);
   values.blink = Number.isFinite(seconds) && seconds % 4.2 > 4.05 ? 0.1 : 1; // eye openness: a short blink every few seconds
   values.bob = Math.sin((Number.isFinite(seconds) ? seconds : 0) * 1.4) * target.bob;
   return values;

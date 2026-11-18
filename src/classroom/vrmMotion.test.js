@@ -31,6 +31,12 @@ describe("expressionTargets", () => {
     assert.equal(expressionTargets("explaining", 0.3).aa, 0.3);
     for (const quiet of ["idle", "thinking", "listening", "celebrating", "paused"]) assert.equal(expressionTargets(quiet, 1).aa, undefined);
   });
+  it("shapes the mouth for the word being said, and falls back to aa for an unknown shape", () => {
+    assert.equal(expressionTargets("speaking", 0.5, 0, "oh").oh, 0.5);
+    assert.equal(expressionTargets("speaking", 0.5, 0, "oh").aa, undefined);
+    assert.equal(expressionTargets("speaking", 0.5, 0, "zz").aa, 0.5);
+    assert.equal(expressionTargets("idle", 0.5, 0, "oh").oh, undefined);
+  });
   it("shows the right mood for the state", () => {
     assert.equal(expressionTargets("celebrating").happy, 1);
     assert.ok(expressionTargets("listening").surprised > 0);
