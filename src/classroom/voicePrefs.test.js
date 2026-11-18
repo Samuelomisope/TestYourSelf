@@ -9,12 +9,12 @@ describe("voice preferences", () => {
 
   it("saves and reloads valid settings", () => {
     const storage = memory();
-    assert.equal(saveVoicePrefs(storage, { autoSpeak: true, rate: 1.25, voiceName: "Hazel", showTutor: false }), true);
-    assert.deepEqual(loadVoicePrefs(storage), { autoSpeak: true, rate: 1.25, voiceName: "Hazel", showTutor: false });
+    assert.equal(saveVoicePrefs(storage, { autoSpeak: true, rate: 1.25, voiceName: "Hazel", showTutor: false, tutorView: "3d" }), true);
+    assert.deepEqual(loadVoicePrefs(storage), { autoSpeak: true, rate: 1.25, voiceName: "Hazel", showTutor: false, tutorView: "3d" });
   });
 
   it("repairs damaged values instead of trusting them", () => {
-    assert.deepEqual(sanitizeVoicePrefs({ autoSpeak: "yes", rate: 9, voiceName: 5, showTutor: "no" }), DEFAULT_VOICE_PREFS); // only an explicit false hides the tutor
+    assert.deepEqual(sanitizeVoicePrefs({ autoSpeak: "yes", rate: 9, voiceName: 5, showTutor: "no", tutorView: "holo" }), DEFAULT_VOICE_PREFS); // only an explicit false hides the tutor
     assert.equal(sanitizeVoicePrefs({ voiceName: "x".repeat(500) }).voiceName.length, 200);
     for (const bad of [null, undefined, "x", 5, []]) assert.deepEqual(sanitizeVoicePrefs(bad), DEFAULT_VOICE_PREFS);
   });
