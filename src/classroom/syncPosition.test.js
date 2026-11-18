@@ -50,3 +50,13 @@ test("samePosition", () => {
   assert.ok(!samePosition(p, null));
   assert.ok(samePosition(null, null));
 });
+
+test("a page that is the very first event still owns the start", () => {
+  const first = [{ id: "e0", type: "BOARD_PAGE", stepIndex: 0, title: "P" }, { id: "e1", type: "SAY", text: "x" }];
+  assert.equal(pageEventAt({ events: first, index: 0, status: "playing" }).id, "e0");
+  assert.equal(pageEventAt({ events: first, index: 1, status: "playing" }).id, "e0");
+});
+
+test("event id is the last played one when stopped partway", () => {
+  assert.equal(eventIdAt({ events: ev, index: 3, status: "done" }), "e2");
+});
