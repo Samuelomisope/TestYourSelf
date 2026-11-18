@@ -1,6 +1,10 @@
-import { useRef } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { approach, motionTargets, talkRhythm } from "./tutorMotion";
+import { useEffect, useRef, useState } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
+import { modelAvailable, modelUrl } from "./avatarModel";
+import { initialMotion, stepMotion } from "./tutorMotion";
+import { armAngles, EXPRESSION_NAMES, expressionTargets } from "./vrmMotion";
 
 // The 3D tutor (Phase F). This file, and Three.js with it, is loaded only when a 3D tutor is shown. The character is
 // built from simple shapes for now; a modelled character replaces <Character> without changing anything around it.
@@ -15,26 +19,17 @@ function Character({ state, variant }) {
   const armRight = useRef();
   const mouth = useRef();
   const eyes = useRef();
-  const now = useRef({ headTilt: 0, armLeft: 0, armRight: 0, mouth: 0.08, eyes: 1 });
+  const now = useRef(initialMotion());
   const female = variant !== "MALE";
 
   useFrame(({ clock }, delta) => {
-    const target = motionTargets(state);
-    const t = clock.elapsedTime;
-    const v = now.current;
-    v.headTilt = approach(v.headTilt, target.headTilt, delta);
-    v.armLeft = approach(v.armLeft, target.armLeft, delta, 6);
-    v.armRight = approach(v.armRight, target.armRight, delta, 6);
-    v.eyes = approach(v.eyes, target.eyes, delta, 14);
-    v.mouth = approach(v.mouth, target.talking ? 0.1 + 0.6 * talkRhythm(t) : target.mouth, delta, 18);
-    // A blink every few seconds.
-    const blink = t % 4.2 > 4.05 ? 0.1 : 1;
-    root.current.position.y = Math.sin(t * 1.4) * target.bob;
+    const v = stepMotion(now.current, state, delta, clock.elapsedTime);
+    root.current.position.y = v.bob;
     head.current.rotation.z = v.headTilt;
     armLeft.current.rotation.z = v.armLeft * Math.PI * 0.95;
     armRight.current.rotation.z = -v.armRight * Math.PI * 0.95;
     mouth.current.scale.set(1, 0.4 + v.mouth * 1.6, 1);
-    eyes.current.scale.set(1, Math.max(0.1, v.eyes * blink), 1);
+    eyes.current.scale.set(1, Math.max(0.1, v.eyes * v.blink), 1);
   });
 
   return (
@@ -63,8 +58,78 @@ function Character({ state, variant }) {
   );
 }
 
+// A modelled tutor from a VRM file in /public/tutors. It loads in the background: the placeholder stays until the model
+// is ready, and stays for good if the file is missing or fails to load.
+function VrmCharacter({ url, state, onReady, onError }) {
+  const [vrm, setVrm] = useState(null);
+  const now = useRef(initialMotion());
+  const callbacks = useRef({ onReady, onError });
+  useEffect(() => { callbacks.current = { onReady, onError }; });
+
+  useEffect(() => {
+    let cancelled = false;
+    let loaded = null;
+    const loader = new GLTFLoader();
+    loader.register((parser) => new VRMLoaderPlugin(parser));
+    loader.load(
+      url,
+      (gltf) => {
+        const model = gltf.userData.vrm;
+        if (!model) { callbacks.current.onError?.(); return; }
+        if (cancelled) { VRMUtils.deepDispose(model.scene); return; }
+        VRMUtils.rotateVRM0(model); // old-format models face the other way
+        loaded = model;
+        setVrm(model);
+        callbacks.current.onReady?.();
+      },
+      undefined,
+      () => { if (!cancelled) callbacks.current.onError?.(); },
+    );
+    return () => { cancelled = true; if (loaded) VRMUtils.deepDispose(loaded.scene); };
+  }, [url]);
+
+  useFrame(({ clock }, delta) => {
+    if (!vrm) return;
+    const v = stepMotion(now.current, state, delta, clock.elapsedTime);
+    const bone = (name) => vrm.humanoid?.getNormalizedBoneNode(name);
+    const head = bone("head");
+    if (head) head.rotation.z = v.headTilt;
+    const arms = armAngles(v.armLeft, v.armRight);
+    const left = bone("leftUpperArm");
+    const right = bone("rightUpperArm");
+    if (left) left.rotation.z = arms.left;
+    if (right) right.rotation.z = arms.right;
+    const weights = expressionTargets(state, v.mouth, 1 - v.blink);
+    for (const name of EXPRESSION_NAMES) vrm.expressionManager?.setValue(name, weights[name] ?? 0);
+    vrm.update(delta);
+  });
+
+  return vrm ? <primitive object={vrm.scene} /> : null;
+}
+
+// Where the camera looks: the whole placeholder, or the head and chest of a real model (which is about 1.6 units tall).
+function Framing({ modelled }) {
+  const camera = useThree((state) => state.camera);
+  useEffect(() => {
+    if (modelled) { camera.position.set(0, 1.3, 2.3); camera.lookAt(0, 1.22, 0); }
+    else { camera.position.set(0, 0.85, 6.4); camera.lookAt(0, 0.85, 0); }
+    camera.updateProjectionMatrix();
+  }, [camera, modelled]);
+  return null;
+}
+
 /** The 3D scene. `onFail` is called if the graphics context is lost, so the page can fall back to the 2D tutor. */
 export default function Tutor3DScene({ state, variant, onFail }) {
+  const [url, setUrl] = useState(null); // the model file, once it is known to exist
+  const [ready, setReady] = useState(false);
+  const [broken, setBroken] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    const wanted = modelUrl(variant);
+    modelAvailable(wanted).then((ok) => { if (!cancelled && ok) setUrl(wanted); });
+    return () => { cancelled = true; setUrl(null); setReady(false); setBroken(false); };
+  }, [variant]);
+  const modelled = !!url && ready && !broken;
   return (
     <Canvas
       dpr={[1, 1.5]}
@@ -78,7 +143,9 @@ export default function Tutor3DScene({ state, variant, onFail }) {
     >
       <ambientLight intensity={0.9} />
       <directionalLight position={[2, 3, 4]} intensity={1.6} />
-      <Character state={state} variant={variant} />
+      <Framing modelled={modelled} />
+      {!modelled && <Character state={state} variant={variant} />}
+      {url && !broken && <VrmCharacter key={url} url={url} state={state} onReady={() => setReady(true)} onError={() => setBroken(true)} />}
     </Canvas>
   );
 }

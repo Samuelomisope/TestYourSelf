@@ -29,3 +29,21 @@ export function talkRhythm(seconds) {
   const t = Number.isFinite(seconds) ? seconds : 0;
   return Math.min(1, Math.max(0, 0.5 + 0.32 * Math.sin(t * 13) + 0.18 * Math.sin(t * 7.3 + 1)));
 }
+
+export const initialMotion = () => ({ headTilt: 0, armLeft: 0, armRight: 0, mouth: 0.08, eyes: 1, blink: 1, bob: 0 });
+
+/**
+ * One animation step for a character, shared by every renderer: moves `values` towards what `state` asks for.
+ * `seconds` is the clock, `delta` the frame time. Returns `values` (changed in place) for convenience.
+ */
+export function stepMotion(values, state, delta, seconds) {
+  const target = motionTargets(state);
+  values.headTilt = approach(values.headTilt, target.headTilt, delta);
+  values.armLeft = approach(values.armLeft, target.armLeft, delta, 6);
+  values.armRight = approach(values.armRight, target.armRight, delta, 6);
+  values.eyes = approach(values.eyes, target.eyes, delta, 14);
+  values.mouth = approach(values.mouth, target.talking ? 0.1 + 0.6 * talkRhythm(seconds) : target.mouth, delta, 18);
+  values.blink = Number.isFinite(seconds) && seconds % 4.2 > 4.05 ? 0.1 : 1; // eye openness: a short blink every few seconds
+  values.bob = Math.sin((Number.isFinite(seconds) ? seconds : 0) * 1.4) * target.bob;
+  return values;
+}

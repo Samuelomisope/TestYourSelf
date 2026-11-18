@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { approach, motionTargets, talkRhythm } from "./tutorMotion.js";
+import { approach, initialMotion, motionTargets, stepMotion, talkRhythm } from "./tutorMotion.js";
 import { TUTOR_STATES } from "./tutorState.js";
 
 describe("motionTargets", () => {
@@ -54,5 +54,31 @@ describe("talkRhythm", () => {
     assert.ok(values.every((v) => v >= 0 && v <= 1));
     assert.ok(Math.max(...values) - Math.min(...values) > 0.4);
     assert.equal(talkRhythm(NaN), talkRhythm(0));
+  });
+});
+
+describe("stepMotion", () => {
+  it("moves a character towards the state over several frames and settles", () => {
+    const values = initialMotion();
+    for (let i = 0; i < 120; i++) stepMotion(values, "celebrating", 0.016, i * 0.016);
+    const target = motionTargets("celebrating");
+    assert.ok(Math.abs(values.armLeft - target.armLeft) < 0.02);
+    assert.ok(Math.abs(values.eyes - target.eyes) < 0.02);
+  });
+  it("keeps the mouth moving while talking and still when not", () => {
+    const talking = initialMotion();
+    const mouths = [];
+    for (let i = 0; i < 100; i++) { stepMotion(talking, "speaking", 0.016, i * 0.016); mouths.push(talking.mouth); }
+    assert.ok(Math.max(...mouths.slice(30)) - Math.min(...mouths.slice(30)) > 0.2);
+    const quiet = initialMotion();
+    for (let i = 0; i < 100; i++) stepMotion(quiet, "paused", 0.016, i * 0.016);
+    assert.ok(Math.abs(quiet.mouth - motionTargets("paused").mouth) < 0.01);
+  });
+  it("blinks briefly on a regular beat and never throws on a bad clock", () => {
+    const v = initialMotion();
+    assert.equal(stepMotion(v, "idle", 0.016, 1).blink, 1);
+    assert.equal(stepMotion(v, "idle", 0.016, 4.1).blink, 0.1);
+    assert.doesNotThrow(() => stepMotion(v, "idle", 0.016, NaN));
+    assert.equal(stepMotion(v, "idle", 0.016, NaN).blink, 1);
   });
 });
