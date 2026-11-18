@@ -74,6 +74,14 @@ describe("stepMotion", () => {
     for (let i = 0; i < 100; i++) stepMotion(quiet, "paused", 0.016, i * 0.016);
     assert.ok(Math.abs(quiet.mouth - motionTargets("paused").mouth) < 0.01);
   });
+  it("follows a given mouth amount while talking instead of the rhythm, and ignores it when quiet", () => {
+    const talking = initialMotion();
+    for (let i = 0; i < 100; i++) stepMotion(talking, "speaking", 0.016, i * 0.016, 0.8);
+    assert.ok(Math.abs(talking.mouth - 0.8) < 0.02);
+    const quiet = initialMotion();
+    for (let i = 0; i < 100; i++) stepMotion(quiet, "idle", 0.016, i * 0.016, 0.8);
+    assert.ok(Math.abs(quiet.mouth - motionTargets("idle").mouth) < 0.02);
+  });
   it("blinks briefly on a regular beat and never throws on a bad clock", () => {
     const v = initialMotion();
     assert.equal(stepMotion(v, "idle", 0.016, 1).blink, 1);
