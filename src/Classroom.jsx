@@ -13,7 +13,8 @@ import { blockSummary, normalizeBlock } from "./classroom/boardHelpers";
 import { boardFilename, boardToMarkdown, downloadText } from "./classroom/boardExport";
 import PageNav from "./classroom/PageNav";
 import SetupWizard from "./classroom/SetupWizard";
-import { buildBoard, pageIndexOf, readEvents } from "./classroom/lessonEvents";
+import { buildBoard, readEvents } from "./classroom/lessonEvents";
+import { pageEventAt } from "./classroom/syncPosition";
 import useLessonVoice from "./classroom/useLessonVoice";
 import useSpeechInput from "./classroom/useSpeechInput";
 import { appendDictation } from "./classroom/speechInput";
@@ -118,12 +119,6 @@ function ClassroomInner({ sessionId }) {
     rate: voicePrefs.rate,
     voiceName: voicePrefs.voiceName,
     gender: session?.tutorVoice,
-    // As the tutor starts a board page, turn the whiteboard to it.
-    onEvent: (event) => {
-      if (event.type !== "BOARD_PAGE") return;
-      const index = pageIndexOf(pagesRef.current, playingTurn.current, event.id);
-      if (index >= 0) setPageChoice({ count: pagesRef.current.length, index });
-    },
   });
   // Dictation fills the question box (the student reads it and presses Send); starting it silences the tutor.
   const speechInput = useSpeechInput({
@@ -371,6 +366,19 @@ function ClassroomInner({ sessionId }) {
     if (id && voicePrefs.autoSpeak && voice.supported && replyEvents.length) { playingTurn.current = id; playReply(replyEvents); }
   });
   const listen = () => { if (!latestReply || !replyEvents.length) return; playingTurn.current = latestReply.id; playReply(replyEvents); };
+  // The whiteboard follows the player: whatever moves it (speech, skip, back, replay) turns the board to the page that
+  // owns the current event. It only acts when that page changes, so a page the student picked by hand stays put.
+  const lastOwner = useRef(null);
+  const { player: lessonPlayer } = voice;
+  useEffect(() => {
+    const owner = pageEventAt(lessonPlayer);
+    const key = owner ? `${playingTurn.current}:${owner.id}` : null;
+    if (key === lastOwner.current) return;
+    lastOwner.current = key;
+    if (!key) return;
+    const index = pagesRef.current.findIndex((page) => page.key === key);
+    if (index >= 0) setPageChoice({ count: pagesRef.current.length, index });
+  }, [lessonPlayer]);
   const caption = voice.event?.type === "SAY" ? voice.event.text : voice.event?.type === "CHECK" ? voice.event.question : "";
   const pageIndex = pageChoice.count === boardPages.length && pageChoice.index !== null ? Math.min(pageChoice.index, boardPages.length - 1) : boardPages.length - 1;
   const outline = readOutline(session);
