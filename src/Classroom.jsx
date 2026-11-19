@@ -396,6 +396,12 @@ function ClassroomInner({ sessionId }) {
   const [resumeOffer, setResumeOffer] = useState(null);
   // The step check-in (Phase H): which step it is open for, and whether the tutor is celebrating a good score.
   const [checkStep, setCheckStep] = useState(null);
+  const [checks, setChecks] = useState([]);
+  const loadChecks = useCallback(() => {
+    if (!sessionId) return;
+    apiGet(`/classroom/sessions/${sessionId}/assessments`).then((list) => { if (alive.current && Array.isArray(list)) setChecks(list); }).catch(() => {}); // progress is a nicety; the lesson never depends on it
+  }, [sessionId]);
+  useEffect(() => { if (isClassroom && hasPlan) { const timer = window.setTimeout(loadChecks, 0); return () => window.clearTimeout(timer); } return undefined; }, [isClassroom, hasPlan, loadChecks]);
   const [celebrating, setCelebrating] = useState(false);
   useEffect(() => {
     if (!celebrating) return undefined;
@@ -581,8 +587,8 @@ function ClassroomInner({ sessionId }) {
                   </button>
                 </div>
               )}
-              {isClassroom && hasPlan && started && checkStep !== null && checkStep === current && (
-                <CheckIn key={checkStep} sessionId={sessionId} stepIndex={checkStep} stepTitle={outline[checkStep]?.title} onScore={setCelebrating} onClose={() => setCheckStep(null)} />
+              {isClassroom && hasPlan && started && checkStep !== null && checkStep <= current && (
+                <CheckIn key={checkStep} sessionId={sessionId} stepIndex={checkStep} stepTitle={outline[checkStep]?.title} onScore={(celebrate) => { setCelebrating(celebrate); loadChecks(); }} onClose={() => setCheckStep(null)} />
               )}
               {processingDocs > 0 && (
                 <p role="status" className="mb-2 text-xs text-amber-800 dark:text-amber-300">
@@ -614,7 +620,7 @@ function ClassroomInner({ sessionId }) {
           </div>
 
           <aside className="space-y-4">
-            {hasPlan && <OutlinePanel objectives={objectives} outline={outline} current={current} started={started} />}
+            {hasPlan && <OutlinePanel objectives={objectives} outline={outline} current={current} started={started} checks={checks} onCheck={started ? setCheckStep : undefined} />}
             <section className={card}>
               <h2 className="font-bold">Class materials</h2>
               <label className="mt-3 block cursor-pointer rounded-xl border border-dashed border-violet-500/30 p-4 text-center text-sm text-violet-700 transition hover:bg-violet-500/5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-violet-500 dark:text-violet-300">
