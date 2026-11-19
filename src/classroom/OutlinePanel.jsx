@@ -40,7 +40,7 @@ export default function OutlinePanel({ objectives, outline, current, started, ch
             {weak.map((c) => (
               <li key={c.stepIndex} className="flex items-center justify-between gap-2 text-sm">
                 <span className="min-w-0 truncate">{c.stepIndex + 1}. {outline[c.stepIndex]?.title ?? c.stepTitle}: {percentOf(c.best)}%</span>
-                {onCheck && <button type="button" onClick={() => onCheck(c.stepIndex)} className="shrink-0 rounded-lg border border-amber-600/40 px-2.5 py-1 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-violet-500">Check again</button>}
+                {onCheck && <button type="button" onClick={() => onCheck(c.stepIndex)} className="min-h-9 shrink-0 rounded-lg border border-amber-600/40 px-3 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-violet-500">Check again</button>}
               </li>
             ))}
           </ul>
