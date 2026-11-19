@@ -15,6 +15,7 @@ import PageNav from "./classroom/PageNav";
 import SetupWizard from "./classroom/SetupWizard";
 import { buildBoard, readEvents } from "./classroom/lessonEvents";
 import { pageEventAt, resumePosition } from "./classroom/syncPosition";
+import CheckIn from "./classroom/CheckIn";
 import { offerResume, readMark, shouldSave, writeMark } from "./classroom/resumeSync";
 import useLessonVoice from "./classroom/useLessonVoice";
 import useSpeechInput from "./classroom/useSpeechInput";
@@ -392,6 +393,14 @@ function ClassroomInner({ sessionId }) {
   const atLastStep = hasPlan && current >= outline.length - 1;
   // Continue across devices (Phase G): save where the student is, and offer a position saved from another device.
   const [resumeOffer, setResumeOffer] = useState(null);
+  // The step check-in (Phase H): which step it is open for, and whether the tutor is celebrating a good score.
+  const [checkStep, setCheckStep] = useState(null);
+  const [celebrating, setCelebrating] = useState(false);
+  useEffect(() => {
+    if (!celebrating) return undefined;
+    const timer = window.setTimeout(() => setCelebrating(false), 4000);
+    return () => window.clearTimeout(timer);
+  }, [celebrating]);
   const offerChecked = useRef(false);
   const lastSaved = useRef(null);
   const savedFor = useRef(null);
@@ -493,7 +502,7 @@ function ClassroomInner({ sessionId }) {
           <div className="min-w-0 space-y-4">
           {isClassroom && (
             <TutorStage
-              state={tutorState({ sending, listening: speechInput.listening, playerStatus: voice.player.status, speaking: voice.speaking })}
+              state={tutorState({ sending, listening: speechInput.listening, celebrating, playerStatus: voice.player.status, speaking: voice.speaking })}
               variant={session?.tutorVoice} visible={voicePrefs.showTutor} onToggle={() => changeVoicePrefs({ showTutor: !voicePrefs.showTutor })}
               mode={renderer.mode} canChoose={renderer.canChoose} onView={(tutorView) => changeVoicePrefs({ tutorView })} onFail={renderer.fail}
             />
@@ -527,7 +536,7 @@ function ClassroomInner({ sessionId }) {
             ) : <>
               {voice.supported && isClassroom && started && replyEvents.length > 0 && (
                 <VoiceBar
-                  state={tutorState({ sending, listening: speechInput.listening, playerStatus: voice.player.status, speaking: voice.speaking })}
+                  state={tutorState({ sending, listening: speechInput.listening, celebrating, playerStatus: voice.player.status, speaking: voice.speaking })}
                   status={voice.player.status} caption={caption} error={voice.error} canListen={!sending}
                   rate={voicePrefs.rate} onRate={(rate) => changeVoicePrefs({ rate })}
                   voices={voice.voices} voice={voice.voice} voiceName={voicePrefs.voiceName} onVoice={(voiceName) => changeVoicePrefs({ voiceName })}
@@ -564,7 +573,13 @@ function ClassroomInner({ sessionId }) {
                   <button onClick={() => sendTurn(atLastStep ? "Recap and wrap up the lesson." : "Continue to the next step.", "CONTINUE")} disabled={sending} className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:opacity-50">
                     {atLastStep ? "Recap and finish" : "Continue to next step"}
                   </button>
+                  <button type="button" onClick={() => setCheckStep(current)} disabled={sending || checkStep === current} className="ml-2 rounded-xl border border-violet-500/40 px-4 py-2 text-sm font-semibold text-violet-800 transition hover:bg-violet-500/10 disabled:opacity-50 dark:text-violet-200">
+                    Check my understanding
+                  </button>
                 </div>
+              )}
+              {isClassroom && hasPlan && started && checkStep !== null && checkStep === current && (
+                <CheckIn key={checkStep} sessionId={sessionId} stepIndex={checkStep} stepTitle={outline[checkStep]?.title} onScore={setCelebrating} onClose={() => setCheckStep(null)} />
               )}
               {processingDocs > 0 && (
                 <p role="status" className="mb-2 text-xs text-amber-800 dark:text-amber-300">
