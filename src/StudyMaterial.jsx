@@ -14,6 +14,8 @@ import { faFile as farFile } from '@fortawesome/free-regular-svg-icons';
 import { UploadModal } from "./UploadModal";
 import { createNotification } from "./notifications";
 import { useOfflineDownload } from "./useOfflineDownload";
+import PdfViewer from "./library/PdfViewer";
+import { canViewInApp, downloadName } from "./library/pdfPages.js";
 import { listDownloadedMaterials, getOfflineBlobUrl } from "./offlineStorage";
 import { useParams } from "react-router-dom";
 import { trackEvent } from "./api";
@@ -325,6 +327,10 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
     }
   };
 
+  const [showViewer, setShowViewer] = useState(false);
+  const [previewOn, setPreviewOn] = useState(false);
+  const [savingToDevice, setSavingToDevice] = useState(false);
+  const [saveToDeviceError, setSaveToDeviceError] = useState("");
   const [resolvedUrl, setResolvedUrl] = useState(file.signedUrl || null);
   const [resolvingUrl, setResolvingUrl] = useState(!file.signedUrl);
 
@@ -396,6 +402,27 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
       setSaveError("Could not save changes. Try again.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  // A real download: an offline copy saves straight from the device; otherwise the server gives a link that makes the
+  // browser save the file instead of displaying it.
+  const saveToDevice = async () => {
+    setSaveToDeviceError("");
+    setSavingToDevice(true);
+    try {
+      if (resolvedUrl?.startsWith("blob:")) {
+        const a = document.createElement("a");
+        a.href = resolvedUrl; a.download = downloadName(file.title, file.fileType);
+        document.body.appendChild(a); a.click(); a.remove();
+      } else {
+        const { url } = await apiGet(`/study-material/${file.id}/download-url`);
+        window.location.assign(url);
+      }
+    } catch {
+      setSaveToDeviceError("Couldn't start the download. Try Open instead, then save from there.");
+    } finally {
+      setSavingToDevice(false);
     }
   };
 
@@ -477,9 +504,16 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
               )}
 
               {!resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "pdf" && (
-                <div className="mb-4 rounded-xl overflow-hidden border border-ink/10" style={{ height: 300 }}>
-                  <iframe src={resolvedUrl} className="w-full h-full" title={file.title} />
-                </div>
+                previewOn ? (
+                  <div className="mb-4 rounded-xl overflow-hidden border border-ink/10" style={{ height: 300 }}>
+                    <iframe src={resolvedUrl} className="w-full h-full" title={file.title} />
+                  </div>
+                ) : (
+                  <button onClick={() => setPreviewOn(true)} className="mb-4 w-full rounded-xl border border-dashed border-ink/15 py-6 text-sm text-ink/50 transition hover:border-violet-500/40 hover:text-violet-400">
+                    Show a quick preview
+                    <span className="mt-1 block text-xs text-ink/30">Loads the file, so it uses data</span>
+                  </button>
+                )
               )}
               {!resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "video" && (
                 <div className="mb-4 rounded-xl overflow-hidden bg-black">
@@ -489,9 +523,17 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
 
               {!resolvingUrl && resolvedUrl && (
   <div className="flex gap-3 mb-3">
-    <a href={resolvedUrl} target="_blank" rel="noopener noreferrer" className="flex-1 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium text-center transition">Open</a>
-    <a href={resolvedUrl} download={file.title} className="flex-1 py-2.5 border border-violet-500/30 text-violet-400 rounded-xl text-sm font-medium text-center hover:bg-violet-500/10 transition">Download</a>
+    {canViewInApp(file.fileType)
+      ? <button onClick={() => setShowViewer(true)} className="flex-1 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium text-center transition">Open</button>
+      : <a href={resolvedUrl} target="_blank" rel="noopener noreferrer" className="flex-1 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium text-center transition">Open</a>}
+    <button onClick={saveToDevice} disabled={savingToDevice} className="flex-1 py-2.5 border border-violet-500/30 text-violet-400 rounded-xl text-sm font-medium text-center hover:bg-violet-500/10 transition disabled:opacity-60">{savingToDevice ? "Preparing…" : "Download"}</button>
   </div>
+)}
+
+{saveToDeviceError && <p role="alert" className="mb-2 text-xs text-pink-400">{saveToDeviceError}</p>}
+{showViewer && resolvedUrl && (
+  <PdfViewer url={resolvedUrl} title={file.title} onClose={() => setShowViewer(false)} onDownload={saveToDevice}
+    onFallback={() => { setShowViewer(false); window.open(resolvedUrl, "_blank", "noopener,noreferrer"); }} />
 )}
 
 {!resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "pdf" && (
