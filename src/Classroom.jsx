@@ -25,6 +25,7 @@ import VoiceBar from "./classroom/VoiceBar";
 import TutorStage from "./classroom/TutorStage";
 import useRendererChoice from "./classroom/useRendererChoice";
 import { tutorState } from "./classroom/tutorState";
+import ErrorNotice from "./classroom/QuotaNotice";
 import { browserStorage, loadVoicePrefs, saveVoicePrefs } from "./classroom/voicePrefs";
 import { DOC_STATUS, MODE_LABEL, currentStep, describeError, readObjectives, readOutline, shouldKeepRequestKey, sleep, isScan, pickDocuments, truncationNote } from "./classroom/classroomUtils";
 
@@ -35,10 +36,6 @@ const REPLY_POLL_MS = 2500;
 const REPLY_WAIT_MS = 90_000;
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
-
-function ErrorLine({ children }) {
-  return children ? <p role="alert" className="mt-3 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">{children}</p> : null;
-}
 
 function RenameForm({ initial, onSave, onCancel }) {
   const [title, setTitle] = useState(initial);
@@ -472,7 +469,7 @@ function ClassroomInner({ sessionId }) {
         <section className={`${card} mb-8`} aria-labelledby="new-lesson">
           <h2 id="new-lesson" className="mb-4 text-lg font-bold">Start a lesson</h2>
           <SetupWizard onCreate={createSession} busy={busy} />
-          <ErrorLine>{error}</ErrorLine>
+          <ErrorNotice error={error} premium={premium} />
         </section>
         <section>
           <h2 className="mb-3 text-lg font-bold">Your lessons</h2>
@@ -492,7 +489,7 @@ function ClassroomInner({ sessionId }) {
               ))}
             </div>
           ) : <div className={card}><p className="text-sm text-ink/55">No saved lessons yet. Start with a topic above.</p></div>}
-          {!sessions.length && !loading && <ErrorLine>{error}</ErrorLine>}
+          {!sessions.length && !loading && <ErrorNotice error={error} premium={premium} />}
         </section>
       </> : <>
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -506,7 +503,7 @@ function ClassroomInner({ sessionId }) {
             <button onClick={() => setDialog("delete")} disabled={busy || !session} className="rounded-lg border border-red-500/20 px-3 py-2 text-sm text-red-600 transition hover:bg-red-500/5 disabled:opacity-50 dark:text-red-400">Delete lesson</button>
           </div>
         </div>
-        <ErrorLine>{error}</ErrorLine>
+        <ErrorNotice error={error} premium={premium} />
         <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className="min-w-0 space-y-4">
           {isClassroom && (
