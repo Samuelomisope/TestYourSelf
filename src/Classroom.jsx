@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Mic, Square, X } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import Navbar from "./Navbar";
-import { apiDelete, apiGet, apiPatch, apiPost, apiPostForm } from "./api";
+import { apiDelete, apiGet, apiPatch, apiPost, apiPostForm, apiPut } from "./api";
 import Dialog from "./classroom/Dialog";
 import LessonView from "./classroom/LessonView";
 import Md from "./classroom/Markdown";
@@ -14,7 +14,8 @@ import { boardFilename, boardToMarkdown, downloadText } from "./classroom/boardE
 import PageNav from "./classroom/PageNav";
 import SetupWizard from "./classroom/SetupWizard";
 import { buildBoard, readEvents } from "./classroom/lessonEvents";
-import { pageEventAt } from "./classroom/syncPosition";
+import { pageEventAt, resumePosition } from "./classroom/syncPosition";
+import { offerResume, readMark, shouldSave, writeMark } from "./classroom/resumeSync";
 import useLessonVoice from "./classroom/useLessonVoice";
 import useSpeechInput from "./classroom/useSpeechInput";
 import { appendDictation } from "./classroom/speechInput";
@@ -389,6 +390,48 @@ function ClassroomInner({ sessionId }) {
   const started = turns.some((turn) => turn.role === "TUTOR");
   const current = currentStep(session, outline.length);
   const atLastStep = hasPlan && current >= outline.length - 1;
+  // Continue across devices (Phase G): save where the student is, and offer a position saved from another device.
+  const [resumeOffer, setResumeOffer] = useState(null);
+  const offerChecked = useRef(false);
+  const lastSaved = useRef(null);
+  const savedFor = useRef(null);
+  const position = isClassroom && hasPlan && started ? resumePosition({ stepIndex: current, player: voice.player, boardPage: pageIndex, stepCount: outline.length }) : null;
+  const positionKey = position ? `${position.stepIndex}|${position.boardPage}` : "";
+  useEffect(() => {
+    if (loading || offerChecked.current || !session || !isClassroom || !hasPlan) return undefined;
+    offerChecked.current = true;
+    const mark = readMark(browserStorage(), sessionId);
+    lastSaved.current = mark;
+    const offer = offerResume({ resume: session.resume, mark, stepCount: outline.length, pageCount: boardPages.length, currentStep: current });
+    // Deferred a tick, like the other loads here, so state is not set while this render commits.
+    window.setTimeout(() => { if (offer && alive.current) setResumeOffer(offer); }, 0);
+    return undefined;
+  }, [loading, session, isClassroom, hasPlan, sessionId, outline.length, boardPages.length, current]);
+  useEffect(() => {
+    // While an offer is waiting, saving would overwrite the very position it offers.
+    if (!position || resumeOffer || !offerChecked.current) return undefined;
+    savedFor.current = position;
+    const save = () => {
+      const next = savedFor.current;
+      if (!next || !shouldSave(next, lastSaved.current)) return;
+      lastSaved.current = next;
+      apiPut(`/classroom/sessions/${sessionId}/resume`, { stepIndex: next.stepIndex, boardPage: next.boardPage, ...(next.eventId ? { eventId: next.eventId } : {}) })
+        .then(() => writeMark(browserStorage(), sessionId, next))
+        .catch(() => { if (lastSaved.current === next) lastSaved.current = null; }); // a failed save is retried on the next change
+    };
+    const timer = window.setTimeout(save, 2000);
+    const onHide = () => { if (document.visibilityState === "hidden") save(); };
+    document.addEventListener("visibilitychange", onHide);
+    return () => { window.clearTimeout(timer); document.removeEventListener("visibilitychange", onHide); };
+  }, [positionKey, resumeOffer, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const answerResume = (accept) => {
+    const offer = resumeOffer;
+    setResumeOffer(null);
+    if (!offer) return;
+    writeMark(browserStorage(), sessionId, offer);
+    lastSaved.current = offer;
+    if (accept && boardPages.length) { setPageChoice({ count: boardPages.length, index: Math.min(offer.boardPage, boardPages.length - 1) }); setView("board"); }
+  };
   const readyDocs = documents.filter((doc) => doc.status === "READY").length;
   const selection = pickDocuments(documents, excluded);
   const choosingDocs = selection.ready.length > 1;
@@ -454,6 +497,15 @@ function ClassroomInner({ sessionId }) {
               variant={session?.tutorVoice} visible={voicePrefs.showTutor} onToggle={() => changeVoicePrefs({ showTutor: !voicePrefs.showTutor })}
               mode={renderer.mode} canChoose={renderer.canChoose} onView={(tutorView) => changeVoicePrefs({ tutorView })} onFail={renderer.fail}
             />
+          )}
+          {resumeOffer && (
+            <div role="region" aria-label="Continue where you left off" className="flex flex-wrap items-center gap-2 rounded-2xl border border-violet-500/30 bg-violet-500/10 px-4 py-3 text-sm">
+              <p className="min-w-0 flex-1 font-medium text-ink">
+                Continue from step {resumeOffer.stepIndex + 1}{outline[resumeOffer.stepIndex] ? `: ${outline[resumeOffer.stepIndex].title}` : ""}, where you left off on another device?
+              </p>
+              <button type="button" onClick={() => answerResume(true)} className="rounded-lg bg-violet-600 px-3 py-1.5 font-semibold text-white focus-visible:outline-2 focus-visible:outline-violet-500">Continue</button>
+              <button type="button" onClick={() => answerResume(false)} className="rounded-lg px-3 py-1.5 font-semibold text-ink/70 focus-visible:outline-2 focus-visible:outline-violet-500">Not now</button>
+            </div>
           )}
           <PageNav pages={boardPages} index={pageIndex} onChange={(index) => setPageChoice({ count: boardPages.length, index })} />
           {hasBoard && (
