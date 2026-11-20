@@ -1,6 +1,7 @@
 import { getAccessToken } from "./token";
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { missedDeckTitle, missedToCards } from "./library/missedCards.js";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faHouse,
@@ -274,8 +275,8 @@ function CameraModal({ onCapture, onClose }) {
 }
 
 // ─── Quiz Tab ─────────────────────────────────────────────────────────────────
-function QuizTab() {
-  const [mode, setMode] = useState("text"); // "text" | "upload" | "scan" | "library"
+function QuizTab({ presetMaterial = null }) {
+  const [mode, setMode] = useState(presetMaterial ? "library" : "text"); // "text" | "upload" | "scan" | "library"
   const [text, setText] = useState("");
   const [count, setCount] = useState("5");
   const [difficulty, setDifficulty] = useState("Medium");
@@ -291,13 +292,15 @@ function QuizTab() {
   // Library state
   const [materials, setMaterials] = useState([]);
   const [materialsLoading, setMaterialsLoading] = useState(false);
-  const [selectedMaterial, setSelectedMaterial] = useState(null); // full material object
+  const [selectedMaterial, setSelectedMaterial] = useState(presetMaterial); // full material object
+  const [savedDeck, setSavedDeck] = useState("idle"); // "idle" | "saving" | "saved" | "error"
 
 const fileInputRef = useRef(null);
 const quizCtxRef = useRef(null); // timing + ids for the quiz in progress
 
 function beginQuiz(qs, ctx = {}) {
   setQuestions(qs);
+  setSavedDeck("idle");
   setAnswers({});
   const now = Date.now();
   quizCtxRef.current = { ...ctx, startedAt: now, lastAt: now };
@@ -421,6 +424,17 @@ useEffect(() => {
 
   const score = questions.filter((q, i) => answers[i] === q.answer).length;
   const allDone = questions.length > 0 && Object.keys(answers).length === questions.length;
+  const missed = allDone ? missedToCards(questions, answers) : [];
+
+  async function saveMissed() {
+    setSavedDeck("saving");
+    try {
+      await apiPost("/flashcards/decks", { title: missedDeckTitle(selectedMaterial?.title), description: "Made from questions you missed in a quiz.", isPublic: false, cards: missed, sourceType: "MANUAL" });
+      setSavedDeck("saved");
+    } catch {
+      setSavedDeck("error");
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -519,13 +533,13 @@ useEffect(() => {
             <select
               value={selectedMaterial?.id || ""}
               onChange={(e) => {
-                const mat = materials.find((m) => m.id === e.target.value);
+                const mat = [presetMaterial, ...materials].find((m) => m?.id === e.target.value);
                 setSelectedMaterial(mat || null);
               }}
               className="w-full bg-black/40 border border-ink/10 rounded-2xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
             >
               <option value="">Select a material…</option>
-              {materials.map((m) => (
+              {(presetMaterial && !materials.some((m) => m.id === presetMaterial.id) ? [presetMaterial, ...materials] : materials).map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.title}
                 </option>
@@ -620,13 +634,25 @@ useEffect(() => {
               ? "Good job! Keep it up!"
               : "Keep studying, you've got this!"}
           </p>
+          {missed.length > 0 && (
+            <div className="mt-3">
+              {savedDeck === "saved" ? (
+                <Link to="/flashcards?tab=mine" className="text-sm font-semibold underline">Saved. Open your flashcards</Link>
+              ) : (
+                <button onClick={saveMissed} disabled={savedDeck === "saving"} className="min-h-10 rounded-xl bg-white/15 px-4 text-sm font-semibold hover:bg-white/25 disabled:opacity-60">
+                  {savedDeck === "saving" ? "Saving…" : `Save ${missed.length} missed ${missed.length === 1 ? "question" : "questions"} as flashcards`}
+                </button>
+              )}
+              {savedDeck === "error" && <p role="alert" className="mt-2 text-sm font-normal">Couldn't save them. Make sure your university is set in your profile, then try again.</p>}
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-function ToolModal({ tool, onClose }) {
+function ToolModal({ tool, onClose, material = null }) {
   const TITLES = {
     quiz: "Quiz",
     explain: "Explain",
@@ -645,7 +671,7 @@ function ToolModal({ tool, onClose }) {
         </button>
       </div>
       <div className="flex-1 overflow-y-auto px-4 py-6 max-w-2xl mx-auto w-full">
-        {tool === "quiz" && <QuizTab />}
+        {tool === "quiz" && <QuizTab presetMaterial={material} />}
         {tool === "explain" && <ExplainTab />}
         {tool === "revision" && <RevisionTab />}
         {tool === "practice" && <PracticeTab />}
@@ -2183,7 +2209,7 @@ function HistoryPanel({ onClose, onSelectChat }) {
 function AI() {
   const location = useLocation();
   const [showHistory, setShowHistory] = useState(false);
-  const [activeTool, setActiveTool] = useState(null); // null | "quiz" | "explain" | "revision" | "practice" | "summarize" | "plan"
+  const [activeTool, setActiveTool] = useState(location.state?.openTool === "quiz" ? "quiz" : null); // null | "quiz" | "explain" | "revision" | "practice" | "summarize" | "plan"
   const preloadedFile = location.state?.preloadedFile || null;
   const [restoreChatItem, setRestoreChatItem] = useState(null);
 
@@ -2197,7 +2223,7 @@ function AI() {
         <HistoryPanel onClose={() => setShowHistory(false)} onSelectChat={handleSelectChat} />
       )}
       {activeTool && (
-        <ToolModal tool={activeTool} onClose={() => setActiveTool(null)} />
+        <ToolModal tool={activeTool} material={location.state?.material || null} onClose={() => setActiveTool(null)} />
       )}
 
       <div className="fixed inset-0 pointer-events-none overflow-hidden">

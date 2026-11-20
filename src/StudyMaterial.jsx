@@ -328,6 +328,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
     }
   };
 
+  const navigate = useNavigate();
   const [showViewer, setShowViewer] = useState(false);
   const [previewOn, setPreviewOn] = useState(false);
   const [savingToDevice, setSavingToDevice] = useState(false);
@@ -540,6 +541,12 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
 {showViewer && resolvedUrl && (
   <PdfViewer url={resolvedUrl} title={file.title} initialPage={initialPage} onPage={rememberPage} onClose={() => setShowViewer(false)} onDownload={saveToDevice}
     onFallback={() => { setShowViewer(false); window.open(resolvedUrl, "_blank", "noopener,noreferrer"); }} />
+)}
+
+{!resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "pdf" && (
+  <button onClick={() => navigate("/ai", { state: { openTool: "quiz", material: file } })} className="mb-3 w-full min-h-11 rounded-xl border border-violet-500/30 text-sm font-medium text-violet-400 transition hover:bg-violet-500/10">
+    Test me on this
+  </button>
 )}
 
 {!resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "pdf" && (
