@@ -54,8 +54,8 @@ export function boardFilename(title) {
 }
 
 /** Saves text as a file in the browser. Browser-only; not covered by the node tests. */
-export function downloadText(filename, text) {
-  const url = URL.createObjectURL(new Blob([text], { type: "text/markdown;charset=utf-8" }));
+export function downloadText(filename, text, type = "text/markdown") {
+  const url = URL.createObjectURL(new Blob([text], { type: `${type};charset=utf-8` }));
   const link = document.createElement("a");
   link.href = url;
   link.download = filename;

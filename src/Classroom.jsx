@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Mic, Square, X } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import Navbar from "./Navbar";
 import { apiDelete, apiGet, apiPatch, apiPost, apiPostForm, apiPut } from "./api";
 import Dialog from "./classroom/Dialog";
@@ -16,6 +16,7 @@ import SetupWizard from "./classroom/SetupWizard";
 import { buildBoard, readEvents } from "./classroom/lessonEvents";
 import { pageEventAt, resumePosition } from "./classroom/syncPosition";
 import CheckIn from "./classroom/CheckIn";
+import ResumeNudge from "./classroom/ResumeNudge";
 import { offerResume, readMark, shouldSave, writeMark } from "./classroom/resumeSync";
 import useLessonVoice from "./classroom/useLessonVoice";
 import useSpeechInput from "./classroom/useSpeechInput";
@@ -459,7 +460,9 @@ function ClassroomInner({ sessionId }) {
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-600 dark:text-violet-400">UniLib learning</p>
           <h1 className="mt-2 text-3xl font-black">AI Classroom</h1>
           <p className="mt-2 max-w-xl text-sm text-ink/55">Start a guided lesson, attach your notes, and return to saved lessons whenever you’re ready.</p>
+          <Link to="/classroom/learning" className="mt-3 inline-block text-sm font-semibold text-violet-600 dark:text-violet-400">My learning and progress →</Link>
         </header>
+        <ResumeNudge />
         <section className={`${card} mb-8`} aria-labelledby="new-lesson">
           <h2 id="new-lesson" className="mb-4 text-lg font-bold">Start a lesson</h2>
           <SetupWizard onCreate={createSession} busy={busy} />
