@@ -94,3 +94,24 @@ test("study summary wording and helpers", () => {
   assert.equal(topDueDeck({ decks: [{ deckId: "a", due: 0 }] }), null);
   assert.equal(topDueDeck(undefined), null);
 });
+
+import { REPORT_REASONS, openedLabel, shareUrl, snippetLabel } from "./libraryLinks.js";
+
+test("shareUrl builds a safe deep link", () => {
+  assert.equal(shareUrl("https://unilib.com.ng/", "abc"), "https://unilib.com.ng/study-material?open=abc");
+  assert.equal(shareUrl("https://x.y", "a b&c"), "https://x.y/study-material?open=a%20b%26c");
+});
+
+test("openedLabel and snippetLabel", () => {
+  assert.equal(openedLabel(0), "");
+  assert.equal(openedLabel(undefined), "");
+  assert.equal(openedLabel(1), "Opened once");
+  assert.equal(openedLabel(1234), "Opened 1,234 times");
+  assert.equal(snippetLabel("  …entropy…  "), "Found inside: …entropy…");
+  assert.equal(snippetLabel(""), "");
+  assert.equal(snippetLabel(null), "");
+});
+
+test("report reasons match the server list", () => {
+  assert.deepEqual(REPORT_REASONS.map((r) => r.value).sort(), ["BROKEN_FILE", "DUPLICATE", "INAPPROPRIATE", "OTHER", "WRONG_COURSE"]);
+});

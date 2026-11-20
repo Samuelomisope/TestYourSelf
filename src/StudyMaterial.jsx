@@ -16,6 +16,10 @@ import { createNotification } from "./notifications";
 import { useOfflineDownload } from "./useOfflineDownload";
 import PdfViewer from "./library/PdfViewer";
 import { rememberOpened } from "./library/lastOpened.js";
+import ShareButton from "./library/ShareButton";
+import ReportForm from "./library/ReportForm";
+import MostOpened from "./library/MostOpened";
+import { snippetLabel } from "./library/libraryLinks.js";
 import { canViewInApp, downloadName } from "./library/pdfPages.js";
 import { listDownloadedMaterials, getOfflineBlobUrl } from "./offlineStorage";
 import { useParams } from "react-router-dom";
@@ -538,6 +542,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
 )}
 
 {saveToDeviceError && <p role="alert" className="mb-2 text-xs text-pink-400">{saveToDeviceError}</p>}
+<div className="mb-3 flex gap-2"><ShareButton file={file} /></div>
 {showViewer && resolvedUrl && (
   <PdfViewer url={resolvedUrl} title={file.title} initialPage={initialPage} onPage={rememberPage} onClose={() => setShowViewer(false)} onDownload={saveToDevice}
     onFallback={() => { setShowViewer(false); window.open(resolvedUrl, "_blank", "noopener,noreferrer"); }} />
@@ -552,6 +557,8 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
 {!resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "pdf" && (
   <AskAIButton fileUrl={resolvedUrl} fileName={file.title} onClose={onClose} />
 )}
+
+{!isOwner && <ReportForm send={(reason, note) => apiPost(`/study-material/${file.id}/report`, { reason, note })} />}
 
               {/* ── Offline save / remove ── */}
               {downloadError && <p className="text-pink-400 text-xs mb-2">{downloadError}</p>}
@@ -747,6 +754,7 @@ function FileRow({ file, user, onSelect, onDelete }) {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-ink truncate">{file.title}</p>
         <p className="text-xs text-ink/30">{formatDate(file.createdAt)} · {file.user?.displayName}</p>
+        {file.matchSnippet && <p className="mt-0.5 line-clamp-2 text-xs text-violet-300/70">{snippetLabel(file.matchSnippet)}</p>}
       </div>
       <div className="flex items-center gap-2 shrink-0">
         {isDownloaded && (
@@ -1131,6 +1139,7 @@ function FileCard({ file, user, onSelect, onDelete }) {
         {file.university?.shortName && <span className="px-2 py-0.5 bg-white/5 text-ink/40 rounded-full text-xs">{file.university.shortName}</span>}
       </div>
       <p className="text-xs text-ink/30">{formatDate(file.createdAt)}</p>
+      {file.matchSnippet && <p className="mt-1 line-clamp-3 text-xs text-violet-300/70">{snippetLabel(file.matchSnippet)}</p>}
     </div>
   );
 }
@@ -1432,6 +1441,7 @@ const grouped = useMemo(() => {
 
   const sortedFaculties = Object.keys(grouped).sort();
   const isSearching = debouncedSearch.trim().length > 0;
+  const loadPopular = useCallback(() => apiGet("/study-material/popular?limit=8"), []);
   const hasActiveFilters = Boolean(courseIdParam) || universityFilter !== "All" || levelFilter !== "All" || semesterFilter !== "All";
 
   const clearCourseFilter = () => {
@@ -1486,7 +1496,9 @@ const rosterFaculties = useMemo(
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowDownloadedOnly(d => !d)}
-                className={`relative w-9 h-9 rounded-xl flex items-center justify-center transition ${
+                aria-pressed={showDownloadedOnly}
+                aria-label="Show only files saved for offline"
+                className={`relative h-9 gap-1.5 px-3 text-xs font-medium rounded-xl flex items-center justify-center transition ${
                   showDownloadedOnly
                     ? "bg-emerald-500/15 text-emerald-400"
                     : "bg-ink/[0.05] text-ink/40 hover:text-emerald-400"
@@ -1494,6 +1506,7 @@ const rosterFaculties = useMemo(
                 title="Show downloaded files only"
               >
                 <FontAwesomeIcon icon={faDownload} className="text-sm" />
+                <span>Offline</span>
                 {downloadedIds.size > 0 && (
                   <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 bg-emerald-500 text-white text-[10px] font-medium rounded-full flex items-center justify-center">
                     {downloadedIds.size}
@@ -1652,6 +1665,8 @@ const rosterFaculties = useMemo(
             </div>
 
             {/* Loading Skeleton */}
+            {!loading && !isSearching && !courseIdParam && !showDownloadedOnly && isOnline && <MostOpened load={loadPopular} onSelect={setSelectedFile} />}
+
             {loading && (
               <div className="flex flex-col gap-4">
                 {[1,2,3].map(i => (
