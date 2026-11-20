@@ -2,6 +2,8 @@ import { getAccessToken } from "./token";
 import { useState, useEffect } from "react";
 import { useAuth } from "./useAuth";
 import { Link, useLocation } from "react-router-dom";
+import { rememberOpened } from "./library/lastOpened.js";
+import { dueByDeck, dueHeadline, streakText } from "./library/studySummary.js";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faChevronDown, faXmark, faPlus, faLayerGroup, faHouse, faBook, faRobot,
@@ -418,7 +420,7 @@ function ReviewSession({ deckId, onClose }) {
 }
 
 // ─── Deck Card ───────────────────────────────────────────────────────
-function DeckCard({ deck, user, onStudy, onDelete }) {
+function DeckCard({ deck, user, onStudy, onDelete, due }) {
   const isOwner = deck.userId === user?.uid || deck.user?.displayName === user?.displayName;
   return (
     <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4 hover:border-violet-500/30 transition group relative">
@@ -444,6 +446,7 @@ function DeckCard({ deck, user, onStudy, onDelete }) {
       {deck.description && <p className="text-xs text-ink/30 mb-2 line-clamp-2">{deck.description}</p>}
       <div className="flex items-center gap-2 mb-3">
         <span className="text-xs px-2 py-0.5 bg-white/5 text-ink/40 rounded-full">{deck.cards?.length || 0} cards</span>
+        {due > 0 && <span className="text-xs px-2 py-0.5 bg-amber-500/15 text-amber-500 rounded-full">{due} due</span>}
         {deck.sourceType === "AI_GENERATED" && (
           <span className="text-xs px-2 py-0.5 bg-violet-500/15 text-violet-400 rounded-full flex items-center gap-1">
             <FontAwesomeIcon icon={faWandMagicSparkles} className="text-[10px]" /> AI
@@ -477,8 +480,21 @@ function Flashcards() {
   const [loading, setLoading] = useState(true);
 const [tab, setTab] = useState("all"); // "all" | "mine"
 const [showCreate, setShowCreate] = useState(false);
-const [studyingDeckId, setStudyingDeckId] = useState(null);
+const [studyingDeckId, setStudyingDeckId] = useState(() => new URLSearchParams(location.search).get("deck"));
+const [summary, setSummary] = useState(null);
 const [refreshKey, setRefreshKey] = useState(0);
+
+// Due cards and streak. A failure only hides the badges.
+useEffect(() => {
+  if (!user) return;
+  authedFetch(`/flashcards/summary?tz=${-new Date().getTimezoneOffset()}`).then(setSummary).catch(() => {});
+}, [user, refreshKey, studyingDeckId]);
+
+// Remember the deck being studied so Home can offer "Continue studying". Device only.
+useEffect(() => {
+  const deck = decks.find((d) => d.id === studyingDeckId);
+  if (deck && user?.id) { try { rememberOpened(window.localStorage, user.id, "deck", { id: deck.id, title: deck.title }); } catch { /* blocked */ } }
+}, [studyingDeckId, decks, user?.id]);
 
 useEffect(() => {
   if (!user) return;
@@ -567,6 +583,13 @@ useEffect(() => {
           </button>
         </div>
 
+        {dueHeadline(summary) && (
+          <p className="mb-4 text-sm text-ink/60" aria-live="polite">
+            <span className="font-semibold text-ink">{dueHeadline(summary)}</span>
+            {streakText(summary) && <span className="text-ink/40"> · {streakText(summary)}</span>}
+          </p>
+        )}
+
         {loading && (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {[1,2,3,4].map(i => (
@@ -597,6 +620,7 @@ useEffect(() => {
                 deck={deck}
                 user={user}
                 onStudy={setStudyingDeckId}
+                due={dueByDeck(summary).get(deck.id) || 0}
                 onDelete={() => setRefreshKey(k => k + 1)}
               />
             ))}

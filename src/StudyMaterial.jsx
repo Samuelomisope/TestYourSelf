@@ -15,6 +15,7 @@ import { UploadModal } from "./UploadModal";
 import { createNotification } from "./notifications";
 import { useOfflineDownload } from "./useOfflineDownload";
 import PdfViewer from "./library/PdfViewer";
+import { rememberOpened } from "./library/lastOpened.js";
 import { canViewInApp, downloadName } from "./library/pdfPages.js";
 import { listDownloadedMaterials, getOfflineBlobUrl } from "./offlineStorage";
 import { useParams } from "react-router-dom";
@@ -240,7 +241,7 @@ function AskAIButton({ fileUrl, fileName, onClose }) {
 }
 
 // ─── File Detail Modal ─────────────────────────────────────────────
-function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
+function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, initialPage = 1 }) {
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -407,6 +408,11 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
 
   // A real download: an offline copy saves straight from the device; otherwise the server gives a link that makes the
   // browser save the file instead of displaying it.
+  // Remember where the reader is, on this device only, so Home can offer "Continue reading".
+  const rememberPage = (page) => {
+    if (user?.id) { try { rememberOpened(window.localStorage, user.id, "material", { id: file.id, title: file.title, page }); } catch { /* blocked */ } }
+  };
+
   const saveToDevice = async () => {
     setSaveToDeviceError("");
     setSavingToDevice(true);
@@ -532,7 +538,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
 
 {saveToDeviceError && <p role="alert" className="mb-2 text-xs text-pink-400">{saveToDeviceError}</p>}
 {showViewer && resolvedUrl && (
-  <PdfViewer url={resolvedUrl} title={file.title} onClose={() => setShowViewer(false)} onDownload={saveToDevice}
+  <PdfViewer url={resolvedUrl} title={file.title} initialPage={initialPage} onPage={rememberPage} onClose={() => setShowViewer(false)} onDownload={saveToDevice}
     onFallback={() => { setShowViewer(false); window.open(resolvedUrl, "_blank", "noopener,noreferrer"); }} />
 )}
 
@@ -1217,6 +1223,7 @@ function StudyMaterial() {
   const [showUpload, setShowUpload] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedPage, setSelectedPage] = useState(1);
   const [universitiesList, setUniversitiesList] = useState([]);
   const [successMessage, setSuccessMessage] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
@@ -1224,6 +1231,9 @@ function StudyMaterial() {
   const [searchParams, setSearchParams] = useSearchParams();
   const universitySlugParam = searchParams.get("university");
   const courseIdParam = searchParams.get("courseId");
+  const openParam = searchParams.get("open");
+  const pageParam = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+  const [deepLinkError, setDeepLinkError] = useState("");
 
  // ── Offline state ──
 const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
@@ -1344,6 +1354,20 @@ useEffect(() => {
   }, [selectedFile?.id]);
 
   // Filter by university / level / semester / downloaded-only
+  // A link like /study-material?open=<id>&page=3 (share links and "Continue reading") opens that file straight away.
+  useEffect(() => {
+    if (!user || !openParam) return undefined;
+    let cancelled = false;
+    apiGet(`/study-material/${encodeURIComponent(openParam)}`)
+      .then((material) => { if (!cancelled) { setSelectedPage(pageParam); setSelectedFile(material); } })
+      .catch(() => { if (!cancelled) setDeepLinkError("That material isn't available. It may have been removed or made private."); })
+      .finally(() => {
+        if (cancelled) return;
+        setSearchParams((prev) => { const next = new URLSearchParams(prev); next.delete("open"); next.delete("page"); return next; }, { replace: true });
+      });
+    return () => { cancelled = true; };
+  }, [user, openParam, pageParam, setSearchParams]);
+
   const filtered = useMemo(() => files.filter(f => {
     if (courseIdParam && f.courseId !== courseIdParam) return false;
     if (universityFilter !== "All") {
@@ -1738,11 +1762,13 @@ const rosterFaculties = useMemo(
     universitiesList={universitiesList}
   />
 )}
+      {deepLinkError && <p role="alert" className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-pink-500/30 bg-bg-elevated px-4 py-2 text-sm text-pink-400" onClick={() => setDeepLinkError("")}>{deepLinkError}</p>}
       {showCalculator && <Calculator onClose={() => setShowCalculator(false)} />}
       {selectedFile && (
         <FileDetailModal
           file={selectedFile}
           user={user}
+          initialPage={selectedPage}
           onClose={() => setSelectedFile(null)}
           onUpdated={() => { setRefreshKey(k => k + 1); setSelectedFile(null); }}
           onDownloadChange={handleDownloadChange}

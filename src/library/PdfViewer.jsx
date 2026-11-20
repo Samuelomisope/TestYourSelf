@@ -4,10 +4,9 @@ import { fitScale, pagesToRender } from "./pdfPages.js";
 // Shows a PDF inside UniLib, so phones that would otherwise force a download can read it in place. pdf.js is loaded
 // only when this component opens. If the file cannot be loaded here, onFallback lets the page offer the old
 // "open in a new tab" link instead of a dead end.
-export default function PdfViewer({ url, title, onClose, onFallback, onDownload }) {
+export default function PdfViewer({ url, title, onClose, onFallback, onDownload, initialPage = 1, onPage }) {
   const hostRef = useRef(null);
   const docRef = useRef(null);
-  const slotsRef = useRef(new Map());
   const [state, setState] = useState({ status: "loading", total: 0, current: 1 });
 
   useEffect(() => {
@@ -21,7 +20,7 @@ export default function PdfViewer({ url, title, onClose, onFallback, onDownload 
         const doc = await pdfjs.getDocument({ url }).promise;
         if (cancelled) { doc.destroy(); return; }
         docRef.current = doc;
-        setState({ status: "ready", total: doc.numPages, current: 1 });
+        setState({ status: "ready", total: doc.numPages, current: Math.min(Math.max(1, initialPage), doc.numPages) });
       } catch {
         if (!cancelled) setState({ status: "error", total: 0, current: 1 });
       }
@@ -33,12 +32,13 @@ export default function PdfViewer({ url, title, onClose, onFallback, onDownload 
     if (state.status !== "ready") return undefined;
     const host = hostRef.current;
     const doc = docRef.current;
+    const slots = new Map([...host.querySelectorAll("[data-page]")].map((el) => [Number(el.dataset.page), el]));
     const visible = new Set();
     const drawn = new Map(); // page -> true once drawn at the current width
     let width = host.clientWidth;
 
     const draw = async (pageNo) => {
-      const slot = slotsRef.current.get(pageNo);
+      const slot = slots.get(pageNo);
       if (!slot || drawn.get(pageNo) === width) return;
       drawn.set(pageNo, width);
       const page = await doc.getPage(pageNo);
@@ -56,7 +56,7 @@ export default function PdfViewer({ url, title, onClose, onFallback, onDownload 
       const first = await doc.getPage(1);
       const base = first.getViewport({ scale: 1 });
       const h = base.height * fitScale(base.width, width - 16);
-      slotsRef.current.forEach((el) => { el.style.minHeight = `${h}px`; });
+      slots.forEach((el) => { el.style.minHeight = `${h}px`; });
     };
 
     const observer = new IntersectionObserver((entries) => {
@@ -67,8 +67,12 @@ export default function PdfViewer({ url, title, onClose, onFallback, onDownload 
       pagesToRender(visible, state.total).forEach((n) => { void draw(n); });
       if (visible.size) setState((s) => ({ ...s, current: Math.min(...visible) }));
     }, { root: host, rootMargin: "300px 0px" });
-    slotsRef.current.forEach((el) => observer.observe(el));
-    void sizeSlots();
+    slots.forEach((el) => observer.observe(el));
+    void sizeSlots().then(() => {
+      // Jump to where the reader stopped last time, once the pages have their height.
+      const target = slots.get(Math.min(Math.max(1, initialPage), state.total));
+      if (initialPage > 1 && target) target.scrollIntoView({ block: "start" });
+    });
 
     const onResize = () => {
       if (Math.abs(host.clientWidth - width) < 24) return;
@@ -78,6 +82,8 @@ export default function PdfViewer({ url, title, onClose, onFallback, onDownload 
     window.addEventListener("resize", onResize);
     return () => { observer.disconnect(); window.removeEventListener("resize", onResize); };
   }, [state.status, state.total]);
+
+  useEffect(() => { if (state.status === "ready") onPage?.(state.current); }, [state.status, state.current, onPage]);
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
@@ -102,7 +108,7 @@ export default function PdfViewer({ url, title, onClose, onFallback, onDownload 
           </div>
         )}
         {state.status === "ready" && Array.from({ length: state.total }, (_, i) => i + 1).map((n) => (
-          <div key={n} data-page={n} ref={(el) => { if (el) slotsRef.current.set(n, el); else slotsRef.current.delete(n); }}
+          <div key={n} data-page={n}
             className="mx-auto mb-2 flex w-fit max-w-full items-start justify-center bg-white shadow" aria-label={`Page ${n}`} />
         ))}
       </div>
