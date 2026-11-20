@@ -28,10 +28,13 @@ import UniversityWelcomePage from "./UniversityWelcomePage";
 import StudyPlan from "./StudyPlan";
 import Premium from "./Premium";
 import Classroom from "./Classroom";
+import { OnboardingProvider } from "./onboarding/OnboardingContext";
+import OnboardingLayer from "./onboarding/OnboardingLayer";
 
 function App() {
   return (
     <BrowserRouter>
+      <OnboardingProvider>
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
@@ -68,6 +71,8 @@ function App() {
             </WriterRoute>
             </ProtectedRoute>} />
       </Routes>
+      <OnboardingLayer />
+      </OnboardingProvider>
     </BrowserRouter>
   );
 }

@@ -54,6 +54,7 @@ async function request(path, options = {}, retried = false) {
     const serverMessage = Array.isArray(body?.message) ? body.message.join(" ") : typeof body?.message === "string" ? body.message : "";
     throw Object.assign(new Error(`API error: ${res.status}`), { status: res.status, serverMessage });
   }
+  if (res.status === 204) return null;
   return res.json();
 }
 
