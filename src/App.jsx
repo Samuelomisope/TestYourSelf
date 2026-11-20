@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./Login";
 import Home from "./Home";
@@ -27,17 +28,23 @@ import WriterRoute from "./WriterRoute";
 import UniversityWelcomePage from "./UniversityWelcomePage";
 import StudyPlan from "./StudyPlan";
 import Premium from "./Premium";
-import Classroom from "./Classroom";
+
+// The Classroom pages are large (lesson rendering, voice, tutor) and only some students open them, so they load on demand.
+const Classroom = lazy(() => import("./Classroom"));
+const MyLearning = lazy(() => import("./MyLearning"));
+const pageLoading = <p role="status" className="px-4 pt-36 text-center text-sm text-ink/50">Loading…</p>;
 
 function App() {
   return (
     <BrowserRouter>
+      <Suspense fallback={pageLoading}>
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/study-material" element={<ProtectedRoute><StudyMaterial /></ProtectedRoute>} />        
         <Route path="/ai" element={<ProtectedRoute><AI /></ProtectedRoute>} />
         <Route path="/classroom" element={<ProtectedRoute><Classroom /></ProtectedRoute>} />
+        <Route path="/classroom/learning" element={<ProtectedRoute><MyLearning /></ProtectedRoute>} />
         <Route path="/classroom/:sessionId" element={<ProtectedRoute><Classroom /></ProtectedRoute>} />
         <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
         <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
@@ -68,6 +75,7 @@ function App() {
             </WriterRoute>
             </ProtectedRoute>} />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }
