@@ -47,7 +47,8 @@ export default function CheckIn({ sessionId, stepIndex, stepTitle, onScore, onCl
   const [state, dispatch] = useReducer(checkReducer, initialCheck);
   const alive = useRef(true);
   const heading = useRef(null);
-  useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
+  const title = useRef(null);
+  useEffect(() => { alive.current = true; title.current?.focus(); return () => { alive.current = false; }; }, []); // move focus here so a screen reader announces the new section
 
   const load = () => {
     dispatch({ type: "open" });
@@ -75,8 +76,8 @@ export default function CheckIn({ sessionId, stepIndex, stepTitle, onScore, onCl
   return (
     <section aria-label="Check my understanding" className="mb-3 rounded-2xl border border-violet-500/30 bg-violet-500/[0.06] p-4">
       <div className="flex items-start justify-between gap-3">
-        <h3 className="text-sm font-bold text-ink">Check my understanding{stepTitle ? <span className="font-medium text-ink/60"> · {stepTitle}</span> : null}</h3>
-        <button type="button" onClick={onClose} className="rounded-lg px-2 py-1 text-xs font-semibold text-ink/60 hover:text-ink focus-visible:outline-2 focus-visible:outline-violet-500">Skip</button>
+        <h3 ref={title} tabIndex={-1} className="text-sm font-bold text-ink outline-none">Check my understanding{stepTitle ? <span className="font-medium text-ink/60"> · {stepTitle}</span> : null}</h3>
+        <button type="button" onClick={onClose} className="min-h-9 rounded-lg px-3 text-xs font-semibold text-ink/60 hover:text-ink focus-visible:outline-2 focus-visible:outline-violet-500">Skip</button>
       </div>
 
       {state.phase === "loading" && <p role="status" className="mt-3 text-sm text-ink/60 motion-safe:animate-pulse">Writing your questions…</p>}
