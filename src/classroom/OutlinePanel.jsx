@@ -1,11 +1,14 @@
 import { Check, Circle, CircleDot } from "lucide-react";
+import { WEAK_CUTOFF, percentOf, timeAgo, weakSteps } from "./progressView";
 
 /**
  * The lesson plan with progress. Progress is decided by the server (currentStepIndex), so this only displays it:
  * steps before the current one are done, the current one is in progress, the rest are up next.
  */
-export default function OutlinePanel({ objectives, outline, current, started }) {
+export default function OutlinePanel({ objectives, outline, current, started, checks = [], onCheck }) {
   const total = outline.length;
+  const byStep = new Map(checks.map((c) => [c.stepIndex, c]));
+  const weak = weakSteps(checks).filter((c) => c.stepIndex < total);
   const taught = started ? current + 1 : 0;
   const percent = Math.round((taught / total) * 100);
 
@@ -29,6 +32,21 @@ export default function OutlinePanel({ objectives, outline, current, started }) 
         </div>
       )}
 
+      {weak.length > 0 && (
+        <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-200">Worth another look</h3>
+          <p className="mt-1 text-xs text-ink/60">Steps where your best check-in score is under {WEAK_CUTOFF}%.</p>
+          <ul className="mt-2 space-y-1.5">
+            {weak.map((c) => (
+              <li key={c.stepIndex} className="flex items-center justify-between gap-2 text-sm">
+                <span className="min-w-0 truncate">{c.stepIndex + 1}. {outline[c.stepIndex]?.title ?? c.stepTitle}: {percentOf(c.best)}%</span>
+                {onCheck && <button type="button" onClick={() => onCheck(c.stepIndex)} className="min-h-9 shrink-0 rounded-lg border border-amber-600/40 px-3 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-violet-500">Check again</button>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <ol className="mt-4 space-y-1">
         {outline.map((step, index) => {
           const done = started && index < current;
@@ -43,6 +61,10 @@ export default function OutlinePanel({ objectives, outline, current, started }) 
                   {step.title}
                 </p>
                 {active && step.summary && <p className="mt-0.5 text-xs text-ink/55">{step.summary}</p>}
+                {byStep.has(index) && (() => {
+                  const c = byStep.get(index);
+                  return <p className="mt-0.5 text-xs text-ink/55">Best {percentOf(c.best) ?? "–"}% · latest {percentOf(c.latest) ?? "–"}% · {c.attempts} {c.attempts === 1 ? "attempt" : "attempts"}, last {timeAgo(c.latest.createdAt)}</p>;
+                })()}
               </div>
             </li>
           );

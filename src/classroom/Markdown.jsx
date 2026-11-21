@@ -9,7 +9,10 @@ const remarkPlugins = [remarkGfm, remarkMath];
 const rehypePlugins = [[rehypeKatex, { strict: false, throwOnError: false }]];
 
 // Raw HTML is never rendered (react-markdown's default), and links from tutor text open safely in a new tab.
+// Images are never loaded from tutor text: a remote image URL written into a reply (for example by text hidden in an
+// uploaded document) could carry the student's words to another server. The description is shown instead.
 const components = {
+  img: ({ alt }) => (alt ? <span className="italic text-ink/60">[image: {alt}]</span> : null),
   a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer nofollow">{children}</a>,
 };
 
