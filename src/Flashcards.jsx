@@ -478,7 +478,7 @@ function Flashcards() {
   const location = useLocation();
   const [decks, setDecks] = useState([]);
   const [loading, setLoading] = useState(true);
-const [tab, setTab] = useState("all"); // "all" | "mine"
+const [tab, setTab] = useState(() => (new URLSearchParams(location.search).get("tab") === "mine" ? "mine" : "all")); // "all" | "mine"
 const [showCreate, setShowCreate] = useState(false);
 const [studyingDeckId, setStudyingDeckId] = useState(() => new URLSearchParams(location.search).get("deck"));
 const [summary, setSummary] = useState(null);
