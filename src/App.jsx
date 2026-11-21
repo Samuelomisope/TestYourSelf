@@ -29,10 +29,12 @@ import StudyPlan from "./StudyPlan";
 import Premium from "./Premium";
 import PastQuestions from "./PastQuestions";
 import Classroom from "./Classroom";
+import FeedbackProvider from "./ui/Feedback.jsx";
 
 function App() {
   return (
     <BrowserRouter>
+      <FeedbackProvider>
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
@@ -70,6 +72,7 @@ function App() {
             </WriterRoute>
             </ProtectedRoute>} />
       </Routes>
+      </FeedbackProvider>
     </BrowserRouter>
   );
 }

@@ -1,3 +1,4 @@
+import { notify } from "./ui/feedbackContext.js";
 import { getAccessToken } from "./token";
 
 // ── CreateListing.jsx (dark theme) ────────────────────────────────
@@ -35,7 +36,7 @@ function CreateListing() {
     if (!files.length) return;
     setUploading(true);
     try { const urls = await uploadMultiple(files, "marketplace"); set("images", [...form.images, ...urls]); }
-    catch (err) { console.error(err); alert("Image upload failed."); }
+    catch (err) { console.error(err); notify.error("Image upload failed. Please try again."); }
     setUploading(false);
   };
 
@@ -49,7 +50,7 @@ function CreateListing() {
       message: `Your listing "${form.title}" is now live on the marketplace.`,
     });
     navigate("/marketplace/my-listings");
-  } catch (err) { console.error(err); alert("Failed to create listing. Make sure you belong to a university."); }
+  } catch (err) { console.error(err); notify.error("Failed to create listing. Make sure you belong to a university."); }
   setSubmitting(false);
 };
 

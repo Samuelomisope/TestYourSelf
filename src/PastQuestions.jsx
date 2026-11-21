@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useConfirm } from "./ui/feedbackContext.js";
 import { Link, useLocation } from "react-router-dom";
 import Navbar from "./Navbar";
 import { apiGet, apiPost } from "./api";
@@ -10,6 +11,7 @@ const COUNTS = [5, 10, 15];
 // Timed practice from a past question paper. The questions are made by AI from the paper's content, so they follow
 // its topics and style; they are not copied word for word. Marking happens here, after you submit.
 export default function PastQuestions() {
+  const confirm = useConfirm();
   const location = useLocation();
   const preset = location.state?.material || null;
   const [stage, setStage] = useState(preset ? "setup" : "pick"); // pick | setup | exam | result
@@ -181,7 +183,7 @@ export default function PastQuestions() {
                 </li>
               ))}
             </ol>
-            <button onClick={() => { if (answered === questions.length || window.confirm(`You have ${questions.length - answered} unanswered. Submit anyway?`)) submit(); }} className="mt-6 min-h-12 w-full rounded-xl bg-violet-500 font-semibold text-white hover:bg-violet-400">Submit answers</button>
+            <button onClick={async () => { if (answered === questions.length || (await confirm({ title: "Submit with unanswered questions?", message: `You have ${questions.length - answered} unanswered. They will count as missed.`, confirmLabel: "Submit" }))) submit(); }} className="mt-6 min-h-12 w-full rounded-xl bg-violet-500 font-semibold text-white hover:bg-violet-400">Submit answers</button>
           </section>
         )}
 

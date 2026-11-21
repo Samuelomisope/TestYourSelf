@@ -11,6 +11,10 @@
   --color-bg-elevated: rgb(var(--bg-elevated));
   --color-accent: rgb(var(--accent));
   --color-accent-hover: rgb(var(--accent-hover));
+  /* Semantic tokens: use these in new code instead of text-ink/NN, bg-white/NN, border-white/NN */
+  --color-muted: rgb(var(--ink) / var(--muted-a));
+  --color-surface: rgb(var(--surface));
+  --color-line: rgb(var(--ink) / var(--line-a));
 }
 
 :root {
@@ -19,6 +23,9 @@
   --bg-elevated: 255 255 255; /* light mode: cards/modals/sidebar */
   --accent: 124 58 237;       /* violet-500 */
   --accent-hover: 167 139 250;/* violet-400 */
+  --surface: 245 245 247;     /* light: raised card on white page */
+  --muted-a: 0.66;            /* secondary text, ~5.7:1 on white */
+  --line-a: 0.12;             /* hairline borders */
 }
 
 html.dark {
@@ -27,6 +34,9 @@ html.dark {
   --bg-elevated: 18 18 26;    /* dark mode: cards/modals/sidebar */
   --accent: 124 58 237;
   --accent-hover: 167 139 250;
+  --surface: 24 24 33;
+  --muted-a: 0.66;            /* ~7:1 on the dark page */
+  --line-a: 0.12;
 }
 
 html[data-theme="sepia"] {
@@ -35,6 +45,9 @@ html[data-theme="sepia"] {
   --bg-elevated: 237 226 199; /* sepia: slightly deeper cream for cards/modals */
   --accent: 124 58 237;
   --accent-hover: 167 139 250;
+  --surface: 230 219 191;
+  --muted-a: 0.76;            /* sepia needs a higher floor to stay readable on cream */
+  --line-a: 0.16;
 }
 
 html { color-scheme: light; }
@@ -44,3 +57,33 @@ html[data-theme="sepia"] { color-scheme: light; }
 body { background-color: #ffffff; }
 html.dark body { background-color: #0a0a0f; }
 html[data-theme="sepia"] body { background-color: #f4ecd8; }
+
+/* ---------------------------------------------------------------------------
+ * Readability floor (bridge). Many older screens use text-ink/20..50 for real
+ * copy, which is unreadable on dark and sepia. Until each is moved to
+ * text-muted, lift those steps to the accessible secondary-text colour, keeping
+ * the lightest steps (<=25) as a visibly softer "decorative / disabled" tone.
+ * ------------------------------------------------------------------------- */
+.text-ink\/5, .text-ink\/10, .text-ink\/15, .text-ink\/20, .text-ink\/25 { color: rgb(var(--ink) / 0.45); }
+.text-ink\/30, .text-ink\/35, .text-ink\/40, .text-ink\/45, .text-ink\/50,
+.text-ink\/55, .text-ink\/60, .text-ink\/65 { color: rgb(var(--ink) / var(--muted-a)); }
+
+/* Mobile browsers: 100vh includes the collapsing address bar and hides the bottom of the page. */
+@supports (height: 100dvh) {
+  .min-h-screen { min-height: 100dvh; }
+  .h-screen { height: 100dvh; }
+}
+
+/* Respect the operating-system "reduce motion" setting. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Keyboard focus that is visible on every theme. */
+:focus-visible { outline: 2px solid rgb(var(--accent-hover)); outline-offset: 2px; }
+html:not(.dark) :focus-visible { outline-color: rgb(var(--accent)); }

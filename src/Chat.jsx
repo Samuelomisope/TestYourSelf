@@ -1356,7 +1356,7 @@ function Chat() {
       </header>
 
       {/* Body */}
-      <div className="relative z-10 flex-1 max-w-6xl w-full mx-auto flex pt-[97px]" style={{ height: "100vh" }}>
+      <div className="relative z-10 flex-1 max-w-6xl w-full mx-auto flex pt-[97px]" style={{ height: "100dvh" }}>
 
         {/* Sidebar */}
         <div className={`w-full md:w-80 border-r border-ink/5 bg-bg flex flex-col shrink-0 ${activeRoom ? "hidden md:flex" : "flex"}`}>

@@ -1,3 +1,4 @@
+import { useConfirm } from "./ui/feedbackContext.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect, useCallback, useMemo, createContext, useContext } from "react";
 import { useAuth } from "./useAuth";
@@ -751,6 +752,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
 
 // ─── File Row (list item inside a course) ─────────────────────────
 function FileRow({ file, user, onSelect, onDelete }) {
+  const confirm = useConfirm();
   const fileType = getMimeFileType(file.fileType);
   const { downloadedIds } = useContext(OfflineContext);
   const isDownloaded = downloadedIds.has(file.id);
@@ -785,7 +787,7 @@ function FileRow({ file, user, onSelect, onDelete }) {
           <button
             onClick={async (e) => {
               e.stopPropagation();
-              if (!window.confirm("Delete this file?")) return;
+              if (!(await confirm({ title: "Delete this file?", message: "It will be removed from the library for everyone.", confirmLabel: "Delete", danger: true }))) return;
               try {
                 const token = getAccessToken();
                 await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material/${file.id}`, {
@@ -1112,6 +1114,7 @@ function FacultyBlock({
 
 // ─── Flat Grid Card (for search results) ─────────────────────────
 function FileCard({ file, user, onSelect, onDelete }) {
+  const confirm = useConfirm();
   const { downloadedIds } = useContext(OfflineContext);
   const isDownloaded = downloadedIds.has(file.id);
 
@@ -1121,7 +1124,7 @@ function FileCard({ file, user, onSelect, onDelete }) {
         <button
           onClick={async (e) => {
             e.stopPropagation();
-            if (!window.confirm("Delete this file?")) return;
+            if (!(await confirm({ title: "Delete this file?", message: "It will be removed from the library for everyone.", confirmLabel: "Delete", danger: true }))) return;
             try {
               const token = getAccessToken();
               await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3000"}/study-material/${file.id}`, {

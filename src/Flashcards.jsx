@@ -1,3 +1,4 @@
+import { useConfirm } from "./ui/feedbackContext.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect } from "react";
 import { useAuth } from "./useAuth";
@@ -421,6 +422,7 @@ function ReviewSession({ deckId, onClose }) {
 
 // ─── Deck Card ───────────────────────────────────────────────────────
 function DeckCard({ deck, user, onStudy, onDelete, due }) {
+  const confirm = useConfirm();
   const isOwner = deck.userId === user?.uid || deck.user?.displayName === user?.displayName;
   return (
     <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4 hover:border-violet-500/30 transition group relative">
@@ -428,7 +430,7 @@ function DeckCard({ deck, user, onStudy, onDelete, due }) {
         <button
           onClick={async (e) => {
             e.stopPropagation();
-            if (!window.confirm("Delete this deck?")) return;
+            if (!(await confirm({ title: "Delete this deck?", message: "Its cards and your progress on them will be removed.", confirmLabel: "Delete", danger: true }))) return;
             try {
               await authedFetch(`/flashcards/decks/${deck.id}`, { method: "DELETE" });
               onDelete();
