@@ -28,16 +28,22 @@ import WriterRoute from "./WriterRoute";
 import UniversityWelcomePage from "./UniversityWelcomePage";
 import StudyPlan from "./StudyPlan";
 import Premium from "./Premium";
+import { OnboardingProvider } from "./onboarding/OnboardingContext";
+import OnboardingLayer from "./onboarding/OnboardingLayer";
 import PastQuestions from "./PastQuestions";
 
 // The Classroom pages are large (lesson rendering, voice, tutor) and only some students open them, so they load on demand.
 const Classroom = lazy(() => import("./Classroom"));
 const MyLearning = lazy(() => import("./MyLearning"));
-const pageLoading = <p role="status" className="px-4 pt-36 text-center text-sm text-ink/50">Loading…</p>;
-
+const pageLoading = (
+  <p role="status" className="px-4 pt-36 text-center text-sm text-ink/50">
+    Loading…
+  </p>
+);
 function App() {
   return (
     <BrowserRouter>
+      <OnboardingProvider>
       <Suspense fallback={pageLoading}>
       <Routes>
         <Route path="/" element={<Login />} />
@@ -77,7 +83,9 @@ function App() {
             </WriterRoute>
             </ProtectedRoute>} />
       </Routes>
+        <OnboardingLayer />
       </Suspense>
+      </OnboardingProvider>
     </BrowserRouter>
   );
 }
