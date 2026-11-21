@@ -1,15 +1,33 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Mic, Square, X } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import Navbar from "./Navbar";
-import { apiDelete, apiGet, apiPatch, apiPost, apiPostForm } from "./api";
+import { apiDelete, apiGet, apiPatch, apiPost, apiPostForm, apiPut } from "./api";
 import Dialog from "./classroom/Dialog";
 import LessonView from "./classroom/LessonView";
 import Md from "./classroom/Markdown";
 import OutlinePanel from "./classroom/OutlinePanel";
+import BoardPanel from "./classroom/BoardPanel";
+import BoardPrint from "./classroom/BoardPrint";
+import { blockSummary, normalizeBlock } from "./classroom/boardHelpers";
+import { boardFilename, boardToMarkdown, downloadText } from "./classroom/boardExport";
+import PageNav from "./classroom/PageNav";
 import SetupWizard from "./classroom/SetupWizard";
-import {
-  DOC_STATUS, MODE_LABEL, currentStep, describeError, readObjectives, readOutline, shouldKeepRequestKey, sleep,
-} from "./classroom/classroomUtils";
+import { buildBoard, readEvents } from "./classroom/lessonEvents";
+import { pageEventAt, resumePosition } from "./classroom/syncPosition";
+import CheckIn from "./classroom/CheckIn";
+import ResumeNudge from "./classroom/ResumeNudge";
+import { offerResume, readMark, shouldSave, writeMark } from "./classroom/resumeSync";
+import useLessonVoice from "./classroom/useLessonVoice";
+import useSpeechInput from "./classroom/useSpeechInput";
+import { appendDictation } from "./classroom/speechInput";
+import VoiceBar from "./classroom/VoiceBar";
+import TutorStage from "./classroom/TutorStage";
+import useRendererChoice from "./classroom/useRendererChoice";
+import { tutorState } from "./classroom/tutorState";
+import ErrorNotice from "./classroom/QuotaNotice";
+import { browserStorage, loadVoicePrefs, saveVoicePrefs } from "./classroom/voicePrefs";
+import { DOC_STATUS, MODE_LABEL, currentStep, describeError, readObjectives, readOutline, shouldKeepRequestKey, sleep, isScan, pickDocuments, truncationNote } from "./classroom/classroomUtils";
 
 const card = "rounded-2xl border border-ink/10 bg-bg-elevated p-5 shadow-sm";
 const primary = "rounded-xl bg-violet-600 px-5 py-3 font-semibold text-white transition hover:bg-violet-500 disabled:opacity-50";
@@ -18,10 +36,6 @@ const REPLY_POLL_MS = 2500;
 const REPLY_WAIT_MS = 90_000;
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
-
-function ErrorLine({ children }) {
-  return children ? <p role="alert" className="mt-3 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">{children}</p> : null;
-}
 
 function RenameForm({ initial, onSave, onCancel }) {
   const [title, setTitle] = useState(initial);
@@ -82,10 +96,46 @@ function ClassroomInner({ sessionId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [dialog, setDialog] = useState(null);
+  // Documents the student switched off for tutor answers. Empty means every ready document is used.
+  const [excluded, setExcluded] = useState([]);
   // The idempotency key of a send whose outcome we don't know yet, so a retry can't be charged as a second turn.
   const pendingSend = useRef(null);
   const alive = useRef(true);
   const listRef = useRef(null);
+  // Which board page is showing. It follows the newest page until the student picks one, and a new page resets it.
+  const [pageChoice, setPageChoice] = useState({ count: 0, index: null });
+  // On small screens the board and the lesson take turns; on large screens both are shown.
+  const [view, setView] = useState("lesson");
+  // The whiteboard block the next question is about ({ turnId, eventId, label }), and whether the print view is open.
+  const [askAbout, setAskAbout] = useState(null);
+  const [printing, setPrinting] = useState(false);
+  const questionInput = useRef(null);
+  // Voice (Phase E): settings live in this browser; playback follows the latest tutor reply.
+  const [voicePrefs, setVoicePrefs] = useState(() => loadVoicePrefs(browserStorage()));
+  const pagesRef = useRef([]);
+  const playingTurn = useRef(null);
+  const seenReply = useRef(undefined); // undefined until the lesson has loaded, so opening a lesson never starts speaking
+  const voice = useLessonVoice({
+    rate: voicePrefs.rate,
+    voiceName: voicePrefs.voiceName,
+    gender: session?.tutorVoice,
+  });
+  // Dictation fills the question box (the student reads it and presses Send); starting it silences the tutor.
+  const speechInput = useSpeechInput({
+    onStart: () => voice.controls.stop(),
+    onText: (words) => setQuestion((current) => appendDictation(current, words)),
+  });
+  // The 3D tutor is a premium feature; the account's status comes from the billing endpoint (a failure just means 2D).
+  const [premium, setPremium] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    apiGet("/billing/status").then((status) => { if (!cancelled) setPremium(status?.isPremium === true); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+  const renderer = useRendererChoice({ premium, preference: voicePrefs.tutorView });
+  function changeVoicePrefs(patch) {
+    setVoicePrefs((current) => { const next = { ...current, ...patch }; saveVoicePrefs(browserStorage(), next); return next; });
+  }
 
   useEffect(() => {
     alive.current = true;
@@ -149,6 +199,7 @@ function ClassroomInner({ sessionId }) {
     setBusy(true); setError("");
     try {
       const created = await apiPost("/classroom/sessions", { ...values, title: values.topic });
+      setVoicePrefs(loadVoicePrefs(browserStorage())); // the setup form may have changed the voice choice
       navigate(`/classroom/${created.id}`);
     } catch (err) { setError(describeError(err, "Could not create a lesson.")); setBusy(false); }
   }
@@ -174,15 +225,26 @@ function ClassroomInner({ sessionId }) {
     return result;
   }
 
-  async function sendTurn(message, action = "ASK") {
+  function toggleDocument(id) {
+    setExcluded((current) => {
+      if (current.includes(id)) return current.filter((other) => other !== id);
+      // Keep at least one document on.
+      return pickDocuments(documents, current).ids.length <= 1 ? current : [...current, id];
+    });
+  }
+
+  async function sendTurn(message, action = "ASK", boardRef = null) {
     const text = message.trim();
     if (!text || sending) return false;
-    const signature = `${action}\n${text}`;
+    voice.controls.stop(); // the tutor stops talking when the student speaks up
+    const { ids, narrowed } = pickDocuments(documents, excluded);
+    // The selection is part of the request, so changing it is a new send (new key), while retrying the same one reuses the key.
+    const signature = `${action}\n${text}\n${narrowed ? ids.join(",") : ""}\n${boardRef ? `${boardRef.turnId}:${boardRef.eventId}` : ""}`;
     if (pendingSend.current?.signature !== signature) pendingSend.current = { signature, key: crypto.randomUUID() };
     setSending(true); setError("");
     try {
       const first = await apiPost(`/classroom/sessions/${sessionId}/turns`, {
-        message: text, idempotencyKey: pendingSend.current.key, ...(action === "ASK" ? {} : { action }),
+        message: text, idempotencyKey: pendingSend.current.key, ...(action === "ASK" ? {} : { action }), ...(narrowed ? { documentIds: ids } : {}), ...(boardRef && action === "ASK" ? { boardRef: { turnId: boardRef.turnId, eventId: boardRef.eventId } } : {}),
       });
       const result = await waitForReply(first);
       const status = result?.request?.status;
@@ -203,9 +265,25 @@ function ClassroomInner({ sessionId }) {
     } finally { if (alive.current) setSending(false); }
   }
 
+  function askAboutBlock(block) {
+    const clean = normalizeBlock(block);
+    if (!clean?.turnId || !clean.eventId) return;
+    setAskAbout({ turnId: clean.turnId, eventId: clean.eventId, label: blockSummary(clean) });
+    setView("lesson");
+    // The lesson column may have been hidden on a phone; focus once it is showing.
+    window.setTimeout(() => questionInput.current?.focus(), 0);
+  }
+
+  const boardTitle = session?.title || session?.topic || "";
+  function downloadBoard() {
+    const markdown = boardToMarkdown(boardPages, { title: boardTitle });
+    if (markdown) downloadText(boardFilename(boardTitle), markdown);
+  }
+
   async function submitQuestion(e) {
     e.preventDefault();
-    if (await sendTurn(question, "ASK")) setQuestion("");
+    speechInput.cancel();
+    if (await sendTurn(question, "ASK", askAbout)) { setQuestion(""); setAskAbout(null); }
   }
 
   async function uploadDocument(e) {
@@ -272,6 +350,37 @@ function ClassroomInner({ sessionId }) {
     finally { setBusy(false); }
   }
 
+  // Whiteboard pages rebuilt from the stored lesson events, so they are the same after a reload.
+  const boardPages = buildBoard(turns);
+  const hasBoard = boardPages.length > 0;
+  const latestReply = [...turns].reverse().find((turn) => turn.role === "TUTOR");
+  const replyEvents = readEvents(latestReply?.structuredLesson);
+  const { play: playReply } = voice.controls;
+  useEffect(() => {
+    pagesRef.current = boardPages;
+    if (loading) return;
+    const id = latestReply?.id ?? null;
+    if (seenReply.current === undefined) { seenReply.current = id; return; }
+    if (id === seenReply.current) return;
+    seenReply.current = id;
+    if (id && voicePrefs.autoSpeak && voice.supported && replyEvents.length) { playingTurn.current = id; playReply(replyEvents); }
+  });
+  const listen = () => { if (!latestReply || !replyEvents.length) return; playingTurn.current = latestReply.id; playReply(replyEvents); };
+  // The whiteboard follows the player: whatever moves it (speech, skip, back, replay) turns the board to the page that
+  // owns the current event. It only acts when that page changes, so a page the student picked by hand stays put.
+  const lastOwner = useRef(null);
+  const { player: lessonPlayer } = voice;
+  useEffect(() => {
+    const owner = pageEventAt(lessonPlayer);
+    const key = owner ? `${playingTurn.current}:${owner.id}` : null;
+    if (key === lastOwner.current) return;
+    lastOwner.current = key;
+    if (!key) return;
+    const index = pagesRef.current.findIndex((page) => page.key === key);
+    if (index >= 0) setPageChoice({ count: pagesRef.current.length, index });
+  }, [lessonPlayer]);
+  const caption = voice.event?.type === "SAY" ? voice.event.text : voice.event?.type === "CHECK" ? voice.event.question : "";
+  const pageIndex = pageChoice.count === boardPages.length && pageChoice.index !== null ? Math.min(pageChoice.index, boardPages.length - 1) : boardPages.length - 1;
   const outline = readOutline(session);
   const objectives = readObjectives(session);
   const hasPlan = outline.length > 0;
@@ -280,7 +389,65 @@ function ClassroomInner({ sessionId }) {
   const started = turns.some((turn) => turn.role === "TUTOR");
   const current = currentStep(session, outline.length);
   const atLastStep = hasPlan && current >= outline.length - 1;
+  // Continue across devices (Phase G): save where the student is, and offer a position saved from another device.
+  const [resumeOffer, setResumeOffer] = useState(null);
+  // The step check-in (Phase H): which step it is open for, and whether the tutor is celebrating a good score.
+  const [checkStep, setCheckStep] = useState(null);
+  const [checks, setChecks] = useState([]);
+  const loadChecks = useCallback(() => {
+    if (!sessionId) return;
+    apiGet(`/classroom/sessions/${sessionId}/assessments`).then((list) => { if (alive.current && Array.isArray(list)) setChecks(list); }).catch(() => {}); // progress is a nicety; the lesson never depends on it
+  }, [sessionId]);
+  useEffect(() => { if (isClassroom && hasPlan) { const timer = window.setTimeout(loadChecks, 0); return () => window.clearTimeout(timer); } return undefined; }, [isClassroom, hasPlan, loadChecks]);
+  const [celebrating, setCelebrating] = useState(false);
+  useEffect(() => {
+    if (!celebrating) return undefined;
+    const timer = window.setTimeout(() => setCelebrating(false), 4000);
+    return () => window.clearTimeout(timer);
+  }, [celebrating]);
+  const offerChecked = useRef(false);
+  const lastSaved = useRef(null);
+  const savedFor = useRef(null);
+  const position = isClassroom && hasPlan && started ? resumePosition({ stepIndex: current, player: voice.player, boardPage: pageIndex, stepCount: outline.length }) : null;
+  const positionKey = position ? `${position.stepIndex}|${position.boardPage}` : "";
+  useEffect(() => {
+    if (loading || offerChecked.current || !session || !isClassroom || !hasPlan) return undefined;
+    offerChecked.current = true;
+    const mark = readMark(browserStorage(), sessionId);
+    lastSaved.current = mark;
+    const offer = offerResume({ resume: session.resume, mark, stepCount: outline.length, pageCount: boardPages.length, currentStep: current });
+    // Deferred a tick, like the other loads here, so state is not set while this render commits.
+    window.setTimeout(() => { if (offer && alive.current) setResumeOffer(offer); }, 0);
+    return undefined;
+  }, [loading, session, isClassroom, hasPlan, sessionId, outline.length, boardPages.length, current]);
+  useEffect(() => {
+    // While an offer is waiting, saving would overwrite the very position it offers.
+    if (!position || resumeOffer || !offerChecked.current) return undefined;
+    savedFor.current = position;
+    const save = () => {
+      const next = savedFor.current;
+      if (!next || !shouldSave(next, lastSaved.current)) return;
+      lastSaved.current = next;
+      apiPut(`/classroom/sessions/${sessionId}/resume`, { stepIndex: next.stepIndex, boardPage: next.boardPage, ...(next.eventId ? { eventId: next.eventId } : {}) })
+        .then(() => writeMark(browserStorage(), sessionId, next))
+        .catch(() => { if (lastSaved.current === next) lastSaved.current = null; }); // a failed save is retried on the next change
+    };
+    const timer = window.setTimeout(save, 2000);
+    const onHide = () => { if (document.visibilityState === "hidden") save(); };
+    document.addEventListener("visibilitychange", onHide);
+    return () => { window.clearTimeout(timer); document.removeEventListener("visibilitychange", onHide); };
+  }, [positionKey, resumeOffer, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const answerResume = (accept) => {
+    const offer = resumeOffer;
+    setResumeOffer(null);
+    if (!offer) return;
+    writeMark(browserStorage(), sessionId, offer);
+    lastSaved.current = offer;
+    if (accept && boardPages.length) { setPageChoice({ count: boardPages.length, index: Math.min(offer.boardPage, boardPages.length - 1) }); setView("board"); }
+  };
   const readyDocs = documents.filter((doc) => doc.status === "READY").length;
+  const selection = pickDocuments(documents, excluded);
+  const choosingDocs = selection.ready.length > 1;
   const processingDocs = documents.filter((doc) => doc.status === "PROCESSING").length;
   const showPlanCard = needsPlan && !turns.length && !loading;
   const labelFor = (lesson) => {
@@ -296,11 +463,13 @@ function ClassroomInner({ sessionId }) {
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-600 dark:text-violet-400">UniLib learning</p>
           <h1 className="mt-2 text-3xl font-black">AI Classroom</h1>
           <p className="mt-2 max-w-xl text-sm text-ink/55">Start a guided lesson, attach your notes, and return to saved lessons whenever you’re ready.</p>
+          <Link to="/classroom/learning" className="mt-3 inline-block text-sm font-semibold text-violet-600 dark:text-violet-400">My learning and progress →</Link>
         </header>
+        <ResumeNudge />
         <section className={`${card} mb-8`} aria-labelledby="new-lesson">
           <h2 id="new-lesson" className="mb-4 text-lg font-bold">Start a lesson</h2>
           <SetupWizard onCreate={createSession} busy={busy} />
-          <ErrorLine>{error}</ErrorLine>
+          <ErrorNotice error={error} premium={premium} />
         </section>
         <section>
           <h2 className="mb-3 text-lg font-bold">Your lessons</h2>
@@ -320,7 +489,7 @@ function ClassroomInner({ sessionId }) {
               ))}
             </div>
           ) : <div className={card}><p className="text-sm text-ink/55">No saved lessons yet. Start with a topic above.</p></div>}
-          {!sessions.length && !loading && <ErrorLine>{error}</ErrorLine>}
+          {!sessions.length && !loading && <ErrorNotice error={error} premium={premium} />}
         </section>
       </> : <>
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -334,9 +503,35 @@ function ClassroomInner({ sessionId }) {
             <button onClick={() => setDialog("delete")} disabled={busy || !session} className="rounded-lg border border-red-500/20 px-3 py-2 text-sm text-red-600 transition hover:bg-red-500/5 disabled:opacity-50 dark:text-red-400">Delete lesson</button>
           </div>
         </div>
-        <ErrorLine>{error}</ErrorLine>
+        <ErrorNotice error={error} premium={premium} />
         <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <section className={`${card} flex min-h-[60vh] flex-col`} aria-label="Lesson">
+          <div className="min-w-0 space-y-4">
+          {isClassroom && (
+            <TutorStage
+              state={tutorState({ sending, listening: speechInput.listening, celebrating, playerStatus: voice.player.status, speaking: voice.speaking })}
+              variant={session?.tutorVoice} visible={voicePrefs.showTutor} onToggle={() => changeVoicePrefs({ showTutor: !voicePrefs.showTutor })}
+              mode={renderer.mode} canChoose={renderer.canChoose} onView={(tutorView) => changeVoicePrefs({ tutorView })} onFail={renderer.fail}
+            />
+          )}
+          {resumeOffer && (
+            <div role="region" aria-label="Continue where you left off" className="flex flex-wrap items-center gap-2 rounded-2xl border border-violet-500/30 bg-violet-500/10 px-4 py-3 text-sm">
+              <p className="min-w-0 flex-1 font-medium text-ink">
+                Continue from step {resumeOffer.stepIndex + 1}{outline[resumeOffer.stepIndex] ? `: ${outline[resumeOffer.stepIndex].title}` : ""}, where you left off on another device?
+              </p>
+              <button type="button" onClick={() => answerResume(true)} className="rounded-lg bg-violet-600 px-3 py-1.5 font-semibold text-white focus-visible:outline-2 focus-visible:outline-violet-500">Continue</button>
+              <button type="button" onClick={() => answerResume(false)} className="rounded-lg px-3 py-1.5 font-semibold text-ink/70 focus-visible:outline-2 focus-visible:outline-violet-500">Not now</button>
+            </div>
+          )}
+          <PageNav pages={boardPages} index={pageIndex} onChange={(index) => setPageChoice({ count: boardPages.length, index })} />
+          {hasBoard && (
+            <div role="group" aria-label="Show" className="grid grid-cols-2 gap-1 rounded-xl bg-ink/5 p-1 text-sm font-semibold lg:hidden">
+              {[["lesson", "Lesson"], ["board", "Board"]].map(([id, label]) => (
+                <button key={id} type="button" onClick={() => setView(id)} aria-pressed={view === id} className={`rounded-lg px-3 py-1.5 transition focus-visible:outline-2 focus-visible:outline-violet-500 ${view === id ? "bg-bg-elevated text-ink shadow-sm" : "text-ink/60"}`}>{label}</button>
+              ))}
+            </div>
+          )}
+          {hasBoard && <div className={view === "board" ? "" : "hidden lg:block"}><BoardPanel page={boardPages[pageIndex]} onAsk={askAboutBlock} onDownload={downloadBoard} onPrint={() => setPrinting(true)} /></div>}
+          <section className={`${card} flex min-h-[60vh] flex-col ${hasBoard && view === "board" ? "hidden lg:flex" : ""}`} aria-label="Lesson">
             {hasPlan && (
               <p className="mb-3 rounded-xl bg-violet-500/10 px-3 py-2 text-xs font-medium text-violet-800 dark:text-violet-200 lg:hidden">
                 {started ? `Step ${current + 1} of ${outline.length}: ${outline[current].title}` : `${plural(outline.length, "step")} · ready to start`}
@@ -345,9 +540,19 @@ function ClassroomInner({ sessionId }) {
             {showPlanCard ? (
               <PreparePlan session={session} readyDocs={readyDocs} processingDocs={processingDocs} planning={planning} onPrepare={preparePlan} />
             ) : <>
+              {voice.supported && isClassroom && started && replyEvents.length > 0 && (
+                <VoiceBar
+                  state={tutorState({ sending, listening: speechInput.listening, celebrating, playerStatus: voice.player.status, speaking: voice.speaking })}
+                  status={voice.player.status} caption={caption} error={voice.error} canListen={!sending}
+                  rate={voicePrefs.rate} onRate={(rate) => changeVoicePrefs({ rate })}
+                  voices={voice.voices} voice={voice.voice} voiceName={voicePrefs.voiceName} onVoice={(voiceName) => changeVoicePrefs({ voiceName })}
+                  autoSpeak={voicePrefs.autoSpeak} onAutoSpeak={(autoSpeak) => changeVoicePrefs({ autoSpeak })}
+                  controls={voice.controls} onListen={listen}
+                />
+              )}
               <div ref={listRef} className="mb-4 max-h-[60vh] min-h-[30vh] flex-1 space-y-5 overflow-y-auto pr-1">
                 {loading ? <p className="text-sm text-ink/50">Loading lesson…</p> : turns.length ? turns.map((turn) => (
-                  <article key={turn.id} className={`rounded-2xl p-4 ${turn.role === "STUDENT" ? "ml-8 bg-violet-500/10" : "mr-4 bg-ink/[0.035]"}`}>
+                  <article key={turn.id} id={`turn-${turn.id}`} className={`scroll-mt-2 rounded-2xl p-4 ${turn.role === "STUDENT" ? "ml-8 bg-violet-500/10" : "mr-4 bg-ink/[0.035]"}`}>
                     <p className="text-xs font-bold uppercase tracking-wider text-ink/50">{turn.role === "STUDENT" ? "You" : "UniLib Tutor"}</p>
                     {turn.role === "TUTOR"
                       ? (turn.structuredLesson
@@ -374,22 +579,45 @@ function ClassroomInner({ sessionId }) {
                   <button onClick={() => sendTurn(atLastStep ? "Recap and wrap up the lesson." : "Continue to the next step.", "CONTINUE")} disabled={sending} className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:opacity-50">
                     {atLastStep ? "Recap and finish" : "Continue to next step"}
                   </button>
+                  <button type="button" onClick={() => setCheckStep(current)} disabled={sending || checkStep === current} className="ml-2 rounded-xl border border-violet-500/40 px-4 py-2 text-sm font-semibold text-violet-800 transition hover:bg-violet-500/10 disabled:opacity-50 dark:text-violet-200">
+                    Check my understanding
+                  </button>
                 </div>
+              )}
+              {isClassroom && hasPlan && started && checkStep !== null && checkStep <= current && (
+                <CheckIn key={checkStep} sessionId={sessionId} stepIndex={checkStep} stepTitle={outline[checkStep]?.title} onScore={(celebrate) => { setCelebrating(celebrate); loadChecks(); }} onClose={() => setCheckStep(null)} />
               )}
               {processingDocs > 0 && (
                 <p role="status" className="mb-2 text-xs text-amber-800 dark:text-amber-300">
                   {plural(processingDocs, "document")} still processing. The tutor won’t use {processingDocs === 1 ? "it" : "them"} until {processingDocs === 1 ? "it’s" : "they’re"} ready.
                 </p>
               )}
+              {askAbout && (
+                <p className="mb-2 flex items-center gap-2 rounded-xl bg-violet-500/10 px-3 py-1.5 text-xs text-violet-900 dark:text-violet-100">
+                  <span className="min-w-0 flex-1 truncate">Asking about: {askAbout.label}</span>
+                  <button type="button" onClick={() => setAskAbout(null)} aria-label="Stop asking about this whiteboard item" className="rounded p-0.5 hover:bg-violet-500/20 focus-visible:outline-2 focus-visible:outline-violet-500"><X aria-hidden="true" className="h-3.5 w-3.5" /></button>
+                </p>
+              )}
               <form onSubmit={submitQuestion} className="flex gap-2 border-t border-ink/10 pt-4">
-                <input aria-label="Ask your tutor a question" value={question} onChange={(e) => setQuestion(e.target.value)} maxLength={4000} placeholder="Ask your tutor a question…" className="min-w-0 flex-1 rounded-xl border border-ink/10 bg-bg px-4 py-3 outline-none focus:border-violet-500" />
+                <input ref={questionInput} aria-label="Ask your tutor a question" value={question} onChange={(e) => setQuestion(e.target.value)} maxLength={4000} placeholder="Ask your tutor a question…" className="min-w-0 flex-1 rounded-xl border border-ink/10 bg-bg px-4 py-3 outline-none focus:border-violet-500" />
+                {speechInput.supported && (
+                  <button type="button" onClick={speechInput.listening ? speechInput.stop : speechInput.start} disabled={sending} aria-pressed={speechInput.listening}
+                    aria-label={speechInput.listening ? "Stop voice input" : "Ask with your voice"} title={speechInput.listening ? "Stop voice input" : "Ask with your voice"}
+                    className={`inline-flex w-12 items-center justify-center rounded-xl border transition focus-visible:outline-2 focus-visible:outline-violet-500 disabled:opacity-50 ${speechInput.listening ? "border-violet-500 bg-violet-500/15 text-violet-700 dark:text-violet-200 motion-safe:animate-pulse" : "border-ink/10 hover:bg-ink/5"}`}>
+                    {speechInput.listening ? <Square aria-hidden="true" className="h-4 w-4" /> : <Mic aria-hidden="true" className="h-5 w-5" />}
+                  </button>
+                )}
                 <button disabled={sending || !question.trim()} className="rounded-xl bg-violet-600 px-5 font-semibold text-white transition hover:bg-violet-500 disabled:opacity-50">{sending ? "…" : "Send"}</button>
               </form>
+              {speechInput.listening && <p role="status" className="mt-2 text-xs text-ink/60">Listening{speechInput.interim ? `: ${speechInput.interim}` : "…"}</p>}
+              {speechInput.error && <p role="alert" className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">{speechInput.error}</p>}
+              {speechInput.supported && !speechInput.listening && !speechInput.error && <p className="mt-2 text-xs text-ink/45">Voice input uses your browser’s speech service, which may send your audio to the browser’s provider.</p>}
             </>}
           </section>
+          </div>
 
           <aside className="space-y-4">
-            {hasPlan && <OutlinePanel objectives={objectives} outline={outline} current={current} started={started} />}
+            {hasPlan && <OutlinePanel objectives={objectives} outline={outline} current={current} started={started} checks={checks} onCheck={started ? setCheckStep : undefined} />}
             <section className={card}>
               <h2 className="font-bold">Class materials</h2>
               <label className="mt-3 block cursor-pointer rounded-xl border border-dashed border-violet-500/30 p-4 text-center text-sm text-violet-700 transition hover:bg-violet-500/5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-violet-500 dark:text-violet-300">
@@ -403,9 +631,23 @@ function ClassroomInner({ sessionId }) {
                       <p className="truncate text-sm font-medium">{doc.originalName}</p>
                       <p className="text-xs text-ink/55">
                         {DOC_STATUS[doc.status] ?? doc.status}
-                        {doc.extractedChars ? ` · ${doc.extractedChars.toLocaleString()} chars` : ""}
-                        {doc.truncated ? " · only the start is used" : ""}
+                        {doc.extractedChars && !(doc.truncated && doc.totalChars) ? ` · ${doc.extractedChars.toLocaleString()} chars` : ""}
+                        {doc.truncated ? ` · ${truncationNote(doc)}` : ""}
                       </p>
+                      {doc.status === "READY" && isScan(doc) && (
+                        <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-300">Read from a scan. Equations and handwriting may be misread.</p>
+                      )}
+                      {choosingDocs && doc.status === "READY" && (
+                        <label className="mt-1.5 flex cursor-pointer items-center gap-2 text-xs text-ink/65 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-violet-500">
+                          <input
+                            type="checkbox" className="h-4 w-4 accent-violet-600"
+                            checked={selection.ids.includes(doc.id)}
+                            disabled={selection.ids.length === 1 && selection.ids.includes(doc.id)}
+                            onChange={() => toggleDocument(doc.id)}
+                          />
+                          Use in lesson
+                        </label>
+                      )}
                       {["FAILED", "DELETE_FAILED", "DELETE_PENDING"].includes(doc.status) && (
                         <button disabled={busy} onClick={() => retryDocument(doc.id)} className="mt-1 text-xs font-semibold text-amber-800 dark:text-amber-300">{doc.status === "FAILED" ? "Retry processing" : "Retry deletion"}</button>
                       )}
@@ -414,6 +656,7 @@ function ClassroomInner({ sessionId }) {
                   </div>
                 ))}
               </div>
+              {choosingDocs && <p className="mt-2 text-xs text-ink/50">The tutor answers from the ticked documents. The lesson plan is built from all of them.</p>}
             </section>
             <section className={card}>
               <h2 className="font-bold">Link UniLib material</h2>
@@ -440,6 +683,7 @@ function ClassroomInner({ sessionId }) {
       </>}
     </main>
 
+    {printing && <BoardPrint pages={boardPages} title={boardTitle} onDone={() => setPrinting(false)} />}
     <Dialog open={dialog === "rename"} onClose={() => setDialog(null)} labelledBy="rename-title">
       <RenameForm initial={session?.title || ""} onSave={saveTitle} onCancel={() => setDialog(null)} />
     </Dialog>

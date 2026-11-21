@@ -4,10 +4,12 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCheck, faCrown, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import Navbar from "./Navbar";
 import { apiGet, apiPost } from "./api";
+import { PREMIUM_CLASSROOM_BENEFITS } from "./classroom/quota";
 
 export default function Premium() {
   const [searchParams] = useSearchParams();
   const reference = searchParams.get("reference");
+  const fromClassroom = searchParams.get("from") === "classroom";
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [openingCheckout, setOpeningCheckout] = useState(false);
@@ -55,8 +57,9 @@ export default function Premium() {
           </div>
           <h1 className="mt-5 text-3xl sm:text-4xl font-black">Study with more AI support</h1>
           <p className="mt-3 text-ink/60 leading-relaxed">
-            Premium is planned to include a higher monthly AI allowance and advanced AI study tools. The library and core study access remain free.
+            Premium gives you more room to learn with AI. The library and core study features stay free for everyone.
           </p>
+          {fromClassroom && <p role="note" className="mt-3 rounded-xl bg-violet-500/10 p-3 text-sm text-violet-200">You reached a daily AI Classroom limit. Free limits reset every day, and Premium raises them.</p>}
 
           <div className="mt-8 rounded-2xl border border-ink/10 bg-white/[0.03] p-5">
             <div className="flex items-baseline gap-2">
@@ -65,7 +68,7 @@ export default function Premium() {
             </div>
             <p className="mt-1 text-sm text-ink/45">Monthly recurring subscription. Manage or cancel according to the subscription instructions provided at checkout.</p>
             <ul className="mt-5 space-y-3 text-sm text-ink/70">
-              {["Higher monthly AI allowance", "Advanced AI study tools", "Free access to the library and core study features"].map((item) => (
+              {[...PREMIUM_CLASSROOM_BENEFITS, "Higher monthly AI allowance", "Advanced AI study tools", "Free access to the library and core study features"].map((item) => (
                 <li key={item} className="flex gap-3"><FontAwesomeIcon className="mt-1 text-emerald-400" icon={faCheck} /><span>{item}</span></li>
               ))}
             </ul>

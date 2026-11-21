@@ -57,3 +57,38 @@ export function currentStep(source, total) {
   const value = Number.isInteger(source?.currentStepIndex) ? source.currentStepIndex : 0;
   return Math.min(Math.max(value, 0), total - 1);
 }
+
+/** Where a step came from, per document, with the section names when the document had them: "notes.pdf — Limit laws; Continuity". */
+export function describeSources(sources) {
+  const byTitle = new Map();
+  for (const source of Array.isArray(sources) ? sources : []) {
+    if (!source?.title) continue;
+    const headings = byTitle.get(source.title) ?? [];
+    if (source.heading && !headings.includes(source.heading)) headings.push(source.heading);
+    byTitle.set(source.title, headings);
+  }
+  return [...byTitle].map(([title, headings]) => (headings.length ? `${title} — ${headings.join("; ")}` : title));
+}
+
+/** A scan was read by OCR, so equations and handwriting are the likeliest things to be misread. */
+export const isScan = (doc) => doc?.extractionMethod === "OCR";
+
+/** How much of a long document is used. Older documents have no totalChars, so they get the general wording. */
+export function truncationNote(doc) {
+  if (!doc?.truncated) return "";
+  return doc.totalChars && doc.extractedChars
+    ? `only the first ${doc.extractedChars.toLocaleString()} of ${doc.totalChars.toLocaleString()} characters are used`
+    : "only the start is used";
+}
+
+/**
+ * Which ready documents the tutor should answer from. `ids` always lists the documents that are switched on; it is only sent to
+ * the server when the student has switched some off (`narrowed`), because leaving it out already means "all of them". At least one
+ * stays on: an empty selection would also mean "all", so it falls back to every ready document.
+ */
+export function pickDocuments(documents, excluded) {
+  const ready = documents.filter((doc) => doc.status === "READY");
+  const chosen = ready.filter((doc) => !excluded.includes(doc.id));
+  const ids = (chosen.length ? chosen : ready).map((doc) => doc.id);
+  return { ready, ids, narrowed: ids.length > 0 && ids.length < ready.length };
+}
