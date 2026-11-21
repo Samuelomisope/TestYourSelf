@@ -180,14 +180,14 @@ function ReviewRow({ file, schools, onResolved, onDismissed, onMarkedDuplicate, 
       {error && <p className="text-pink-400 text-xs mb-2">{error}</p>}
 
       <div className="grid grid-cols-2 gap-2 mb-3">
-        <select value={schoolId} onChange={(e) => setSchoolId(e.target.value)} className={selectClass}>
+        <select aria-label="School" value={schoolId} onChange={(e) => setSchoolId(e.target.value)} className={selectClass}>
           <option value="">— School —</option>
           {schools.map((s) => (
             <option key={s.id} value={s.id}>{s.code} — {s.name}</option>
           ))}
         </select>
 
-        <select
+        <select aria-label="Department"
           value={departmentId}
           onChange={(e) => setDepartmentId(e.target.value)}
           disabled={!schoolId}
@@ -199,7 +199,7 @@ function ReviewRow({ file, schools, onResolved, onDismissed, onMarkedDuplicate, 
           ))}
         </select>
 
-        <select
+        <select aria-label="Program"
           value={programId}
           onChange={(e) => setProgramId(e.target.value)}
           disabled={!departmentId}
@@ -211,7 +211,7 @@ function ReviewRow({ file, schools, onResolved, onDismissed, onMarkedDuplicate, 
           ))}
         </select>
 
-        <select
+        <select aria-label="Course"
           value={courseId}
           onChange={(e) => setCourseId(e.target.value)}
           disabled={!programId}

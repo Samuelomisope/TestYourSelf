@@ -178,11 +178,11 @@ function Calculator({ onClose }) {
   const isOperator = (v) => ["÷","×","−","+","=","AC"].includes(v);
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/60  z-50 flex items-center justify-center p-4">
       <div className={`${CARD} w-80 overflow-hidden`}>
         <div className="flex items-center justify-between px-6 pt-5 pb-2">
           <span className="text-ink font-semibold text-sm">Calculator</span>
-          <button onClick={onClose} className="w-7 h-7 rounded-full flex items-center justify-center text-ink/30 hover:text-ink hover:bg-ink/[0.06] transition">
+          <button aria-label="Close" onClick={onClose} className="w-7 h-7 rounded-full flex items-center justify-center text-ink/30 hover:text-ink hover:bg-ink/[0.06] transition">
             <FontAwesomeIcon icon={faXmark} className="text-xs" />
           </button>
         </div>
@@ -451,7 +451,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/60  z-50 flex items-end sm:items-center justify-center p-4">
       <div className="bg-bg-elevated border border-ink/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
 
         {/* Header */}
@@ -476,7 +476,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
                 Cancel
               </button>
             )}
-            <button onClick={onClose} className="text-ink/30 hover:text-ink transition">
+            <button aria-label="Close" onClick={onClose} className="text-ink/30 hover:text-ink transition">
               <FontAwesomeIcon icon={faXmark} />
             </button>
           </div>
@@ -610,7 +610,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
               {saveError && <p className="text-pink-400 text-sm">{saveError}</p>}
               <div>
   <label className="text-xs text-ink/30 mb-1 block">School</label>
-  <select
+  <select aria-label="Select School"
     value={form.schoolId}
     onChange={(e) => loadDepartments(e.target.value)}
     className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
@@ -622,7 +622,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
 
 <div>
   <label className="text-xs text-ink/30 mb-1 block">Department</label>
-  <select
+  <select aria-label="Select Department"
     value={form.departmentId}
     disabled={!form.schoolId}
     onChange={(e) => {
@@ -638,7 +638,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
 
 <div>
   <label className="text-xs text-ink/30 mb-1 block">Program</label>
-  <select
+  <select aria-label="Select Program"
     value={form.programId}
     disabled={!form.departmentId}
     onChange={(e) => loadCourses(e.target.value)}
@@ -652,7 +652,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
 {form.programId && (
   <div>
     <label className="text-xs text-ink/30 mb-1 block">Course</label>
-    <select
+    <select aria-label="Select existing course"
       value={form.courseId}
       onChange={(e) => {
         const c = courses.find((c) => c.id === e.target.value);
@@ -667,19 +667,19 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
     {!form.courseId && (
       <div className="mt-2 border border-violet-500/20 rounded-xl p-3 space-y-2 bg-violet-500/5">
         <p className="text-xs text-ink/40">Course not in the list? Create it:</p>
-        <input
+        <input aria-label="Course code"
           type="text"
           placeholder="Course code e.g. CHM 101"
           value={form.courseCode}
           onChange={(e) => setForm((f) => ({ ...f, courseCode: e.target.value }))}
-          className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+          className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 transition"
         />
-        <input
+        <input aria-label="Course title"
           type="text"
           placeholder="Course title e.g. General Chemistry"
           value={form.courseTitle}
           onChange={(e) => setForm((f) => ({ ...f, courseTitle: e.target.value }))}
-          className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+          className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 transition"
         />
         <button
           type="button"
@@ -695,7 +695,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
               <div className="flex gap-2">
                 <div className="flex-1">
                   <label className="text-xs text-ink/30 mb-1 block">Level</label>
-                  <select
+                  <select aria-label="Level"
                     value={form.level}
                     onChange={e => setForm(f => ({ ...f, level: e.target.value }))}
                     className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
@@ -708,7 +708,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
                 </div>
                 <div className="flex-1">
                   <label className="text-xs text-ink/30 mb-1 block">Semester</label>
-                  <select
+                  <select aria-label="Semester"
                     value={form.semester}
                     onChange={e => setForm(f => ({ ...f, semester: e.target.value }))}
                     className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
@@ -722,12 +722,12 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
 
               <div>
                 <label className="text-xs text-ink/30 mb-1 block">Description</label>
-                <textarea
+                <textarea aria-label="Optional description"
                   placeholder="Optional description..."
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   rows={3}
-                  className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
+                  className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 resize-none transition"
                 />
               </div>
               <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-ink/70">
@@ -1496,7 +1496,7 @@ const rosterFaculties = useMemo(
       )}
 
       {/* HEADER */}
-      <header className="fixed top-0 left-0 w-full z-40 bg-bg/85 backdrop-blur-md">
+      <header className="fixed top-0 left-0 w-full z-40 bg-bg">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-3">
@@ -1592,15 +1592,15 @@ const rosterFaculties = useMemo(
               <svg className="w-4 h-4 text-ink/30 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" strokeLinecap="round" />
               </svg>
-              <input
+              <input aria-label="Search by title, course code or keyword"
                 type="text"
                 placeholder="Search by title, course code or keyword..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="flex-1 bg-transparent text-sm outline-none text-ink placeholder-ink/25"
+                className="flex-1 bg-transparent text-sm outline-none text-ink placeholder:text-muted"
               />
               {search && (
-                <button onClick={() => setSearch("")} className="text-ink/30 hover:text-ink/60 transition">
+                <button aria-label="Clear search" onClick={() => setSearch("")} className="text-ink/30 hover:text-ink/60 transition">
                   <FontAwesomeIcon icon={faXmark} className="text-xs" />
                 </button>
               )}

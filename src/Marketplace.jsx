@@ -103,10 +103,6 @@ function Marketplace() {
 
   return (
     <div className="min-h-screen bg-bg text-ink">
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -right-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
-        <div className="absolute bottom-0 left-1/4 w-72 h-72 bg-pink-500 rounded-full opacity-[0.06] blur-[100px]" />
-      </div>
 
       <Navbar />
 
@@ -131,8 +127,8 @@ function Marketplace() {
         <form onSubmit={(e) => { e.preventDefault(); fetchListings(); }} className="flex gap-2 mb-4">
           <div className="flex-1 relative">
             <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/30 text-sm" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search listings..."
-              className="w-full pl-9 pr-4 py-2.5 bg-white/[0.03] border border-ink/10 rounded-xl text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/40 transition" />
+            <input aria-label="Search listings" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search listings..."
+              className="w-full pl-9 pr-4 py-2.5 bg-white/[0.03] border border-ink/10 rounded-xl text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/40 transition" />
           </div>
           <button type="button" onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl border text-sm transition ${activeFilterCount > 0 ? "bg-violet-500 text-white border-violet-500" : "border-ink/10 text-ink/50 hover:border-violet-500/30"}`}>
@@ -153,7 +149,7 @@ function Marketplace() {
               ].map(({ label, key, options }) => (
                 <div key={key}>
                   <label className="text-xs text-ink/30 mb-1 block">{label}</label>
-                  <select value={filters[key]} onChange={e => setFilters(f => ({ ...f, [key]: e.target.value }))}
+                  <select aria-label="All" value={filters[key]} onChange={e => setFilters(f => ({ ...f, [key]: e.target.value }))}
                     className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/40 transition">
                     <option value="">All</option>
                     {options.map(o => <option key={o} value={o}>{o}</option>)}
@@ -163,8 +159,8 @@ function Marketplace() {
               {[{ label: "Min Price (₦)", key: "minPrice", placeholder: "0" }, { label: "Max Price (₦)", key: "maxPrice", placeholder: "Any" }].map(({ label, key, placeholder }) => (
                 <div key={key}>
                   <label className="text-xs text-ink/30 mb-1 block">{label}</label>
-                  <input type="number" value={filters[key]} onChange={e => setFilters(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder}
-                    className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/40 transition" />
+                  <input aria-label="Price filter" type="number" value={filters[key]} onChange={e => setFilters(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder}
+                    className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/40 transition" />
                 </div>
               ))}
             </div>

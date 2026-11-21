@@ -18,14 +18,9 @@ function Privacy() {
   return (
     <div className="min-h-screen bg-bg text-ink">
 
-      {/* Ambient orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
-        <div className="absolute bottom-0 right-0 w-72 h-72 bg-emerald-500 rounded-full opacity-[0.06] blur-[100px]" />
-      </div>
 
       {/* Header */}
-      <header className="fixed top-0 left-0 w-full z-40 bg-bg/80 backdrop-blur-md border-b border-ink/5">
+      <header className="fixed top-0 left-0 w-full z-40 bg-bg border-b border-ink/5">
         <div className="max-w-3xl mx-auto flex items-center gap-3 px-4 py-3">
           <Link to="/home" className="text-ink/40 hover:text-violet-400 transition">
             <FontAwesomeIcon icon={faChevronDown} className="rotate-90" />

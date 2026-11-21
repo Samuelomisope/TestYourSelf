@@ -29,7 +29,7 @@ function NotificationPanel({ onClose }) {
     <div className="absolute right-0 top-12 w-80 bg-bg-elevated border border-ink/10 rounded-2xl shadow-2xl z-50 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-ink/5">
         <h3 className="font-semibold text-ink text-sm">Notifications</h3>
-        <button onClick={onClose} className="text-ink/30 hover:text-ink transition text-sm">
+        <button aria-label="Close" onClick={onClose} className="text-ink/30 hover:text-ink transition text-sm">
           <FontAwesomeIcon icon={faXmark} />
         </button>
       </div>
