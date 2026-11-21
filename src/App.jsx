@@ -29,7 +29,6 @@ import UniversityWelcomePage from "./UniversityWelcomePage";
 import StudyPlan from "./StudyPlan";
 import Premium from "./Premium";
 import PastQuestions from "./PastQuestions";
-import Classroom from "./Classroom";
 
 // The Classroom pages are large (lesson rendering, voice, tutor) and only some students open them, so they load on demand.
 const Classroom = lazy(() => import("./Classroom"));
