@@ -23,6 +23,7 @@ export function canViewInApp(fileType) {
 
 /** The material's own file name for an offline copy, safe for the download attribute. */
 export function downloadName(title, fileType) {
-  const base = String(title || "material").replace(/[\\/:*?"<>|\u0000-\u001f]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 100) || "material";
+  const noControls = Array.from(String(title || "material")).filter((c) => c.charCodeAt(0) >= 32).join("");
+  const base = noControls.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 100) || "material";
   return canViewInApp(fileType) && !/\.pdf$/i.test(base) ? `${base}.pdf` : base;
 }

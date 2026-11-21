@@ -2,6 +2,8 @@ import { getAccessToken } from "./token";
 import { useState, useEffect } from "react";
 import { useAuth } from "./useAuth";
 import { auth, db } from "./firebase";
+import HomeStudyBar from "./library/HomeStudyBar";
+import { daysToExam, examLabel } from "./library/continueView.js";
 import { apiGet, updateMe, getUniversityByName } from "./api";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import NotificationPanel from "./NotificationPanel";
@@ -173,6 +175,7 @@ function TodayStudyCard() {
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs font-semibold text-violet-400 tracking-widest uppercase">
           {data.plan.subject} — Day {data.dayNumber} of {data.plan.daysAvailable}
+          {examLabel(daysToExam(data.plan.examDate)) && <span className="ml-2 rounded-full bg-violet-500/15 px-2 py-0.5 normal-case tracking-normal">{examLabel(daysToExam(data.plan.examDate))}</span>}
         </p>
         <Link to="/study-plan" className="text-xs text-violet-400 hover:text-violet-300 font-medium transition">
           View Full Study Plan →
@@ -493,6 +496,7 @@ const timeAgo = (dateStr) => {
           <p className="text-sm italic text-ink/30 mb-1">Study smarter. Learn together. Test yourself daily.</p>
           <LiveClock />
         </div>
+        <HomeStudyBar />
             <div className="mb-6">
           <TodayStudyCard />
         </div>
