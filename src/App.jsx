@@ -30,11 +30,14 @@ import Premium from "./Premium";
 import PastQuestions from "./PastQuestions";
 import Classroom from "./Classroom";
 import FeedbackProvider from "./ui/Feedback.jsx";
+import { OnboardingProvider } from "./onboarding/OnboardingContext";
+import OnboardingLayer from "./onboarding/OnboardingLayer";
 
 function App() {
   return (
     <BrowserRouter>
       <FeedbackProvider>
+      <OnboardingProvider>
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
@@ -72,6 +75,8 @@ function App() {
             </WriterRoute>
             </ProtectedRoute>} />
       </Routes>
+      <OnboardingLayer />
+      </OnboardingProvider>
       </FeedbackProvider>
     </BrowserRouter>
   );
