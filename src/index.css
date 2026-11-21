@@ -58,36 +58,37 @@ body { background-color: #ffffff; }
 html.dark body { background-color: #0a0a0f; }
 html[data-theme="sepia"] body { background-color: #f4ecd8; }
 
-/* ---------------------------------------------------------------------------
- * Readability floor (bridge). Many older screens use text-ink/20..50 for real
- * copy, which is unreadable on dark and sepia. Until each is moved to
- * text-muted, lift those steps to the accessible secondary-text colour, keeping
- * the lightest steps (<=25) as a visibly softer "decorative / disabled" tone.
- * ------------------------------------------------------------------------- */
-.text-ink\/5, .text-ink\/10, .text-ink\/15, .text-ink\/20, .text-ink\/25 { color: rgb(var(--ink) / 0.55); }
-.text-ink\/30, .text-ink\/35, .text-ink\/40, .text-ink\/45, .text-ink\/50,
-.text-ink\/55, .text-ink\/60, .text-ink\/65 { color: rgb(var(--ink) / var(--muted-a)); }
-
-/* Solid violet buttons carry white text: violet-500 is only 4.4:1, the theme accent (violet-600) is 5.7:1. */
-.bg-violet-500 { background-color: rgb(var(--accent)); }
-.hover\:bg-violet-400:hover { background-color: rgb(var(--accent-hover) / 1); }
-
-/* Mobile browsers: 100vh includes the collapsing address bar and hides the bottom of the page. */
-@supports (height: 100dvh) {
-  .min-h-screen { min-height: 100dvh; }
-  .h-screen { height: 100dvh; }
-}
-
-/* Respect the operating-system "reduce motion" setting. */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+/* Whiteboard printing (Phase D5): only #board-print is shown, always in light colours whatever the theme. */
+#board-print { display: none; }
+@media print {
+  html[data-print-board] #root { display: none !important; }
+  html[data-print-board], html[data-print-board] body { background: #fff !important; color-scheme: light; }
+  html[data-print-board] #board-print {
+    display: block; padding: 0;
+    --ink: 10 10 15; --bg: 255 255 255; --bg-elevated: 255 255 255;
+    background: #fff; color: #0a0a0f;
   }
+  #board-print h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 1rem; }
+  #board-print h2 { font-size: 1.1rem; font-weight: 700; margin: 1.25rem 0 0.5rem; break-after: avoid; }
+  #board-print .board-print-block { margin: 0.6rem 0; break-inside: avoid; }
+  #board-print table { border-collapse: collapse; }
 }
 
-/* Keyboard focus that is visible on every theme. */
-:focus-visible { outline: 2px solid rgb(var(--accent-hover)); outline-offset: 2px; }
-html:not(.dark) :focus-visible { outline-color: rgb(var(--accent)); }
+/* Animated tutor (Phase F). Everything that moves is here and is off for students who prefer reduced motion. */
+.tutor-blink, .tutor-talk, .tutor-sway, .tutor-dot, .tutor-sparkle, .tutor-waves, .tutor-cheer { transform-box: fill-box; transform-origin: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .tutor-blink { animation: tutor-blink 4.2s infinite; }
+  .tutor-talk { animation: tutor-talk .32s ease-in-out infinite alternate; }
+  .tutor-sway { animation: tutor-sway 4.5s ease-in-out infinite; }
+  .tutor-dot { animation: tutor-dot 1s ease-in-out infinite; }
+  .tutor-sparkle { animation: tutor-sparkle 1.1s ease-in-out infinite alternate; }
+  .tutor-waves { animation: tutor-waves 1.2s ease-in-out infinite; }
+  .tutor-cheer { animation: tutor-cheer .6s ease-in-out infinite alternate; }
+}
+@keyframes tutor-blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
+@keyframes tutor-talk { from { transform: scaleY(.35); } to { transform: scaleY(1.1); } }
+@keyframes tutor-sway { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(2px); } }
+@keyframes tutor-dot { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+@keyframes tutor-sparkle { from { transform: scale(.8); opacity: .6; } to { transform: scale(1.15); opacity: 1; } }
+@keyframes tutor-waves { 0%, 100% { opacity: .4; } 50% { opacity: 1; } }
+@keyframes tutor-cheer { from { transform: translateY(2px); } to { transform: translateY(-3px); } }

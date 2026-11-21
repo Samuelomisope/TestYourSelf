@@ -1,0 +1,167 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import { blockSummary, clampZoom, drawableBlocks, formulaMarkdown, normalizeBlock, normalizeChart, normalizeDiagram, pinchZoom, stepZoom, zoomLabel } from "./boardHelpers.js";
+
+describe("zoom", () => {
+  it("clamps to the supported range and recovers from bad numbers", () => {
+    assert.equal(clampZoom(0.1), 0.5);
+    assert.equal(clampZoom(9), 2);
+    assert.equal(clampZoom(1.234567), 1.23);
+    for (const bad of [NaN, Infinity, undefined, null, "2"]) assert.equal(clampZoom(bad), 1);
+  });
+
+  it("steps through the levels and stops at both ends", () => {
+    assert.equal(stepZoom(1, 1), 1.25);
+    assert.equal(stepZoom(1, -1), 0.75);
+    assert.equal(stepZoom(2, 1), 2);
+    assert.equal(stepZoom(0.5, -1), 0.5);
+  });
+
+  it("steps from an in-between zoom (after a pinch) to the neighbouring level", () => {
+    assert.equal(stepZoom(1.12, 1), 1.25); // nearest level is 1.0, so one step up
+    assert.equal(stepZoom(1.12, -1), 0.75);
+    assert.equal(stepZoom(NaN, 1), 1.25);
+  });
+
+  it("scales by how far the fingers have moved, within limits", () => {
+    assert.equal(pinchZoom(1, 100, 150), 1.5);
+    assert.equal(pinchZoom(1, 100, 50), 0.5);
+    assert.equal(pinchZoom(1.5, 100, 400), 2);
+    assert.equal(pinchZoom(1, 0, 100), 1);
+    assert.equal(pinchZoom(1.25, 100, NaN), 1.25);
+  });
+
+  it("labels the zoom as a percentage", () => {
+    assert.equal(zoomLabel(1), "100%");
+    assert.equal(zoomLabel(0.75), "75%");
+  });
+});
+
+describe("formulaMarkdown", () => {
+  it("wraps a formula as display math and removes dollar signs", () => {
+    assert.equal(formulaMarkdown("x^2"), "$$\nx^2\n$$");
+    assert.equal(formulaMarkdown("$$x+1$$"), "$$\nx+1\n$$");
+    assert.equal(formulaMarkdown("a$\n$$\n# heading"), "$$\na\n\n# heading\n$$");
+  });
+
+  it("returns nothing for empty, oversized or non-text input", () => {
+    for (const bad of ["", "   ", "$$", "a".repeat(401), null, undefined, 5, {}]) assert.equal(formulaMarkdown(bad), "");
+  });
+});
+
+describe("normalizeBlock", () => {
+  it("keeps valid blocks and their keys", () => {
+    assert.deepEqual(normalizeBlock({ key: "k", kind: "TEXT", text: "hi" }), { kind: "TEXT", key: "k", text: "hi" });
+    assert.deepEqual(normalizeBlock({ key: "k", kind: "LIST", ordered: true, items: ["a", "b"] }), { kind: "LIST", key: "k", ordered: true, items: ["a", "b"] });
+    assert.deepEqual(normalizeBlock({ kind: "FORMULA", latex: "x", caption: "c" }), { kind: "FORMULA", key: undefined, markdown: "$$\nx\n$$", caption: "c" });
+  });
+
+  it("drops anything unusable instead of throwing", () => {
+    for (const bad of [null, undefined, "x", 5, [], {}, { kind: "HTML", html: "<b>x</b>" }, { kind: "IMAGE", url: "https://x.test/a.png" },
+      { kind: "TEXT", text: "  " }, { kind: "TEXT", text: 5 }, { kind: "LIST", items: "nope" }, { kind: "LIST", items: ["", " "] }, { kind: "FORMULA", latex: "" },
+      { kind: "TABLE", headers: [], rows: [["1"]] }, { kind: "TABLE", headers: ["a"], rows: [] }, { kind: "TABLE", headers: ["a"], rows: ["x", null] }]) {
+      assert.equal(normalizeBlock(bad), null);
+    }
+  });
+
+  it("caps long lists, text and tables", () => {
+    assert.equal(normalizeBlock({ kind: "TEXT", text: "a".repeat(900) }).text.length, 600);
+    assert.equal(normalizeBlock({ kind: "LIST", items: Array(30).fill("x") }).items.length, 12);
+    const table = normalizeBlock({ kind: "TABLE", headers: Array(12).fill("h"), rows: Array(30).fill(Array(12).fill("c")) });
+    assert.equal(table.headers.length, 8);
+    assert.equal(table.rows.length, 12);
+    assert.equal(table.rows[0].length, 8);
+  });
+
+  it("pads ragged table rows and skips empty ones", () => {
+    const table = normalizeBlock({ kind: "TABLE", headers: ["a", "b"], rows: [["1"], [], ["", ""], ["2", "3", "4"]], caption: "T" });
+    assert.deepEqual(table.rows, [["1", ""], ["2", "3"]]);
+    assert.equal(table.caption, "T");
+  });
+
+  it("shows a diagram or chart only with a text alternative", () => {
+    assert.deepEqual(normalizeBlock({ kind: "DIAGRAM", alt: "A leads to B", nodes: [] }), { kind: "DIAGRAM", key: undefined, alt: "A leads to B", diagram: null });
+    assert.deepEqual(normalizeBlock({ kind: "CHART", alt: "Rising line" }), { kind: "CHART", key: undefined, alt: "Rising line", chart: null });
+    assert.equal(normalizeBlock({ kind: "DIAGRAM", nodes: [] }), null);
+    assert.equal(normalizeBlock({ kind: "CHART", alt: "  " }), null);
+  });
+});
+
+describe("drawableBlocks", () => {
+  it("filters a page's blocks and copes with a missing page", () => {
+    assert.deepEqual(drawableBlocks({ blocks: [{ kind: "TEXT", text: "a" }, { kind: "NOPE" }, null] }).map((b) => b.kind), ["TEXT"]);
+    for (const bad of [null, undefined, {}, { blocks: "x" }]) assert.deepEqual(drawableBlocks(bad), []);
+  });
+});
+
+describe("normalizeDiagram", () => {
+  const nodes = [{ id: "a", label: "Start" }, { id: "b", label: "End" }];
+
+  it("keeps a valid diagram and defaults the direction to left to right", () => {
+    assert.deepEqual(normalizeDiagram({ nodes, edges: [{ from: "a", to: "b", label: "then" }] }), { direction: "LR", nodes, edges: [{ from: "a", to: "b", label: "then" }] });
+    assert.equal(normalizeDiagram({ direction: "TB", nodes, edges: [] }).direction, "TB");
+    assert.equal(normalizeDiagram({ direction: "sideways", nodes, edges: [] }).direction, "LR");
+  });
+
+  it("needs two usable nodes", () => {
+    for (const bad of [{}, { nodes: "x" }, { nodes: [nodes[0]] }, { nodes: [nodes[0], { id: "a", label: "dup" }] }, { nodes: [nodes[0], { id: "bad id!", label: "x" }] }, { nodes: [nodes[0], { id: "b", label: "  " }] }]) {
+      assert.equal(normalizeDiagram(bad), null);
+    }
+  });
+
+  it("drops edges to unknown nodes, to itself, and malformed edges; caps the sizes", () => {
+    const d = normalizeDiagram({ nodes, edges: [{ from: "a", to: "zzz" }, { from: "a", to: "a" }, null, "x", { from: "b", to: "a" }] });
+    assert.deepEqual(d.edges, [{ from: "b", to: "a", label: "" }]);
+    const many = normalizeDiagram({ nodes: Array.from({ length: 15 }, (_, i) => ({ id: `n${i}`, label: `Node ${i}` })), edges: Array.from({ length: 40 }, () => ({ from: "n0", to: "n1" })) });
+    assert.equal(many.nodes.length, 10);
+    assert.equal(many.edges.length, 20);
+  });
+});
+
+describe("normalizeChart", () => {
+  const base = { chart: "bar", labels: ["Mon", "Tue", "Wed"], series: [{ name: "Hours", values: [1, 2, 3] }] };
+
+  it("keeps a valid chart and defaults to a line chart", () => {
+    assert.deepEqual(normalizeChart(base), { chart: "bar", labels: ["Mon", "Tue", "Wed"], series: [{ name: "Hours", values: [1, 2, 3] }], xLabel: "", yLabel: "" });
+    assert.equal(normalizeChart({ ...base, chart: "pie" }).chart, "line");
+  });
+
+  it("drops series that do not match the labels or hold non-finite numbers, and needs one left", () => {
+    const c = normalizeChart({ ...base, series: [...base.series, { name: "short", values: [1] }, { name: "nan", values: [1, null, 3] }, { name: "huge", values: [1, 2, 1e12] }, { name: "str", values: ["1", "2", "3"] }] });
+    assert.deepEqual(c.series.map((s) => s.name), ["Hours"]);
+    assert.equal(normalizeChart({ ...base, series: [{ name: "short", values: [1] }] }), null);
+  });
+
+  it("needs two labels, none blank, and caps labels and series", () => {
+    assert.equal(normalizeChart({ ...base, labels: ["only"] }), null);
+    assert.equal(normalizeChart({ ...base, labels: ["a", " ", "c"] }), null);
+    const big = normalizeChart({ chart: "line", labels: Array.from({ length: 20 }, (_, i) => `l${i}`), series: Array.from({ length: 5 }, (_, i) => ({ name: `s${i}`, values: Array(12).fill(i) })) });
+    assert.equal(big.labels.length, 12);
+    assert.equal(big.series.length, 3);
+  });
+});
+
+describe("block references", () => {
+  it("keeps where a block came from, only when both ids are present", () => {
+    const kept = normalizeBlock({ key: "k", kind: "TEXT", text: "hi", turnId: "t1", eventId: "e2" });
+    assert.equal(kept.turnId, "t1");
+    assert.equal(kept.eventId, "e2");
+    assert.equal("turnId" in normalizeBlock({ kind: "TEXT", text: "hi", turnId: "t1" }), false);
+    assert.equal("eventId" in normalizeBlock({ kind: "TEXT", text: "hi", eventId: 5, turnId: "t" }), false);
+  });
+});
+
+describe("blockSummary", () => {
+  it("labels each kind briefly", () => {
+    assert.equal(blockSummary(normalizeBlock({ kind: "FORMULA", latex: "a^2+b^2" })), "Formula: a^2+b^2");
+    assert.equal(blockSummary(normalizeBlock({ kind: "TABLE", headers: ["x", "y"], rows: [["1", "2"]] })), "Table: x, y");
+    assert.equal(blockSummary(normalizeBlock({ kind: "LIST", items: ["first", "second"] })), "List: first");
+    assert.equal(blockSummary(normalizeBlock({ kind: "DIAGRAM", alt: "A flow", nodes: [] })), "Diagram: A flow");
+    assert.equal(blockSummary(normalizeBlock({ kind: "CHART", alt: "Rising" })), "Chart: Rising");
+  });
+  it("shortens long text and copes with nothing", () => {
+    assert.ok(blockSummary({ kind: "TEXT", text: "w ".repeat(100) }).length <= 57);
+    assert.equal(blockSummary(null), "");
+    assert.equal(blockSummary({ kind: "NOPE" }), "Item");
+  });
+});
