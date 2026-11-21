@@ -109,7 +109,7 @@ export default function Navbar() {
           </div>
 
           {/* Nav tabs */}
-          <div className="flex items-center justify-around border-t border-ink/5 px-2">
+          <div className="flex items-stretch border-t border-line">
             {TAB_LINKS.map((tab) => {
               const isActive = location.pathname === tab.href;
               return (
