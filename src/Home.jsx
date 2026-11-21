@@ -12,9 +12,9 @@ import { signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faRobot, faBookOpen, faCartShopping, faComments, faBookmark,
+  faRobot, faBookOpen, faCartShopping, faComments,
   faCamera, faBagShopping, faMessage, faFile, faBell, faSearch, faBars, faXmark,
-  faLayerGroup, } from '@fortawesome/free-solid-svg-icons';
+  faLayerGroup, faChalkboard, faBook, faCalendarCheck, faStopwatch, faWandMagicSparkles, } from '@fortawesome/free-solid-svg-icons';
 import ThemeToggle from "./components/ThemeToggle";
 import { TAB_LINKS, SIDEBAR_LINKS } from "./onboarding/navLinks";
 import { useOnboarding, useMenuEvent } from "./onboarding/context";
@@ -34,27 +34,40 @@ function Toast({ message, onClose }) {
         <h3 className="text-ink font-medium">Login Successful!</h3>
         <p className="text-ink/50">Welcome back, {message}</p>
       </div>
-      <button onClick={onClose} className="cursor-pointer mb-auto text-ink/30 hover:text-ink/60 transition">
+      <button onClick={onClose} aria-label="Dismiss" className="cursor-pointer mb-auto text-ink/30 hover:text-ink/60 transition">
         <FontAwesomeIcon icon={faXmark} />
       </button>
     </div>
   );
 }
 
-function AnimatedNumber({ target }) {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    if (target === 0) return;
-    let start = 0;
-    const step = Math.ceil(target / 40);
-    const timer = setInterval(() => {
-      start += step;
-      if (start >= target) { setCount(target); clearInterval(timer); }
-      else setCount(start);
-    }, 30);
-    return () => clearInterval(timer);
-  }, [target]);
-  return <span>{count}</span>;
+const timeAgo = (dateStr) => {
+  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+};
+
+const EXPLORE = [
+  { title: "Study Materials", hint: "Notes, slides and past questions", href: "/study-material", icon: faBook },
+  { title: "UniLib AI", hint: "Ask questions about your notes", href: "/ai", icon: faRobot },
+  { title: "AI Study Tools", hint: "Quizzes, summaries and explanations", href: "/ai", icon: faWandMagicSparkles },
+  { title: "Flashcards", hint: "Spaced repetition decks", href: "/flashcards", icon: faLayerGroup },
+  { title: "Study Plans", hint: "A day-by-day plan to your exam", href: "/study-plan", icon: faCalendarCheck },
+  { title: "Past questions", hint: "Timed exam practice", href: "/practice", icon: faStopwatch },
+  { title: "Marketplace", hint: "Buy and sell on campus", href: "/marketplace", icon: faCartShopping },
+  { title: "Chat", hint: "Talk to students at your school", href: "/chat", icon: faComments },
+  { title: "Novels", hint: "Read and write stories", href: "/novels", icon: faBookOpen },
+];
+
+function LoadError({ what, onRetry }) {
+  return (
+    <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm">
+      <span>Couldn't load {what}.</span>
+      <button onClick={onRetry} className="min-h-9 rounded-lg px-3 font-medium text-violet-400 hover:text-violet-300">Try again</button>
+    </div>
+  );
 }
 
 function SkeletonCard() {
@@ -106,19 +119,6 @@ function StudyTimer() {
         {running ? "Pause" : "Start"}
       </button>
     </div>
-  );
-}
-
-function LiveClock() {
-  const [now, setNow] = useState(new Date());
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
-  return (
-    <p className="text-xs text-ink/30">
-      {now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })} — {now.toLocaleTimeString()}
-    </p>
   );
 }
 
@@ -201,31 +201,16 @@ function Home() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const [stats, setStats] = useState({ files: 0, aiQuestions: 0, products: 0, messages: 0 });
+  const [stats, setStats] = useState(null);
+  const [statsError, setStatsError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [streak, setStreak] = useState(0);
   const [recentActivity, setRecentActivity] = useState([]);
-  const [lastMaterial, setLastMaterial] = useState(null);
 
- // ─── Quotes pool ──────────────────────────────────────────────
-const QUOTES = [
-  { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
-  { text: "Whether you think you can or you think you can't, you're right.", author: "Henry Ford" },
-  { text: "The expert in anything was once a beginner.", author: "Helen Hayes" },
-  { text: "Success is the sum of small efforts repeated daily.", author: "Robert Collier" },
-  { text: "Don't watch the clock; do what it does. Keep going.", author: "Sam Levenson" },
-  { text: "It always seems impossible until it's done.", author: "Nelson Mandela" },
-  { text: "Discipline is choosing between what you want now and what you want most.", author: "Abraham Lincoln" },
-];
- const [quote] = useState(() => {
-  const dayIndex = Math.floor(Date.now() / 86400000) % QUOTES.length;
-  return QUOTES[dayIndex];
-});
-  const [leaderboardRank, setLeaderboardRank] = useState(null);
   const [activityDays, setActivityDays] = useState(7);
   const { unreadCount } = useNotifications();
   const { isNew, unseen } = useOnboarding();
   useMenuEvent(setMenuOpen);
-  const [lastMarketplace, setLastMarketplace] = useState(null);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -256,17 +241,18 @@ const QUOTES = [
           }
         }
 
-        const statsData = await apiGet("/users/me/stats");
-        setStats({ files: statsData.files ?? 0, aiQuestions: 0, products: statsData.products ?? 0, messages: statsData.messages ?? 0 });
         setStreak(pgUser.streakCount || 0);
+        try {
+          const statsData = await apiGet("/users/me/stats");
+          setStats({ files: statsData.files ?? 0, products: statsData.products ?? 0, messages: statsData.messages ?? 0 });
+          setStatsError(false);
+        } catch { setStats(null); setStatsError(true); }
 
-        try { const myMaterials = await apiGet("/study-material/my"); if (myMaterials.length > 0) setLastMaterial(myMaterials[0]); } catch { setLastMaterial(null); }
-        try { const marketplace = await apiGet("/marketplace/my"); if (marketplace.length > 0) setLastMarketplace(marketplace[0]); } catch { setLastMarketplace(null); }
       } catch (err) { console.error(err); }
       finally { setLoading(false); }
     };
     fetchAll();
-  }, [user]);
+  }, [user, reloadKey]);
   const handleLogout = async () => {
   await logout();
   await signOut(auth).catch(() => {});
@@ -275,6 +261,7 @@ const QUOTES = [
 
 
 const [activityLoading, setActivityLoading] = useState(true);
+const [activityError, setActivityError] = useState(false);
 
 useEffect(() => {
     if (!user) return;
@@ -283,14 +270,16 @@ useEffect(() => {
       try {
         const activityData = await apiGet(`/users/me/activity?days=${activityDays}`);
         setRecentActivity(activityData);
+        setActivityError(false);
       } catch {
         setRecentActivity([]);
+        setActivityError(true);
       } finally {
         setActivityLoading(false);
       }
     };
     fetchActivity();
-  }, [user, activityDays]);
+  }, [user, activityDays, reloadKey]);
   const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -319,43 +308,20 @@ useEffect(() => {
   return "";
 };
 
-const timeAgo = (dateStr) => {
-  // eslint-disable-next-line react-hooks/purity -- "time ago" labels are inherently
-  // time-dependent; this is a display-only helper, not a value stored in state.
-  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
-  if (diff < 60) return `${diff}s ago`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
-};
 
-  const cards = [
-    { title: "Study Material", icon: <FontAwesomeIcon icon={faBookOpen} className="text-violet-400 text-2xl" />, href: "/study-material", content: lastMaterial ? `Last uploaded: ${lastMaterial.title}` : "No file uploaded yet.\nNo file viewed yet." },
-    { title: "AI Assistant", icon: <FontAwesomeIcon icon={faRobot} className="text-violet-400 text-2xl" />, href: "/ai", content: `${greeting()}, ${user?.displayName?.split(" ")[0] || "there"}! Ready to help you study smarter today.` },
-    { title: "Marketplace", icon: <FontAwesomeIcon icon={faCartShopping} className="text-violet-400 text-2xl" />, href: "/marketplace", content: "Browse and list items for your campus community." },
-    { title: "Chat", icon: <FontAwesomeIcon icon={faComments} className="text-violet-400 text-2xl" />, href: "/chat", content: "Connect and study with students from your university." },
-    { title: "Flashcards", icon: <FontAwesomeIcon icon={faLayerGroup} className="text-violet-400 text-2xl" />, href: "/flashcards", content: "Create and study with flashcards." },
-  ];
 
 
   return (
     <div className="min-h-screen bg-bg text-ink">
 
-      {/* Ambient orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
-        <div className="absolute top-1/2 -right-20 w-72 h-72 bg-emerald-500 rounded-full opacity-[0.06] blur-[100px]" />
-        <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-pink-500 rounded-full opacity-[0.06] blur-[100px]" />
-      </div>
-
       {/* HEADER */}
-      <header className="fixed top-0 left-0 w-full z-40 bg-bg/80 backdrop-blur-md border-b border-ink/5">
+      <header className="fixed top-0 left-0 w-full z-40 bg-bg border-b border-line">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between px-4 py-2.5">
 
             {/* Logo + menu — tour target: sidebar */}
             <div data-tour="sidebar" className="flex items-center gap-3">
-              <button onClick={() => setMenuOpen(true)} aria-label="Open menu" className="relative text-ink/40 hover:text-violet-400 transition">
+              <button onClick={() => setMenuOpen(true)} aria-label="Open menu" className="relative grid h-10 w-10 place-items-center text-muted hover:text-violet-400 transition">
                 <FontAwesomeIcon icon={faBars} className="w-5 h-5" />
                 {unseen.length > 0 && <NewDot className="absolute -right-1 -top-1" />}
               </button>
@@ -369,7 +335,7 @@ const timeAgo = (dateStr) => {
               {/* Search — tour target: global-search */}
               <Link
                 data-tour="global-search"
-                to="/search"
+                to="/search" aria-label="Search"
                 className="w-9 h-9 bg-white/5 border border-ink/10 rounded-xl flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/40 transition"
               >
                 <FontAwesomeIcon icon={faSearch} className="w-4 h-4" />
@@ -396,7 +362,7 @@ const timeAgo = (dateStr) => {
           </div>
 
           {/* Nav tabs */}
-          <div className="flex items-center justify-around border-t border-ink/5 px-2">
+          <div className="flex items-stretch border-t border-line">
             {TAB_LINKS.map((tab) => {
               const isActive = location.pathname === tab.href;
               return (
@@ -404,7 +370,7 @@ const timeAgo = (dateStr) => {
                   key={tab.href}
                   to={tab.href}
                   data-tour={`tab-${tab.id}`}
-                  className={`flex flex-col items-center py-2 px-4 border-b-2 transition text-xs gap-0.5 ${isActive ? "border-violet-500 text-violet-400" : "border-transparent text-ink/30 hover:text-ink/60"}`}
+                  className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 border-b-2 px-1 py-2 text-xs transition ${isActive ? "border-violet-500 text-violet-400" : "border-transparent text-muted hover:text-ink"}`}
                 >
                   <FontAwesomeIcon icon={tab.icon} className="w-4 h-4" />
                   <span className="relative">{tab.label}{isNew(tab.feature) && <NewDot className="absolute -right-3 -top-1" />}</span>
@@ -418,7 +384,7 @@ const timeAgo = (dateStr) => {
       {showToast && <Toast message={user?.displayName || user?.email} onClose={() => setShowToast(false)} />}
 
       {/* OVERLAY */}
-      {menuOpen && <div className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />}
+      {menuOpen && <div className="fixed inset-0 bg-black/60 z-40" onClick={() => setMenuOpen(false)} />}
 
       {/* SIDEBAR DRAWER */}
       <aside className={`fixed top-0 left-0 h-full w-72 z-50 flex flex-col bg-bg-elevated border-r border-ink/5 shadow-2xl transform transition-transform duration-300 ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}>
@@ -439,7 +405,7 @@ const timeAgo = (dateStr) => {
               <p className="text-xs text-ink/30">{user?.email}</p>
             </div>
           </div>
-          <button onClick={() => setMenuOpen(false)} className="text-ink/30 hover:text-ink transition">
+          <button onClick={() => setMenuOpen(false)} aria-label="Close menu" className="grid h-10 w-10 place-items-center text-muted hover:text-ink transition">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
@@ -475,129 +441,92 @@ const timeAgo = (dateStr) => {
       </aside>
 
       {/* PAGE CONTENT */}
-      <main className="relative z-10 pt-28 px-4 pb-16 max-w-6xl mx-auto">
+      <main className="mx-auto max-w-6xl px-4 pb-16 pt-28">
 
-        {/* Welcome */}
         <div className="mb-6">
-          <div className="inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/25 rounded-full px-4 py-1.5 text-xs text-violet-400 font-medium mb-3">
-            <span>🔥</span>
-            <span>Welcome back, {user?.displayName || user?.email}</span>
-          </div>
-          <p className="text-sm italic text-ink/30 mb-1">Study smarter. Learn together. Test yourself daily.</p>
-          <LiveClock />
+          <h2 className="text-2xl font-bold tracking-tight">{greeting()}, {user?.displayName?.split(" ")[0] || "there"}</h2>
+          <p className="mt-1 text-sm text-muted">Pick up where you left off.</p>
         </div>
-        <HomeStudyBar />
-            <div className="mb-6">
+
+        {/* Continue learning */}
+        <section aria-labelledby="continue-h" className="mb-8">
+          <h3 id="continue-h" className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">Continue learning</h3>
+          <HomeStudyBar />
           <TodayStudyCard />
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Link to="/classroom" data-tour="home-classroom" className="mt-3 flex min-h-[88px] items-center gap-4 rounded-2xl border border-violet-500/30 bg-violet-500/10 p-4 transition hover:border-violet-500/50">
+            <span aria-hidden="true" className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-violet-500/20 text-violet-400"><FontAwesomeIcon icon={faChalkboard} className="h-5 w-5" /></span>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-2 text-sm font-semibold">AI Classroom {isNew("feature:classroom") && <NewBadge />}</span>
+              <span className="block text-sm text-muted">Learn any topic from your own notes with a voice-guided AI tutor.</span>
+            </span>
+            <span aria-hidden="true" className="text-violet-400">→</span>
+          </Link>
+        </section>
 
-          {/* LEFT COLUMN */}
-          <div className="lg:col-span-2 flex flex-col gap-6">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="flex flex-col gap-8 lg:col-span-2">
 
-            {/* Streak + Leaderboard */}
-            <div className="flex gap-3">
-              <div className="flex-1 bg-white/[0.03] border border-ink/10 rounded-2xl p-3 text-center">
-                <p className="text-2xl font-bold text-violet-400">🔥 {streak}</p>
-                <p className="text-xs text-ink/30 mt-1">Day streak</p>
-              </div>
-          
-            </div>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[
-                { label: "Files uploaded", value: stats.files, icon: faFile },
-                { label: "Products listed", value: stats.products, icon: faBagShopping },
-                { label: "Messages sent", value: stats.messages, icon: faMessage },
-              ].map((stat, i) => (
-                loading ? <SkeletonCard key={i} /> : (
-                  <div key={i} className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4 text-center">
-                    <p className="text-xl mb-1 text-violet-400"><FontAwesomeIcon icon={stat.icon} /></p>
-                    <p className="text-2xl font-bold text-ink"><AnimatedNumber target={stat.value} /></p>
-                    <p className="text-xs text-ink/30 mt-1">{stat.label}</p>
-                  </div>
-                )
-              ))}
-            </div>
-<div>
-  <div className="flex items-center justify-between mb-3">
-    <h2 className="text-xs font-semibold text-ink/30 tracking-widest uppercase">Recent Activity</h2>
-    <div className="flex gap-1">
-      {[3, 7, 30].map((d) => (
-        <button
-          key={d}
-          onClick={() => setActivityDays(d)}
-          className={`px-2.5 py-1 rounded-full text-xs transition ${
-            activityDays === d
-              ? "bg-violet-500/20 text-violet-400 border border-violet-500/30"
-              : "text-ink/30 hover:text-ink/60"
-          }`}
-        >
-          {d}d
-        </button>
-      ))}
-    </div>
-  </div>
-  {activityLoading ? [1, 2, 3].map(i => <SkeletonCard key={i} />) :
-    recentActivity.length === 0 ? (
-      <p className="text-sm text-ink/20 text-center py-4">No recent activity yet.</p>
-    ) : (
-      recentActivity.map((item) => (
-        <Link key={item.id} to={item.href || "#"}
-          className="flex items-start gap-3 bg-white/[0.03] border border-ink/5 rounded-xl px-4 py-3 mb-2 hover:border-violet-500/30 hover:bg-violet-500/5 transition">
-          <span className="text-violet-400 mt-0.5">{activityIcon(item.type)}</span>
-          <div>
-            <p className="text-sm text-ink/70">{item.description}</p>
-            <p className="text-xs text-ink/30 mt-0.5">{timeAgo(item.createdAt)}</p>
-          </div>
-        </Link>
-      ))
-    )
-  }
-</div>
-
-            {/* Module Cards */}
-            <div>
-              <h2 className="text-xs font-semibold text-ink/30 tracking-widest uppercase mb-3">Your Modules</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {cards.map((card, index) => (
-                  loading ? <SkeletonCard key={index} /> : (
-                    <Link key={index} to={card.href}
-                      className="block bg-white/[0.03] border border-ink/10 rounded-2xl p-5 hover:border-violet-500/30 hover:bg-violet-500/5 transition-all duration-300 hover:scale-[1.02]">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span>{card.icon}</span>
-                        <h3 className="text-ink font-bold text-sm">{card.title}</h3>
-                      </div>
-                      <p className="text-ink/40 text-sm whitespace-pre-line">{card.content}</p>
-                    </Link>
-                  )
+            {/* Explore */}
+            <section aria-labelledby="explore-h">
+              <h3 id="explore-h" className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">Everything in UniLib</h3>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {EXPLORE.map((it) => (
+                  <Link key={it.href + it.title} to={it.href} className="flex min-h-[96px] flex-col gap-2 rounded-2xl border border-line bg-surface p-4 transition hover:border-violet-500/40">
+                    <FontAwesomeIcon icon={it.icon} className="h-5 w-5 text-violet-400" aria-hidden="true" />
+                    <span className="text-sm font-semibold">{it.title}</span>
+                    <span className="text-xs leading-snug text-muted">{it.hint}</span>
+                  </Link>
                 ))}
               </div>
-            </div>
+            </section>
+
+            {/* Recent activity */}
+            <section aria-labelledby="activity-h">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 id="activity-h" className="text-xs font-semibold uppercase tracking-widest text-muted">Recent activity</h3>
+                <div className="flex gap-1" role="group" aria-label="Activity period">
+                  {[3, 7, 30].map((d) => (
+                    <button key={d} onClick={() => setActivityDays(d)} aria-pressed={activityDays === d}
+                      className={`min-h-9 rounded-full px-3 text-xs transition ${activityDays === d ? "border border-violet-500/30 bg-violet-500/20 text-violet-400" : "text-muted hover:text-ink"}`}>{d} days</button>
+                  ))}
+                </div>
+              </div>
+              {activityLoading ? [1, 2, 3].map((i) => <SkeletonCard key={i} />)
+                : activityError ? <LoadError what="your activity" onRetry={() => setReloadKey((k) => k + 1)} />
+                : recentActivity.length === 0 ? <p className="rounded-xl border border-dashed border-line py-6 text-center text-sm text-muted">Nothing here yet. Upload a note or ask the AI a question and it will show up.</p>
+                : recentActivity.map((item) => (
+                  <Link key={item.id} to={item.href || "/home"} className="mb-2 flex items-start gap-3 rounded-xl border border-line bg-surface px-4 py-3 transition hover:border-violet-500/30">
+                    <span className="mt-0.5 text-violet-400" aria-hidden="true">{activityIcon(item.type)}</span>
+                    <div>
+                      <p className="text-sm">{item.description}</p>
+                      <p className="mt-0.5 text-xs text-muted">{timeAgo(item.createdAt)}</p>
+                    </div>
+                  </Link>
+                ))}
+            </section>
           </div>
 
-          {/* RIGHT COLUMN */}
-          <div className="flex flex-col gap-5">
+          {/* Right column */}
+          <div className="flex flex-col gap-4">
+            <section aria-labelledby="progress-h" className="rounded-2xl border border-line bg-surface p-4">
+              <h3 id="progress-h" className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">Your progress</h3>
+              {loading ? <div className="h-16 animate-pulse rounded-xl bg-ink/10" />
+                : (
+                <dl className="grid grid-cols-2 gap-3">
+                  <div><dt className="text-xs text-muted">Day streak</dt><dd className="text-2xl font-bold text-violet-400">{streak}</dd></div>
+                  {statsError || !stats ? (
+                    <div className="col-span-2"><LoadError what="your stats" onRetry={() => setReloadKey((k) => k + 1)} /></div>
+                  ) : (
+                    <>
+                      <div><dt className="text-xs text-muted">Files uploaded</dt><dd className="text-2xl font-bold">{stats.files}</dd></div>
+                      <div><dt className="text-xs text-muted">Listings</dt><dd className="text-2xl font-bold">{stats.products}</dd></div>
+                      <div><dt className="text-xs text-muted">Messages sent</dt><dd className="text-2xl font-bold">{stats.messages}</dd></div>
+                    </>
+                  )}
+                </dl>
+              )}
+            </section>
             <StudyTimer />
-
-            {/* Quote */}
-            <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4">
-              <p className="text-xs font-semibold text-ink/30 tracking-widest uppercase mb-2">Quote of the day</p>
-              <p className="text-sm text-ink/60 italic">"{quote.text}"</p>
-              <p className="text-xs text-ink/30 mt-1 text-right">— {quote.author}</p>
-            </div>
-
-            {/* Shortcuts */}
-            <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4">
-              <p className="text-xs font-semibold text-ink/30 tracking-widest uppercase mb-3">Quick shortcuts</p>
-              <div className="flex flex-col gap-2">
-                <Link to="/study-material" className="text-sm text-violet-400 hover:text-violet-300 transition flex items-center gap-2"><FontAwesomeIcon icon={faBookmark} />Go to Library</Link>
-                <Link to="/ai" className="text-sm text-violet-400 hover:text-violet-300 transition flex items-center gap-2"><FontAwesomeIcon icon={faRobot} />Resume AI conversation</Link>
-                <Link to="/chat" className="text-sm text-violet-400 hover:text-violet-300 transition flex items-center gap-2"><FontAwesomeIcon icon={faMessage} />Open Chat</Link>
-                <Link to="/marketplace" className="text-sm text-violet-400 hover:text-violet-300 transition flex items-center gap-2"><FontAwesomeIcon icon={faBagShopping} />Browse Marketplace</Link>
-              </div>
-            </div>
           </div>
         </div>
       </main>
@@ -611,7 +540,7 @@ const timeAgo = (dateStr) => {
           </div>
           <div className="lg:col-span-3 grid grid-cols-2 gap-8">
             <div>
-              <h3 className="font-bold text-xs text-ink/30 uppercase tracking-widest mb-4">Resources</h3>
+              <h3 className="font-bold text-xs text-muted uppercase tracking-widest mb-4">Resources</h3>
               <ul className="space-y-2 text-sm text-ink/50">
                 <li><Link to="/study-material" className="hover:text-violet-400 transition">Library</Link></li>
                 <li><Link to="/ai" className="hover:text-violet-400 transition">AI</Link></li>
@@ -622,10 +551,9 @@ const timeAgo = (dateStr) => {
             <div>
               <h3 className="font-bold text-xs text-ink/30 uppercase tracking-widest mb-4">Company</h3>
               <ul className="space-y-2 text-sm text-ink/50">
-                <li><a href="#" className="hover:text-violet-400 transition">About</a></li>
-                <li><a href="/terms" className="hover:text-violet-400 transition">Vision</a></li>
-                <li><a href="/privacy" className="hover:text-violet-400 transition">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-violet-400 transition">Contact Us</a></li>
+                                <li><Link to="/terms" className="hover:text-violet-400 transition">Terms of Service</Link></li>
+                <li><Link to="/privacy" className="hover:text-violet-400 transition">Privacy Policy</Link></li>
+                <li><Link to="/feedback" className="hover:text-violet-400 transition">Contact &amp; feedback</Link></li>
               </ul>
             </div>
           </div>
