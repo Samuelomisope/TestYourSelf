@@ -1,3 +1,4 @@
+import { useModal } from "./ui/useModal.js";
 import { useConfirm } from "./ui/feedbackContext.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect, useCallback, useMemo, createContext, useContext } from "react";
@@ -144,6 +145,7 @@ function evaluateMath(expression) {
 
 // ─── Scientific Calculator ─────────────────────────────────────────
 function Calculator({ onClose }) {
+  const modalRef = useModal(onClose);
   const [display, setDisplay] = useState("0");
   const [equation, setEquation] = useState("");
   const [justCalculated, setJustCalculated] = useState(false);
@@ -178,7 +180,7 @@ function Calculator({ onClose }) {
   const isOperator = (v) => ["÷","×","−","+","=","AC"].includes(v);
 
   return (
-    <div className="fixed inset-0 bg-black/60  z-50 flex items-center justify-center p-4">
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Calculator" tabIndex={-1} className="fixed inset-0 bg-black/60  z-50 flex items-center justify-center p-4">
       <div className={`${CARD} w-80 overflow-hidden`}>
         <div className="flex items-center justify-between px-6 pt-5 pb-2">
           <span className="text-ink font-semibold text-sm">Calculator</span>
@@ -247,6 +249,7 @@ function AskAIButton({ fileUrl, fileName, onClose }) {
 
 // ─── File Detail Modal ─────────────────────────────────────────────
 function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, initialPage = 1 }) {
+  const modalRef = useModal(onClose);
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -451,7 +454,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60  z-50 flex items-end sm:items-center justify-center p-4">
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-label="File details" tabIndex={-1} className="fixed inset-0 bg-black/60  z-50 flex items-end sm:items-center justify-center p-4">
       <div className="bg-bg-elevated border border-ink/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
 
         {/* Header */}

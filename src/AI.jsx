@@ -1,3 +1,4 @@
+import { useModal } from "./ui/useModal.js";
 import { notify } from "./ui/feedbackContext.js";
 import { getAccessToken } from "./token";
 import { useState, useRef, useEffect } from "react";
@@ -202,6 +203,7 @@ function FileChip({ file, onRemove }) {
 
 // ─── Camera Modal ─────────────────────────────────────────────────────────────
 function CameraModal({ onCapture, onClose }) {
+  const modalRef = useModal(onClose);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [streaming, setStreaming] = useState(false);
@@ -236,7 +238,7 @@ function CameraModal({ onCapture, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70  p-4">
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Take a photo" tabIndex={-1} className="fixed inset-0 z-50 flex items-center justify-center bg-black/70  p-4">
       <div className="bg-bg-elevated border border-ink/10 rounded-3xl overflow-hidden w-full max-w-md">
         <div className="flex items-center justify-between px-5 py-3 border-b border-ink/5">
           <span className="text-sm font-semibold text-ink">Take a Snap</span>
@@ -654,6 +656,7 @@ useEffect(() => {
 }
 
 function ToolModal({ tool, onClose, material = null }) {
+  const modalRef = useModal(onClose);
   const TITLES = {
     quiz: "Quiz",
     explain: "Explain",
@@ -664,7 +667,7 @@ function ToolModal({ tool, onClose, material = null }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-bg flex flex-col">
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-label="AI study tool" tabIndex={-1} className="fixed inset-0 z-50 bg-bg flex flex-col">
       <div className="flex items-center justify-between px-4 py-3 border-b border-ink/5 bg-bg shrink-0">
         <span className="text-sm font-bold text-ink">{TITLES[tool]}</span>
         <button aria-label="Close" onClick={onClose} className="text-ink/40 hover:text-ink transition">
@@ -2140,6 +2143,7 @@ function StudyPlanTab() {
 }
 
 function HistoryPanel({ onClose, onSelectChat }) {
+  const modalRef = useModal(onClose);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -2161,7 +2165,7 @@ function HistoryPanel({ onClose, onSelectChat }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60  p-4">
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Chat history" tabIndex={-1} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60  p-4">
       <div className="bg-bg-elevated border border-ink/10 rounded-3xl w-full max-w-md max-h-[70vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-ink/5 shrink-0">
           <div className="flex items-center gap-2 text-ink font-semibold text-sm">
