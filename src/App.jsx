@@ -28,6 +28,7 @@ import WriterRoute from "./WriterRoute";
 import UniversityWelcomePage from "./UniversityWelcomePage";
 import StudyPlan from "./StudyPlan";
 import Premium from "./Premium";
+import PastQuestions from "./PastQuestions";
 
 // The Classroom pages are large (lesson rendering, voice, tutor) and only some students open them, so they load on demand.
 const Classroom = lazy(() => import("./Classroom"));
@@ -67,6 +68,7 @@ function App() {
         <Route path="/episodes/:id" element={<ProtectedRoute><EpisodeReader /></ProtectedRoute>} />
         <Route path="/study-plan" element={<ProtectedRoute><StudyPlan /></ProtectedRoute>} />
         <Route path="/premium" element={<ProtectedRoute><Premium /></ProtectedRoute>} />
+        <Route path="/practice" element={<ProtectedRoute><PastQuestions /></ProtectedRoute>} />
         <Route path="/writer/dashboard" 
         element={
         <ProtectedRoute>

@@ -269,6 +269,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
     courseId: existingCourse?.id || "",
     courseCode: existingCourse?.code || file.course || "",
     courseTitle: "",
+    isPastQuestion: Boolean(file.isPastQuestion),
   });
 
   const [schools, setSchools] = useState(existingSchool ? [existingSchool] : []);
@@ -397,6 +398,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
             department: form.departmentName,
             course: form.courseCode,
             courseId: form.courseId || null,
+            isPastQuestion: Boolean(form.isPastQuestion),
           }),
         }
       );
@@ -551,6 +553,12 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
 {!resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "pdf" && (
   <button onClick={() => navigate("/ai", { state: { openTool: "quiz", material: file } })} className="mb-3 w-full min-h-11 rounded-xl border border-violet-500/30 text-sm font-medium text-violet-400 transition hover:bg-violet-500/10">
     Test me on this
+  </button>
+)}
+
+{file.isPastQuestion && !resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "pdf" && (
+  <button onClick={() => navigate("/practice", { state: { material: file } })} className="mb-3 w-full min-h-11 rounded-xl bg-violet-500/15 text-sm font-medium text-violet-300 transition hover:bg-violet-500/25">
+    Practise this paper (timed)
   </button>
 )}
 
@@ -721,6 +729,10 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
                   className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
                 />
               </div>
+              <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-ink/70">
+                <input type="checkbox" checked={Boolean(form.isPastQuestion)} onChange={(e) => setForm((f) => ({ ...f, isPastQuestion: e.target.checked }))} className="h-4 w-4 accent-violet-500" />
+                <span>This is a past question paper</span>
+              </label>
 
               <button
                 onClick={handleSave}
@@ -1665,6 +1677,11 @@ const rosterFaculties = useMemo(
             </div>
 
             {/* Loading Skeleton */}
+            {!loading && !isSearching && !courseIdParam && !showDownloadedOnly && isOnline && (
+              <Link to="/practice" className="mb-4 flex min-h-12 items-center justify-between rounded-2xl border border-violet-500/20 bg-violet-500/5 px-4 text-sm font-medium text-violet-300 transition hover:border-violet-500/40">
+                <span>Practise past questions (timed)</span><span aria-hidden="true">→</span>
+              </Link>
+            )}
             {!loading && !isSearching && !courseIdParam && !showDownloadedOnly && isOnline && <MostOpened load={loadPopular} onSelect={setSelectedFile} />}
 
             {loading && (

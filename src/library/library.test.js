@@ -115,3 +115,46 @@ test("openedLabel and snippetLabel", () => {
 test("report reasons match the server list", () => {
   assert.deepEqual(REPORT_REASONS.map((r) => r.value).sort(), ["BROKEN_FILE", "DUPLICATE", "INAPPROPRIATE", "OTHER", "WRONG_COURSE"]);
 });
+
+import { SECONDS_PER_QUESTION, defaultMinutes, formatClock, gradeLabel, looksLikePastQuestion, remainingSeconds, scoreExam } from "./examLogic.js";
+
+test("exam timing", () => {
+  assert.equal(SECONDS_PER_QUESTION, 90);
+  assert.equal(defaultMinutes(10), 15);
+  assert.equal(defaultMinutes(5), 8);
+  assert.equal(defaultMinutes(0), 2);
+  assert.equal(remainingSeconds(1000, 60, 1000), 60);
+  assert.equal(remainingSeconds(1000, 60, 31000), 30);
+  assert.equal(remainingSeconds(1000, 60, 999999), 0);
+  assert.equal(remainingSeconds(NaN, 60, 5), 60);
+  assert.equal(formatClock(75), "1:15");
+  assert.equal(formatClock(3725), "1:02:05");
+  assert.equal(formatClock(-5), "0:00");
+  assert.equal(formatClock(undefined), "0:00");
+});
+
+test("scoreExam marks, counts unanswered and rounds", () => {
+  const qs = [{ question: "a", answer: "x" }, { question: "b", answer: "y" }, { question: "c", answer: "z" }];
+  const r = scoreExam(qs, { 0: "x", 1: "nope" });
+  assert.equal(r.correct, 1);
+  assert.equal(r.total, 3);
+  assert.equal(r.unanswered, 1);
+  assert.equal(r.percent, 33);
+  assert.deepEqual(r.rows.map((x) => [x.ok, x.answered]), [[true, true], [false, true], [false, false]]);
+  assert.equal(scoreExam([], {}).percent, 0);
+  assert.equal(scoreExam(undefined, undefined).total, 0);
+  assert.equal(scoreExam([{ question: "a", answer: "x" }, { question: "b", answer: "y" }, { question: "c", answer: "z" }], { 0: "x", 1: "y", 2: "z" }).percent, 100);
+});
+
+test("gradeLabel bands", () => {
+  assert.equal(gradeLabel(100), "Excellent");
+  assert.equal(gradeLabel(70), "Excellent");
+  assert.equal(gradeLabel(69), "Good, with room to improve");
+  assert.equal(gradeLabel(40), "Borderline, revise the missed topics");
+  assert.equal(gradeLabel(0), "Needs more revision");
+});
+
+test("looksLikePastQuestion spots common titles, not ordinary notes", () => {
+  for (const t of ["MEE 301 Past Questions 2023", "CSC201 exam paper", "Past papers", "PQ MTH101", "Question Paper - 2022", "Final examination questions"]) assert.ok(looksLikePastQuestion(t), t);
+  for (const t of ["Thermodynamics lecture notes", "Organic chemistry summary", "", undefined]) assert.ok(!looksLikePastQuestion(t), String(t));
+});
