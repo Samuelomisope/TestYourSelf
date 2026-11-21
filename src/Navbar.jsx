@@ -117,7 +117,7 @@ export default function Navbar() {
                   key={tab.href}
                   to={tab.href}
                   data-tour={`tab-${tab.id}`}
-                  className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 border-b-2 px-1 py-2 text-xs transition ${isActive ? "border-violet-500 text-violet-400" : "border-transparent text-muted hover:text-ink"}`}
+                  className={`flex flex-col items-center py-2 px-4 border-b-2 transition text-xs gap-0.5 ${isActive ? "border-violet-500 text-violet-400" : "border-transparent text-ink/30 hover:text-ink/60"}`}
                 >
                   <FontAwesomeIcon icon={tab.icon} className="w-4 h-4" />
                   <span className="relative">{tab.label}{isNew(tab.feature) && <NewDot className="absolute -right-1.5 -top-2" />}</span>

@@ -1,4 +1,5 @@
 import Md from "./Markdown";
+import { describeSources } from "./classroomUtils";
 
 // Each label says where a step came from, in words, so it never depends on colour alone.
 const ORIGIN = {
@@ -18,18 +19,26 @@ export default function LessonView({ lesson, label, showOrigins }) {
   const steps = Array.isArray(lesson.steps) ? lesson.steps : [];
   const examples = Array.isArray(lesson.examples) ? lesson.examples : [];
   const sourceTitles = titles(lesson.sources);
+  // Every step is the tutor's own knowledge: the notes were searched and nothing matched, so say so once, plainly.
+  const beyondNotes = showOrigins && steps.length > 0 && steps.every((step) => step.origin === "EXTRA");
 
   return (
     <div className="mt-3 space-y-4">
       {label && <p className="text-xs font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400">{label}</p>}
       <Md>{lesson.summary}</Md>
 
+      {beyondNotes && (
+        <p role="note" className="rounded-xl bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200">
+          Your notes don’t cover this part, so the tutor taught it from general knowledge.
+        </p>
+      )}
+
       {steps.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-xs font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400">Step by step</h3>
           {steps.map((step) => {
             const origin = showOrigins ? ORIGIN[step.origin] : null;
-            const from = showOrigins ? titles(step.sources) : [];
+            const from = showOrigins ? describeSources(step.sources) : [];
             return (
               <section key={step.id} className="rounded-xl bg-ink/[0.035] p-4">
                 <div className="flex flex-wrap items-center gap-2">
@@ -37,7 +46,7 @@ export default function LessonView({ lesson, label, showOrigins }) {
                   {origin && <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${origin.cls}`}>{origin.label}</span>}
                 </div>
                 <Md className="mt-1">{step.explanation}</Md>
-                {from.length > 0 && <p className="mt-2 text-xs text-ink/50">From: {from.join(", ")}</p>}
+                {from.length > 0 && <p className="mt-2 text-xs text-ink/50">From: {from.join(" · ")}</p>}
               </section>
             );
           })}
