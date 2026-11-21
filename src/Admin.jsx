@@ -1,3 +1,4 @@
+import { useModal } from "./ui/useModal.js";
 import { notify } from "./ui/feedbackContext.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect, useCallback } from 'react';
@@ -58,13 +59,14 @@ function StatCard({ label, value, icon, accent = "violet" }) {
 }
 
 function ConfirmModal({ message, onConfirm, onCancel, confirmLabel = "Delete", confirmColor = "pink" }) {
+  const modalRef = useModal(onCancel);
   const colorCls = {
     pink: "bg-pink-500/80 hover:bg-pink-500",
     yellow: "bg-yellow-500/80 hover:bg-yellow-500",
     emerald: "bg-emerald-500/80 hover:bg-emerald-500",
   };
   return (
-    <div className="fixed inset-0 bg-black/60  z-50 flex items-center justify-center p-4">
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Confirm action" tabIndex={-1} className="fixed inset-0 bg-black/60  z-50 flex items-center justify-center p-4">
       <div className="bg-bg-elevated border border-ink/10 rounded-2xl p-6 max-w-sm w-full shadow-xl">
         <p className="text-ink/60 text-sm mb-5">{message}</p>
         <div className="flex gap-3">

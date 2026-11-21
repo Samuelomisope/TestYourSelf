@@ -1,3 +1,4 @@
+import { useModal } from "./ui/useModal.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -19,6 +20,7 @@ async function apiFetch(path, options = {}) {
 }
 
 function MyListings() {
+  const modalRef = useModal(() => setConfirm(null), !!confirm);
   const navigate = useNavigate();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -126,7 +128,7 @@ function MyListings() {
 
       {/* Confirm Delete */}
       {confirm && (
-        <div className="fixed inset-0 bg-black/60  z-50 flex items-center justify-center p-4">
+        <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Confirm delete" tabIndex={-1} className="fixed inset-0 bg-black/60  z-50 flex items-center justify-center p-4">
           <div className="bg-bg-elevated border border-ink/10 rounded-2xl p-6 max-w-sm w-full shadow-xl">
             <p className="text-ink/70 text-sm mb-5">Are you sure you want to delete this listing? This cannot be undone.</p>
             <div className="flex gap-3">

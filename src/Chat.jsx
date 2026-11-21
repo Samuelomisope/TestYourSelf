@@ -1,3 +1,4 @@
+import { useModal } from "./ui/useModal.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
@@ -228,6 +229,7 @@ function MessageBubble({ message, isOwn, onReply, onReact }) {
 
 // ── Create Group Modal ─────────────────────────────────────────────
 function CreateGroupModal({ onClose, onCreated }) {
+  const modalRef = useModal(onClose);
   const [name, setName] = useState("");
   const [search, setSearch] = useState("");
   const [results, setResults] = useState([]);
@@ -276,7 +278,7 @@ function CreateGroupModal({ onClose, onCreated }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70  flex items-end justify-center" onClick={onClose}>
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Create group" tabIndex={-1} className="fixed inset-0 z-50 bg-black/70  flex items-end justify-center" onClick={onClose}>
       <div className="bg-bg-elevated border border-ink/10 w-full max-w-lg rounded-t-3xl overflow-hidden"
         style={{ maxHeight: "85vh" }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-ink/5">
@@ -997,6 +999,7 @@ function ChatRoom({ room, dbUserId, onBack, onOpenWallpaper, onlineUsers }) {
 
 // ── Status Creator ─────────────────────────────────────────────────
 function StatusCreator({ onClose, onPosted }) {
+  const modalRef = useModal(onClose);
   const [mode, setMode] = useState("text");
   const [text, setText] = useState("");
   const [bgColor, setBgColor] = useState(STATUS_BG_COLORS[0].value);
@@ -1041,7 +1044,7 @@ function StatusCreator({ onClose, onPosted }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80  flex items-end justify-center" onClick={onClose}>
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Create status" tabIndex={-1} className="fixed inset-0 z-50 bg-black/80  flex items-end justify-center" onClick={onClose}>
       <div className="bg-bg-elevated border border-ink/10 w-full max-w-lg rounded-t-3xl overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="relative w-full h-56 flex items-center justify-center rounded-t-3xl overflow-hidden"
           style={{ backgroundColor: mode === "text" ? bgColor : "#0d0d14" }}>
@@ -1110,11 +1113,12 @@ function StatusCreator({ onClose, onPosted }) {
 
 // ── Status Viewer ──────────────────────────────────────────────────
 function StatusViewer({ status, onClose, onView }) {
+  const modalRef = useModal(onClose);
   useEffect(() => { onView(status.id); }, [status.id, onView]);
   const bgStyle = status.bgColor ? { backgroundColor: status.bgColor } : { backgroundColor: "#0d0d14" };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={bgStyle}>
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Status" tabIndex={-1} className="fixed inset-0 z-50 flex flex-col" style={bgStyle}>
       <div className="flex items-center gap-3 px-4 py-4">
         <button aria-label="Close" onClick={onClose} className="text-ink"><FontAwesomeIcon icon={faChevronLeft} /></button>
         <img src={safeAvatar(status.user?.photoURL, status.user?.displayName)}
@@ -1181,6 +1185,7 @@ function EmptyState({ onCreateGroup }) {
 
 // ── Main Chat Component ────────────────────────────────────────────
 function Chat() {
+  const modalRef = useModal(() => setShowWallpaperPicker(false), !!showWallpaperPicker);
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -1509,7 +1514,7 @@ function Chat() {
         <StatusViewer status={viewingStatus} onClose={() => setViewingStatus(null)} onView={handleViewStatus} />
       )}
       {showWallpaperPicker && (
-        <div className="fixed inset-0 z-50 bg-black/70  flex items-end justify-center" onClick={() => setShowWallpaperPicker(false)}>
+        <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Chat wallpaper" tabIndex={-1} className="fixed inset-0 z-50 bg-black/70  flex items-end justify-center" onClick={() => setShowWallpaperPicker(false)}>
           <div className="bg-bg-elevated border border-ink/10 w-full max-w-lg rounded-t-3xl p-6 pb-10" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-base font-bold text-ink">

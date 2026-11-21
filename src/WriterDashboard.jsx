@@ -1,3 +1,4 @@
+import { useModal } from "./ui/useModal.js";
 import { useState, useEffect } from "react";
 import { useAuth } from "./useAuth";
 import { Link } from "react-router-dom";
@@ -16,6 +17,7 @@ const GENRE_LABELS = {
 
 // ─── Create Novel Modal ─────────────────────────────────────
 function CreateNovelModal({ genres, onClose }) {
+  const modalRef = useModal(onClose);
   const [title, setTitle] = useState("");
   const [synopsis, setSynopsis] = useState("");
   const [genre, setGenre] = useState(genres[0] || "");
@@ -47,7 +49,7 @@ function CreateNovelModal({ genres, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60  z-50 flex items-end sm:items-center justify-center p-4">
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Create novel" tabIndex={-1} className="fixed inset-0 bg-black/60  z-50 flex items-end sm:items-center justify-center p-4">
       <div className="bg-bg-elevated border border-ink/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-ink/5 shrink-0">
           <h2 className="font-bold text-ink">New Novel</h2>
@@ -124,6 +126,7 @@ function CreateNovelModal({ genres, onClose }) {
 
 // ─── Add Episode Modal ───────────────────────────────────────
 function AddEpisodeModal({ novel, onClose }) {
+  const modalRef = useModal(onClose);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isPublished, setIsPublished] = useState(true);
@@ -153,7 +156,7 @@ function AddEpisodeModal({ novel, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60  z-50 flex items-end sm:items-center justify-center p-4">
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Add episode" tabIndex={-1} className="fixed inset-0 bg-black/60  z-50 flex items-end sm:items-center justify-center p-4">
       <div className="bg-bg-elevated border border-ink/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-ink/5 shrink-0">
           <h2 className="font-bold text-ink">New Episode — {novel.title}</h2>

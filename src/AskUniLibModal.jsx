@@ -1,3 +1,4 @@
+import { useModal } from "./ui/useModal.js";
 import { useState, useRef } from "react";
 import { getAccessToken } from "./token";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -65,6 +66,7 @@ function ConfidenceBadge({ contentType, confidence }) {
 }
 
 export default function AskUniLibModal({ onClose }) {
+  const modalRef = useModal(onClose);
   const [image, setImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [question, setQuestion] = useState("");
@@ -118,7 +120,7 @@ export default function AskUniLibModal({ onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70  p-4">
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Ask UniLib" tabIndex={-1} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70  p-4">
       <div className="bg-bg-elevated border border-ink/10 rounded-3xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-ink/5 shrink-0">

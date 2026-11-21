@@ -1,3 +1,4 @@
+import { useModal } from "./ui/useModal.js";
 import { useConfirm } from "./ui/feedbackContext.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect } from "react";
@@ -56,6 +57,7 @@ async function authedFetchForm(path, formData) {
 
 // ─── Create Deck Modal ──────────────────────────────────────────────
 function CreateDeckModal({ onClose }) {
+  const modalRef = useModal(onClose);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(true);
@@ -125,7 +127,7 @@ function CreateDeckModal({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60  z-50 flex items-end sm:items-center justify-center p-4">
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Create flashcard deck" tabIndex={-1} className="fixed inset-0 bg-black/60  z-50 flex items-end sm:items-center justify-center p-4">
       <div className="bg-bg-elevated border border-ink/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-ink/5 shrink-0">
           <h2 className="font-bold text-ink">New Flashcard Deck</h2>
@@ -295,6 +297,7 @@ function CreateDeckModal({ onClose }) {
 
 // ─── Review Session ─────────────────────────────────────────────────
 function ReviewSession({ deckId, onClose }) {
+  const modalRef = useModal(onClose);
   const [dueCards, setDueCards] = useState(null);
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -336,7 +339,7 @@ function ReviewSession({ deckId, onClose }) {
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/80  z-50 flex items-center justify-center p-4">
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Flashcard review" tabIndex={-1} className="fixed inset-0 bg-black/80  z-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-between mb-4">
           <p className="text-xs text-ink/40">

@@ -1,3 +1,4 @@
+import { useModal } from "./ui/useModal.js";
 import { looksLikePastQuestion } from "./library/examLogic.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect, useRef } from "react";
@@ -67,6 +68,7 @@ function loadGoogleApis() {
 
 // ─── Upload Modal ──────────────────────────────────────────────────
 export function UploadModal({ onClose, universitiesList = [] }) {
+  const modalRef = useModal(() => onClose(false));
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -488,7 +490,7 @@ const handleZipUpload = async () => {
 
   // ── Render ───────────────────────────────────────────────────────
   return (
-    <div className="fixed inset-0 bg-black/60  z-50 flex items-end sm:items-center justify-center p-4">
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Upload study material" tabIndex={-1} className="fixed inset-0 bg-black/60  z-50 flex items-end sm:items-center justify-center p-4">
       <div className="bg-bg-elevated border border-ink/10 rounded-3xl w-full max-w-md shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
 
         {/* Header */}
