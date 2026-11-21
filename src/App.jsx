@@ -27,6 +27,7 @@ import WriterRoute from "./WriterRoute";
 import UniversityWelcomePage from "./UniversityWelcomePage";
 import StudyPlan from "./StudyPlan";
 import Premium from "./Premium";
+import PastQuestions from "./PastQuestions";
 import Classroom from "./Classroom";
 
 function App() {
@@ -60,6 +61,7 @@ function App() {
         <Route path="/episodes/:id" element={<ProtectedRoute><EpisodeReader /></ProtectedRoute>} />
         <Route path="/study-plan" element={<ProtectedRoute><StudyPlan /></ProtectedRoute>} />
         <Route path="/premium" element={<ProtectedRoute><Premium /></ProtectedRoute>} />
+        <Route path="/practice" element={<ProtectedRoute><PastQuestions /></ProtectedRoute>} />
         <Route path="/writer/dashboard" 
         element={
         <ProtectedRoute>
