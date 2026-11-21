@@ -1,3 +1,4 @@
+import { notify } from "./ui/feedbackContext.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from "react-router-dom";
@@ -528,7 +529,7 @@ const toggleBan = async (id) => {
     setUsers(prev => prev.map(x => x.id === id ? { ...x, isBanned: updated.isBanned } : x));
   } catch (err) {
     console.error(err);
-    alert("Failed to update ban status — please try again.");
+    notify.error("Failed to update ban status — please try again.");
   }
 };
 
@@ -582,8 +583,8 @@ const toggleBan = async (id) => {
                             method: 'POST',
                             body: JSON.stringify({ userId: u.id, subject, message }),
                           })
-                            .then(() => alert(`Message sent to ${u.displayName}!`))
-                            .catch(() => alert('Failed to send message'));
+                            .then(() => notify.success(`Message sent to ${u.displayName}.`))
+                            .catch(() => notify.error('Failed to send message'));
                         }}
                         className="text-violet-400 hover:text-violet-300 text-xs font-medium transition"
                       >
@@ -860,7 +861,7 @@ function UniversitiesTab() {
         setUniversities(prev => prev.map(x => x.id === u.id ? { ...x, isVerified: updated.isVerified } : x));
       } catch (err) {
         console.error(err);
-        alert("Failed to update verification status — please try again.");
+        notify.error("Failed to update verification status — please try again.");
       }
     }}
     className={`px-3 py-1 rounded-full text-xs font-medium transition flex items-center gap-1 ${u.isVerified ? "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25" : "bg-white/5 text-ink/30 hover:bg-white/10"}`}
@@ -1420,9 +1421,9 @@ function Admin() {
                 onClick={async () => {
                   try {
                     const res = await apiFetch('/admin/notify-inactive', { method: 'POST' });
-                    alert(`Sent emails to ${res.sent} inactive users!`);
+                    notify.success(`Sent emails to ${res.sent} inactive users.`);
                   } catch {
-                    alert(`Failed to send emails`);
+                    notify.error("Failed to send emails");
                   }
                 }}
                 className="shrink-0 px-4 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium transition"

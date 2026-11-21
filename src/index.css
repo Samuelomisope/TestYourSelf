@@ -11,6 +11,10 @@
   --color-bg-elevated: rgb(var(--bg-elevated));
   --color-accent: rgb(var(--accent));
   --color-accent-hover: rgb(var(--accent-hover));
+  /* Semantic tokens: use these in new code instead of text-ink/NN, bg-white/NN, border-white/NN */
+  --color-muted: rgb(var(--ink) / var(--muted-a));
+  --color-surface: rgb(var(--surface));
+  --color-line: rgb(var(--ink) / var(--line-a));
 }
 
 :root {
@@ -19,6 +23,9 @@
   --bg-elevated: 255 255 255; /* light mode: cards/modals/sidebar */
   --accent: 124 58 237;       /* violet-500 */
   --accent-hover: 167 139 250;/* violet-400 */
+  --surface: 245 245 247;     /* light: raised card on white page */
+  --muted-a: 0.66;            /* secondary text, ~5.7:1 on white */
+  --line-a: 0.12;             /* hairline borders */
 }
 
 html.dark {
@@ -27,6 +34,9 @@ html.dark {
   --bg-elevated: 18 18 26;    /* dark mode: cards/modals/sidebar */
   --accent: 124 58 237;
   --accent-hover: 167 139 250;
+  --surface: 24 24 33;
+  --muted-a: 0.66;            /* ~7:1 on the dark page */
+  --line-a: 0.12;
 }
 
 html[data-theme="sepia"] {
@@ -35,6 +45,9 @@ html[data-theme="sepia"] {
   --bg-elevated: 237 226 199; /* sepia: slightly deeper cream for cards/modals */
   --accent: 124 58 237;
   --accent-hover: 167 139 250;
+  --surface: 230 219 191;
+  --muted-a: 0.76;            /* sepia needs a higher floor to stay readable on cream */
+  --line-a: 0.16;
 }
 
 html { color-scheme: light; }

@@ -1,3 +1,4 @@
+import { notify } from "./ui/feedbackContext.js";
 import { getAccessToken } from "./token";
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -820,7 +821,7 @@ useEffect(() => {
       mediaRecorderRef.current = mr;
       setRecording(true);
     } catch {
-      alert("Microphone access denied.");
+      notify.error("Microphone access is blocked. Allow it in your browser settings to use voice.");
     }
   }
 
