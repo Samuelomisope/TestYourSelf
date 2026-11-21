@@ -1,3 +1,4 @@
+import { looksLikePastQuestion } from "./library/examLogic.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect, useRef } from "react";
 import { auth } from "./firebase";
@@ -72,6 +73,7 @@ export function UploadModal({ onClose, universitiesList = [] }) {
   const [progresses, setProgresses] = useState({});
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [isPublic, setIsPublic] = useState(false);
+  const [isPastQuestion, setIsPastQuestion] = useState(false);
   const [driveLoading, setDriveLoading] = useState(false);
   const fileRef = useRef();
 
@@ -382,6 +384,7 @@ const loadZipPrograms = async (departmentId) => {
       formData.append("level", item.level);
       formData.append("semester", item.semester);
       formData.append("isPublic", String(isPublic));
+      if (isPastQuestion) formData.append("isPastQuestion", "true");
       if (item.university) formData.append("university", item.university);
       const xhr = new XMLHttpRequest();
       xhr.open(
@@ -807,6 +810,13 @@ const handleZipUpload = async () => {
             <FontAwesomeIcon icon={faGlobe} className="mr-1" /> Public
           </button>
         </div>
+
+        {mode === "files" && (
+          <label className="mb-5 flex min-h-11 cursor-pointer items-center gap-3 text-sm text-ink/70">
+            <input type="checkbox" checked={isPastQuestion} onChange={(e) => setIsPastQuestion(e.target.checked)} className="h-4 w-4 accent-violet-500" />
+            <span>These are past question papers {!isPastQuestion && files.some((f) => looksLikePastQuestion(f.title || f.file?.name)) && <button type="button" onClick={() => setIsPastQuestion(true)} className="ml-1 text-violet-400 underline">Looks like it. Tick this?</button>}</span>
+          </label>
+        )}
 
         {/* Upload button */}
         <button

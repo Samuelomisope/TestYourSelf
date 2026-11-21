@@ -14,6 +14,13 @@ import { faFile as farFile } from '@fortawesome/free-regular-svg-icons';
 import { UploadModal } from "./UploadModal";
 import { createNotification } from "./notifications";
 import { useOfflineDownload } from "./useOfflineDownload";
+import PdfViewer from "./library/PdfViewer";
+import { rememberOpened } from "./library/lastOpened.js";
+import ShareButton from "./library/ShareButton";
+import ReportForm from "./library/ReportForm";
+import MostOpened from "./library/MostOpened";
+import { snippetLabel } from "./library/libraryLinks.js";
+import { canViewInApp, downloadName } from "./library/pdfPages.js";
 import { listDownloadedMaterials, getOfflineBlobUrl } from "./offlineStorage";
 import { useParams } from "react-router-dom";
 import { trackEvent } from "./api";
@@ -238,7 +245,7 @@ function AskAIButton({ fileUrl, fileName, onClose }) {
 }
 
 // ─── File Detail Modal ─────────────────────────────────────────────
-function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
+function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, initialPage = 1 }) {
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -262,6 +269,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
     courseId: existingCourse?.id || "",
     courseCode: existingCourse?.code || file.course || "",
     courseTitle: "",
+    isPastQuestion: Boolean(file.isPastQuestion),
   });
 
   const [schools, setSchools] = useState(existingSchool ? [existingSchool] : []);
@@ -325,6 +333,11 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
     }
   };
 
+  const navigate = useNavigate();
+  const [showViewer, setShowViewer] = useState(false);
+  const [previewOn, setPreviewOn] = useState(false);
+  const [savingToDevice, setSavingToDevice] = useState(false);
+  const [saveToDeviceError, setSaveToDeviceError] = useState("");
   const [resolvedUrl, setResolvedUrl] = useState(file.signedUrl || null);
   const [resolvingUrl, setResolvingUrl] = useState(!file.signedUrl);
 
@@ -385,6 +398,7 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
             department: form.departmentName,
             course: form.courseCode,
             courseId: form.courseId || null,
+            isPastQuestion: Boolean(form.isPastQuestion),
           }),
         }
       );
@@ -396,6 +410,32 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
       setSaveError("Could not save changes. Try again.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  // A real download: an offline copy saves straight from the device; otherwise the server gives a link that makes the
+  // browser save the file instead of displaying it.
+  // Remember where the reader is, on this device only, so Home can offer "Continue reading".
+  const rememberPage = (page) => {
+    if (user?.id) { try { rememberOpened(window.localStorage, user.id, "material", { id: file.id, title: file.title, page }); } catch { /* blocked */ } }
+  };
+
+  const saveToDevice = async () => {
+    setSaveToDeviceError("");
+    setSavingToDevice(true);
+    try {
+      if (resolvedUrl?.startsWith("blob:")) {
+        const a = document.createElement("a");
+        a.href = resolvedUrl; a.download = downloadName(file.title, file.fileType);
+        document.body.appendChild(a); a.click(); a.remove();
+      } else {
+        const { url } = await apiGet(`/study-material/${file.id}/download-url`);
+        window.location.assign(url);
+      }
+    } catch {
+      setSaveToDeviceError("Couldn't start the download. Try Open instead, then save from there.");
+    } finally {
+      setSavingToDevice(false);
     }
   };
 
@@ -477,9 +517,16 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
               )}
 
               {!resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "pdf" && (
-                <div className="mb-4 rounded-xl overflow-hidden border border-ink/10" style={{ height: 300 }}>
-                  <iframe src={resolvedUrl} className="w-full h-full" title={file.title} />
-                </div>
+                previewOn ? (
+                  <div className="mb-4 rounded-xl overflow-hidden border border-ink/10" style={{ height: 300 }}>
+                    <iframe src={resolvedUrl} className="w-full h-full" title={file.title} />
+                  </div>
+                ) : (
+                  <button onClick={() => setPreviewOn(true)} className="mb-4 w-full rounded-xl border border-dashed border-ink/15 py-6 text-sm text-ink/50 transition hover:border-violet-500/40 hover:text-violet-400">
+                    Show a quick preview
+                    <span className="mt-1 block text-xs text-ink/30">Loads the file, so it uses data</span>
+                  </button>
+                )
               )}
               {!resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "video" && (
                 <div className="mb-4 rounded-xl overflow-hidden bg-black">
@@ -489,14 +536,37 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
 
               {!resolvingUrl && resolvedUrl && (
   <div className="flex gap-3 mb-3">
-    <a href={resolvedUrl} target="_blank" rel="noopener noreferrer" className="flex-1 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium text-center transition">Open</a>
-    <a href={resolvedUrl} download={file.title} className="flex-1 py-2.5 border border-violet-500/30 text-violet-400 rounded-xl text-sm font-medium text-center hover:bg-violet-500/10 transition">Download</a>
+    {canViewInApp(file.fileType)
+      ? <button onClick={() => setShowViewer(true)} className="flex-1 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium text-center transition">Open</button>
+      : <a href={resolvedUrl} target="_blank" rel="noopener noreferrer" className="flex-1 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium text-center transition">Open</a>}
+    <button onClick={saveToDevice} disabled={savingToDevice} className="flex-1 py-2.5 border border-violet-500/30 text-violet-400 rounded-xl text-sm font-medium text-center hover:bg-violet-500/10 transition disabled:opacity-60">{savingToDevice ? "Preparing…" : "Download"}</button>
   </div>
+)}
+
+{saveToDeviceError && <p role="alert" className="mb-2 text-xs text-pink-400">{saveToDeviceError}</p>}
+<div className="mb-3 flex gap-2"><ShareButton file={file} /></div>
+{showViewer && resolvedUrl && (
+  <PdfViewer url={resolvedUrl} title={file.title} initialPage={initialPage} onPage={rememberPage} onClose={() => setShowViewer(false)} onDownload={saveToDevice}
+    onFallback={() => { setShowViewer(false); window.open(resolvedUrl, "_blank", "noopener,noreferrer"); }} />
+)}
+
+{!resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "pdf" && (
+  <button onClick={() => navigate("/ai", { state: { openTool: "quiz", material: file } })} className="mb-3 w-full min-h-11 rounded-xl border border-violet-500/30 text-sm font-medium text-violet-400 transition hover:bg-violet-500/10">
+    Test me on this
+  </button>
+)}
+
+{file.isPastQuestion && !resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "pdf" && (
+  <button onClick={() => navigate("/practice", { state: { material: file } })} className="mb-3 w-full min-h-11 rounded-xl bg-violet-500/15 text-sm font-medium text-violet-300 transition hover:bg-violet-500/25">
+    Practise this paper (timed)
+  </button>
 )}
 
 {!resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "pdf" && (
   <AskAIButton fileUrl={resolvedUrl} fileName={file.title} onClose={onClose} />
 )}
+
+{!isOwner && <ReportForm send={(reason, note) => apiPost(`/study-material/${file.id}/report`, { reason, note })} />}
 
               {/* ── Offline save / remove ── */}
               {downloadError && <p className="text-pink-400 text-xs mb-2">{downloadError}</p>}
@@ -659,6 +729,10 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange }) {
                   className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
                 />
               </div>
+              <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-ink/70">
+                <input type="checkbox" checked={Boolean(form.isPastQuestion)} onChange={(e) => setForm((f) => ({ ...f, isPastQuestion: e.target.checked }))} className="h-4 w-4 accent-violet-500" />
+                <span>This is a past question paper</span>
+              </label>
 
               <button
                 onClick={handleSave}
@@ -692,6 +766,7 @@ function FileRow({ file, user, onSelect, onDelete }) {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-ink truncate">{file.title}</p>
         <p className="text-xs text-ink/30">{formatDate(file.createdAt)} · {file.user?.displayName}</p>
+        {file.matchSnippet && <p className="mt-0.5 line-clamp-2 text-xs text-violet-300/70">{snippetLabel(file.matchSnippet)}</p>}
       </div>
       <div className="flex items-center gap-2 shrink-0">
         {isDownloaded && (
@@ -1076,6 +1151,7 @@ function FileCard({ file, user, onSelect, onDelete }) {
         {file.university?.shortName && <span className="px-2 py-0.5 bg-white/5 text-ink/40 rounded-full text-xs">{file.university.shortName}</span>}
       </div>
       <p className="text-xs text-ink/30">{formatDate(file.createdAt)}</p>
+      {file.matchSnippet && <p className="mt-1 line-clamp-3 text-xs text-violet-300/70">{snippetLabel(file.matchSnippet)}</p>}
     </div>
   );
 }
@@ -1175,6 +1251,7 @@ function StudyMaterial() {
   const [showUpload, setShowUpload] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedPage, setSelectedPage] = useState(1);
   const [universitiesList, setUniversitiesList] = useState([]);
   const [successMessage, setSuccessMessage] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
@@ -1182,6 +1259,9 @@ function StudyMaterial() {
   const [searchParams, setSearchParams] = useSearchParams();
   const universitySlugParam = searchParams.get("university");
   const courseIdParam = searchParams.get("courseId");
+  const openParam = searchParams.get("open");
+  const pageParam = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+  const [deepLinkError, setDeepLinkError] = useState("");
 
  // ── Offline state ──
 const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
@@ -1302,6 +1382,20 @@ useEffect(() => {
   }, [selectedFile?.id]);
 
   // Filter by university / level / semester / downloaded-only
+  // A link like /study-material?open=<id>&page=3 (share links and "Continue reading") opens that file straight away.
+  useEffect(() => {
+    if (!user || !openParam) return undefined;
+    let cancelled = false;
+    apiGet(`/study-material/${encodeURIComponent(openParam)}`)
+      .then((material) => { if (!cancelled) { setSelectedPage(pageParam); setSelectedFile(material); } })
+      .catch(() => { if (!cancelled) setDeepLinkError("That material isn't available. It may have been removed or made private."); })
+      .finally(() => {
+        if (cancelled) return;
+        setSearchParams((prev) => { const next = new URLSearchParams(prev); next.delete("open"); next.delete("page"); return next; }, { replace: true });
+      });
+    return () => { cancelled = true; };
+  }, [user, openParam, pageParam, setSearchParams]);
+
   const filtered = useMemo(() => files.filter(f => {
     if (courseIdParam && f.courseId !== courseIdParam) return false;
     if (universityFilter !== "All") {
@@ -1359,6 +1453,7 @@ const grouped = useMemo(() => {
 
   const sortedFaculties = Object.keys(grouped).sort();
   const isSearching = debouncedSearch.trim().length > 0;
+  const loadPopular = useCallback(() => apiGet("/study-material/popular?limit=8"), []);
   const hasActiveFilters = Boolean(courseIdParam) || universityFilter !== "All" || levelFilter !== "All" || semesterFilter !== "All";
 
   const clearCourseFilter = () => {
@@ -1413,7 +1508,9 @@ const rosterFaculties = useMemo(
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowDownloadedOnly(d => !d)}
-                className={`relative w-9 h-9 rounded-xl flex items-center justify-center transition ${
+                aria-pressed={showDownloadedOnly}
+                aria-label="Show only files saved for offline"
+                className={`relative h-9 gap-1.5 px-3 text-xs font-medium rounded-xl flex items-center justify-center transition ${
                   showDownloadedOnly
                     ? "bg-emerald-500/15 text-emerald-400"
                     : "bg-ink/[0.05] text-ink/40 hover:text-emerald-400"
@@ -1421,6 +1518,7 @@ const rosterFaculties = useMemo(
                 title="Show downloaded files only"
               >
                 <FontAwesomeIcon icon={faDownload} className="text-sm" />
+                <span>Offline</span>
                 {downloadedIds.size > 0 && (
                   <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 bg-emerald-500 text-white text-[10px] font-medium rounded-full flex items-center justify-center">
                     {downloadedIds.size}
@@ -1579,6 +1677,13 @@ const rosterFaculties = useMemo(
             </div>
 
             {/* Loading Skeleton */}
+            {!loading && !isSearching && !courseIdParam && !showDownloadedOnly && isOnline && (
+              <Link to="/practice" className="mb-4 flex min-h-12 items-center justify-between rounded-2xl border border-violet-500/20 bg-violet-500/5 px-4 text-sm font-medium text-violet-300 transition hover:border-violet-500/40">
+                <span>Practise past questions (timed)</span><span aria-hidden="true">→</span>
+              </Link>
+            )}
+            {!loading && !isSearching && !courseIdParam && !showDownloadedOnly && isOnline && <MostOpened load={loadPopular} onSelect={setSelectedFile} />}
+
             {loading && (
               <div className="flex flex-col gap-4">
                 {[1,2,3].map(i => (
@@ -1696,11 +1801,13 @@ const rosterFaculties = useMemo(
     universitiesList={universitiesList}
   />
 )}
+      {deepLinkError && <p role="alert" className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-pink-500/30 bg-bg-elevated px-4 py-2 text-sm text-pink-400" onClick={() => setDeepLinkError("")}>{deepLinkError}</p>}
       {showCalculator && <Calculator onClose={() => setShowCalculator(false)} />}
       {selectedFile && (
         <FileDetailModal
           file={selectedFile}
           user={user}
+          initialPage={selectedPage}
           onClose={() => setSelectedFile(null)}
           onUpdated={() => { setRefreshKey(k => k + 1); setSelectedFile(null); }}
           onDownloadChange={handleDownloadChange}

@@ -54,7 +54,7 @@ async function request(path, options = {}, retried = false) {
     const serverMessage = Array.isArray(body?.message) ? body.message.join(" ") : typeof body?.message === "string" ? body.message : "";
     throw Object.assign(new Error(`API error: ${res.status}`), { status: res.status, serverMessage });
   }
-  if (res.status === 204) return null;
+  if (res.status === 204) return null; // no content (for example a saved position)
   return res.json();
 }
 
@@ -76,6 +76,10 @@ export async function apiPostForm(path, formData) {
 
 export async function apiPatch(path, body) {
   return request(path, { method: "PATCH", body: JSON.stringify(body) });
+}
+
+export async function apiPut(path, body) {
+  return request(path, { method: "PUT", body: JSON.stringify(body) });
 }
 
 export async function apiDelete(path) {
