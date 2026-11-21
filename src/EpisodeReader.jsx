@@ -46,12 +46,8 @@ useEffect(() => {
 
   return (
     <div className="min-h-screen bg-bg text-ink">
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
-        <div className="absolute bottom-0 right-0 w-72 h-72 bg-emerald-500 rounded-full opacity-[0.06] blur-[100px]" />
-      </div>
 
-      <header className="fixed top-0 left-0 w-full z-40 bg-bg/80 backdrop-blur-md border-b border-ink/5">
+      <header className="fixed top-0 left-0 w-full z-40 bg-bg border-b border-ink/5">
         <div className="max-w-2xl mx-auto flex items-center gap-3 px-4 py-3">
           <Link to={episode ? `/novels/${episode.novel.id}` : "/novels"} className="text-ink/40 hover:text-violet-400 transition">
             <FontAwesomeIcon icon={faChevronDown} className="rotate-90" />
@@ -97,7 +93,7 @@ useEffect(() => {
       </main>
 
       {!loading && episode && (
-        <div className="fixed bottom-0 left-0 w-full bg-bg/90 backdrop-blur-md border-t border-ink/5 z-40">
+        <div className="fixed bottom-0 left-0 w-full bg-bg border-t border-ink/5 z-40">
           <div className="max-w-2xl mx-auto flex items-center justify-between px-4 py-3 gap-3">
             <button
               onClick={() => prevEpisode && navigate(`/episodes/${prevEpisode.id}`)}

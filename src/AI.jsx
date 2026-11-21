@@ -192,7 +192,7 @@ function FileChip({ file, onRemove }) {
       <FontAwesomeIcon icon={fileIcon(file.type)} className="shrink-0" />
       <span className="truncate">{file.name}</span>
       {onRemove && (
-        <button onClick={onRemove} className="shrink-0 hover:text-pink-400 transition">
+        <button aria-label="Remove attachment" onClick={onRemove} className="shrink-0 hover:text-pink-400 transition">
           <FontAwesomeIcon icon={faXmark} />
         </button>
       )}
@@ -236,11 +236,11 @@ function CameraModal({ onCapture, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70  p-4">
       <div className="bg-bg-elevated border border-ink/10 rounded-3xl overflow-hidden w-full max-w-md">
         <div className="flex items-center justify-between px-5 py-3 border-b border-ink/5">
           <span className="text-sm font-semibold text-ink">Take a Snap</span>
-          <button onClick={onClose} className="text-ink/40 hover:text-ink transition">
+          <button aria-label="Close" onClick={onClose} className="text-ink/40 hover:text-ink transition">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
@@ -496,12 +496,12 @@ useEffect(() => {
           <label className="block text-xs font-semibold text-violet-400 tracking-widest uppercase mb-2">
             Paste Your Study Material
           </label>
-          <textarea
+          <textarea aria-label="Text to study"
             rows={5}
             placeholder="e.g. The mitochondria is the powerhouse of the cell…"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            className="w-full bg-black/40 border border-ink/10 rounded-2xl px-4 py-3 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
+            className="w-full bg-black/40 border border-ink/10 rounded-2xl px-4 py-3 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 resize-none transition"
           />
         </div>
       )}
@@ -511,7 +511,7 @@ useEffect(() => {
         <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-500/10 border border-violet-500/20 text-sm text-violet-300">
           <FontAwesomeIcon icon={mode === "scan" ? faCamera : faPaperclip} className="text-xs" />
           <span className="truncate">{file.name}</span>
-          <button
+          <button aria-label="Close"
             onClick={() => { setFile(null); setMode("text"); }}
             className="ml-auto text-ink/30 hover:text-ink transition"
           >
@@ -531,7 +531,7 @@ useEffect(() => {
           ) : materials.length === 0 ? (
             <p className="text-sm text-ink/30">No PDF materials found in your library.</p>
           ) : (
-            <select
+            <select aria-label="Select a material"
               value={selectedMaterial?.id || ""}
               onChange={(e) => {
                 const mat = [presetMaterial, ...materials].find((m) => m?.id === e.target.value);
@@ -552,7 +552,7 @@ useEffect(() => {
 
       {/* Controls */}
       <div className="flex gap-2">
-        <select
+        <select aria-label="Number of questions"
           value={count}
           onChange={(e) => setCount(e.target.value)}
           className="flex-1 bg-black/40 border border-ink/10 rounded-2xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
@@ -561,7 +561,7 @@ useEffect(() => {
           <option value="5">5 questions</option>
           <option value="10">10 questions</option>
         </select>
-        <select
+        <select aria-label="Difficulty"
           value={difficulty}
           onChange={(e) => setDifficulty(e.target.value)}
           className="flex-1 bg-black/40 border border-ink/10 rounded-2xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
@@ -665,9 +665,9 @@ function ToolModal({ tool, onClose, material = null }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-bg flex flex-col">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-ink/5 bg-bg/95 backdrop-blur-md shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-ink/5 bg-bg shrink-0">
         <span className="text-sm font-bold text-ink">{TITLES[tool]}</span>
-        <button onClick={onClose} className="text-ink/40 hover:text-ink transition">
+        <button aria-label="Close" onClick={onClose} className="text-ink/40 hover:text-ink transition">
           <FontAwesomeIcon icon={faXmark} />
         </button>
       </div>
@@ -1182,14 +1182,14 @@ if (data.sessionId) setSessionId(data.sessionId);
             className="hidden"
             onChange={handleFileAttach}
           />
-          <input
+          <input aria-label="Ask a question"
             type="text"
             placeholder={recording ? "Listening…" : "Ask a question…"}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && send()}
             disabled={loading}
-            className="flex-1 bg-black/40 border border-ink/10 rounded-2xl px-4 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+            className="flex-1 bg-black/40 border border-ink/10 rounded-2xl px-4 py-2.5 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 transition"
           />
           <button
             onClick={toggleRecording}
@@ -1202,7 +1202,7 @@ if (data.sessionId) setSessionId(data.sessionId);
           >
             <FontAwesomeIcon icon={recording ? faMicrophoneSlash : faMicrophone} />
           </button>
-          <button
+          <button aria-label="Send message"
             onClick={send}
             disabled={loading || (!input.trim() && !attachedFile)}
             className="w-9 h-9 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-xl flex items-center justify-center transition shrink-0"
@@ -1268,12 +1268,12 @@ function SummarizeTab() {
       </label>
       <GenerationHistory tool="summarize" onSelect={(gen) => setSummary(gen.result.summary)} />
     </div>
-    <textarea
+    <textarea aria-label="Paste your notes or any text to summarize"
       rows={6}
       placeholder="Paste your notes or any text to summarize…"
       value={text}
       onChange={(e) => setText(e.target.value)}
-      className="w-full bg-black/40 border border-ink/10 rounded-2xl px-4 py-3 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
+      className="w-full bg-black/40 border border-ink/10 rounded-2xl px-4 py-3 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 resize-none transition"
     />
   </div>
       <div className="flex items-center gap-2">
@@ -1301,7 +1301,7 @@ function SummarizeTab() {
         {attachedFile && <FileChip file={attachedFile} onRemove={() => setAttachedFile(null)} />}
       </div>
       <div className="flex gap-2">
-        <select
+        <select aria-label="Explanation style"
           value={style}
           onChange={(e) => setStyle(e.target.value)}
           className="flex-1 bg-black/40 border border-ink/10 rounded-2xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
@@ -1445,12 +1445,12 @@ function RevisionTab() {
             <label className="block text-xs font-semibold text-violet-400 tracking-widest uppercase mb-2">
               Paste Material to Condense
             </label>
-            <textarea
+            <textarea aria-label="Paste notes, a chapter, or a topic to turn into a revision sheet"
               rows={6}
               placeholder="Paste notes, a chapter, or a topic to turn into a revision sheet…"
               value={text}
               onChange={(e) => setText(e.target.value)}
-              className="w-full bg-black/40 border border-ink/10 rounded-2xl px-4 py-3 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
+              className="w-full bg-black/40 border border-ink/10 rounded-2xl px-4 py-3 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 resize-none transition"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -1475,7 +1475,7 @@ function RevisionTab() {
           ) : materials.length === 0 ? (
             <p className="text-sm text-ink/30">No PDF materials found in your library.</p>
           ) : (
-            <select
+            <select aria-label="Select a material"
               value={selectedMaterial?.id || ""}
               onChange={(e) => setSelectedMaterial(materials.find((m) => m.id === e.target.value) || null)}
               className="w-full bg-black/40 border border-ink/10 rounded-2xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
@@ -1613,12 +1613,12 @@ function PracticeTab() {
             <label className="block text-xs font-semibold text-violet-400 tracking-widest uppercase mb-2">
               Paste Study Material
             </label>
-            <textarea
+            <textarea aria-label="Paste the topic or material to generate practice problems from"
               rows={5}
               placeholder="Paste the topic or material to generate practice problems from…"
               value={text}
               onChange={(e) => setText(e.target.value)}
-              className="w-full bg-black/40 border border-ink/10 rounded-2xl px-4 py-3 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
+              className="w-full bg-black/40 border border-ink/10 rounded-2xl px-4 py-3 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 resize-none transition"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -1643,7 +1643,7 @@ function PracticeTab() {
           ) : materials.length === 0 ? (
             <p className="text-sm text-ink/30">No PDF materials found in your library.</p>
           ) : (
-            <select
+            <select aria-label="Select a material"
               value={selectedMaterial?.id || ""}
               onChange={(e) => setSelectedMaterial(materials.find((m) => m.id === e.target.value) || null)}
               className="w-full bg-black/40 border border-ink/10 rounded-2xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
@@ -1656,12 +1656,12 @@ function PracticeTab() {
       )}
 
       <div className="flex gap-2">
-        <select value={count} onChange={(e) => setCount(e.target.value)} className="flex-1 bg-black/40 border border-ink/10 rounded-2xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
+        <select aria-label="Number of problems" value={count} onChange={(e) => setCount(e.target.value)} className="flex-1 bg-black/40 border border-ink/10 rounded-2xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
           <option value="3">3 problems</option>
           <option value="5">5 problems</option>
           <option value="10">10 problems</option>
         </select>
-        <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="flex-1 bg-black/40 border border-ink/10 rounded-2xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
+        <select aria-label="Difficulty" value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="flex-1 bg-black/40 border border-ink/10 rounded-2xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
           <option>Easy</option>
           <option>Medium</option>
           <option>Hard</option>
@@ -1836,12 +1836,12 @@ function ExplainTab() {
             <label className="block text-xs font-semibold text-violet-400 tracking-widest uppercase mb-2">
               Paste What You Want Explained
             </label>
-            <textarea
+            <textarea aria-label="Paste a concept, passage, or question you want explained"
               rows={6}
               placeholder="Paste a concept, passage, or question you want explained…"
               value={text}
               onChange={(e) => setText(e.target.value)}
-              className="w-full bg-black/40 border border-ink/10 rounded-2xl px-4 py-3 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
+              className="w-full bg-black/40 border border-ink/10 rounded-2xl px-4 py-3 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 resize-none transition"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -1881,7 +1881,7 @@ function ExplainTab() {
           ) : materials.length === 0 ? (
             <p className="text-sm text-ink/30">No PDF materials found in your library.</p>
           ) : (
-            <select
+            <select aria-label="Select a material"
               value={selectedMaterial?.id || ""}
               onChange={(e) => setSelectedMaterial(materials.find((m) => m.id === e.target.value) || null)}
               className="w-full bg-black/40 border border-ink/10 rounded-2xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
@@ -1896,7 +1896,7 @@ function ExplainTab() {
       )}
 
       <div className="flex gap-2">
-        <select
+        <select aria-label="Level"
           value={level}
           onChange={(e) => setLevel(e.target.value)}
           className="flex-1 bg-black/40 border border-ink/10 rounded-2xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition"
@@ -2013,12 +2013,12 @@ function StudyPlanTab() {
         <label className="block text-xs font-semibold text-violet-400 tracking-widest uppercase mb-2">
           Subject / Course
         </label>
-        <input
+        <input aria-label="Course name"
           type="text"
           placeholder="e.g. CHE 205 Thermodynamics"
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
-          className="w-full bg-black/40 border border-ink/10 rounded-2xl px-4 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+          className="w-full bg-black/40 border border-ink/10 rounded-2xl px-4 py-2.5 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 transition"
         />
       </div>
 
@@ -2027,7 +2027,7 @@ function StudyPlanTab() {
           <label className="block text-xs font-semibold text-violet-400 tracking-widest uppercase mb-2">
             Days
           </label>
-          <input
+          <input aria-label="Number of days available"
             type="number"
             min="1"
             max="90"
@@ -2040,7 +2040,7 @@ function StudyPlanTab() {
           <label className="block text-xs font-semibold text-violet-400 tracking-widest uppercase mb-2">
             Hrs/day
           </label>
-          <input
+          <input aria-label="Hours per day"
             type="number"
             min="1"
             max="12"
@@ -2053,7 +2053,7 @@ function StudyPlanTab() {
           <label className="block text-xs font-semibold text-violet-400 tracking-widest uppercase mb-2">
             Exam date
           </label>
-          <input
+          <input aria-label="Exam date"
             type="date"
             value={examDate}
             onChange={(e) => setExamDate(e.target.value)}
@@ -2066,12 +2066,12 @@ function StudyPlanTab() {
         <label className="block text-xs font-semibold text-violet-400 tracking-widest uppercase mb-2">
           Notes or syllabus (optional)
         </label>
-        <textarea
+        <textarea aria-label="Paste a syllabus, topic list, or notes to base the plan on"
           rows={3}
           placeholder="Paste a syllabus, topic list, or notes to base the plan on…"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          className="w-full bg-black/40 border border-ink/10 rounded-2xl px-4 py-3 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
+          className="w-full bg-black/40 border border-ink/10 rounded-2xl px-4 py-3 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 resize-none transition"
         />
       </div>
 
@@ -2161,14 +2161,14 @@ function HistoryPanel({ onClose, onSelectChat }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60  p-4">
       <div className="bg-bg-elevated border border-ink/10 rounded-3xl w-full max-w-md max-h-[70vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-ink/5 shrink-0">
           <div className="flex items-center gap-2 text-ink font-semibold text-sm">
             <FontAwesomeIcon icon={faClockRotateLeft} className="text-violet-400" />
             Previous Chats
           </div>
-          <button onClick={onClose} className="text-ink/40 hover:text-ink transition">
+          <button aria-label="Close" onClick={onClose} className="text-ink/40 hover:text-ink transition">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
@@ -2227,13 +2227,8 @@ function AI() {
         <ToolModal tool={activeTool} material={location.state?.material || null} onClose={() => setActiveTool(null)} />
       )}
 
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
-        <div className="absolute top-1/2 -right-20 w-72 h-72 bg-emerald-500 rounded-full opacity-8 blur-[100px]" />
-        <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-pink-500 rounded-full opacity-8 blur-[100px]" />
-      </div>
 
-      <header className="fixed top-0 left-0 w-full z-40 bg-bg/80 backdrop-blur-md border-b border-ink/5">
+      <header className="fixed top-0 left-0 w-full z-40 bg-bg border-b border-ink/5">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between px-4 py-2.5">
             <div className="flex items-center gap-3">

@@ -64,12 +64,6 @@ function Login() {
   return (
     <div className="min-h-screen bg-bg text-ink flex items-center justify-center px-4 py-12 relative overflow-hidden">
 
-      {/* Ambient orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
-        <div className="absolute top-1/2 -right-20 w-72 h-72 bg-emerald-500 rounded-full opacity-[0.06] blur-[100px]" />
-        <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-pink-500 rounded-full opacity-[0.06] blur-[100px]" />
-      </div>
 
       <div className="relative z-10 w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-6">
 

@@ -118,7 +118,7 @@ export default function AskUniLibModal({ onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70  p-4">
       <div className="bg-bg-elevated border border-ink/10 rounded-3xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-ink/5 shrink-0">
@@ -130,7 +130,7 @@ export default function AskUniLibModal({ onClose }) {
               BETA
             </span>
           </div>
-          <button onClick={onClose} className="text-ink/40 hover:text-ink transition">
+          <button aria-label="Close" onClick={onClose} className="text-ink/40 hover:text-ink transition">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
@@ -190,14 +190,14 @@ export default function AskUniLibModal({ onClose }) {
               <label className="block text-xs font-semibold text-violet-400 tracking-widest uppercase mb-2">
                 What do you want to know? (optional)
               </label>
-              <input
+              <input aria-label="Your question"
                 type="text"
                 placeholder="e.g. Can you explain question 2?"
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && submit()}
                 disabled={loading}
-                className="w-full bg-black/40 border border-ink/10 rounded-2xl px-4 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+                className="w-full bg-black/40 border border-ink/10 rounded-2xl px-4 py-2.5 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 transition"
               />
             </div>
           )}

@@ -143,13 +143,13 @@ export default function PastQuestions() {
             <h1 className="mt-2 text-2xl font-bold">{paper.title}</h1>
             <div className="mt-5 grid gap-4 sm:grid-cols-3">
               <label className="text-sm"><span className="mb-1 block text-ink/50">Questions</span>
-                <select value={count} onChange={(e) => { const n = Number(e.target.value); setCount(n); setMinutes(defaultMinutes(n)); }} className="min-h-11 w-full rounded-xl border border-ink/10 bg-bg px-3">
+                <select aria-label="Number of questions" value={count} onChange={(e) => { const n = Number(e.target.value); setCount(n); setMinutes(defaultMinutes(n)); }} className="min-h-11 w-full rounded-xl border border-ink/10 bg-bg px-3">
                   {COUNTS.map((n) => <option key={n} value={n}>{n} questions</option>)}
                 </select></label>
               <label className="text-sm"><span className="mb-1 block text-ink/50">Time (minutes)</span>
-                <input type="number" min="1" max="180" value={minutes} onChange={(e) => setMinutes(Math.min(180, Math.max(1, Number(e.target.value) || 1)))} className="min-h-11 w-full rounded-xl border border-ink/10 bg-bg px-3" /></label>
+                <input aria-label="Time in minutes" type="number" min="1" max="180" value={minutes} onChange={(e) => setMinutes(Math.min(180, Math.max(1, Number(e.target.value) || 1)))} className="min-h-11 w-full rounded-xl border border-ink/10 bg-bg px-3" /></label>
               <label className="text-sm"><span className="mb-1 block text-ink/50">Difficulty</span>
-                <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="min-h-11 w-full rounded-xl border border-ink/10 bg-bg px-3">
+                <select aria-label="Difficulty" value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="min-h-11 w-full rounded-xl border border-ink/10 bg-bg px-3">
                   <option>Easy</option><option>Medium</option><option>Hard</option>
                 </select></label>
             </div>
@@ -161,7 +161,7 @@ export default function PastQuestions() {
 
         {stage === "exam" && (
           <section>
-            <div className="sticky top-16 z-10 -mx-4 mb-4 flex items-center justify-between gap-3 border-b border-ink/10 bg-bg/95 px-4 py-3 backdrop-blur">
+            <div className="sticky top-16 z-10 -mx-4 mb-4 flex items-center justify-between gap-3 border-b border-ink/10 bg-bg/95 px-4 py-3 ">
               <div className="min-w-0"><p className="truncate text-sm font-semibold">{paper?.title}</p><p className="text-xs text-ink/40">{answered} of {questions.length} answered</p></div>
               <p className={`font-mono text-lg font-bold ${urgent ? "text-pink-400" : "text-violet-400"}`} role="timer" aria-label={`Time left ${formatClock(left)}`}>{formatClock(left)}</p>
             </div>

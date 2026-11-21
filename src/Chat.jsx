@@ -182,11 +182,11 @@ function MessageBubble({ message, isOwn, onReply, onReact }) {
 
           {/* Hover actions */}
           <div className={`absolute top-0 ${isOwn ? "left-0 -translate-x-full" : "right-0 translate-x-full"} hidden group-hover:flex items-center gap-1 px-1`}>
-            <button onClick={() => onReply(message)}
+            <button aria-label="Reply" onClick={() => onReply(message)}
               className="w-6 h-6 bg-white/10 rounded-full flex items-center justify-center text-ink/40 hover:text-violet-400 transition">
               <FontAwesomeIcon icon={faReply} className="text-xs" />
             </button>
-            <button onClick={() => setShowEmoji(!showEmoji)}
+            <button aria-label="Add reaction" onClick={() => setShowEmoji(!showEmoji)}
               className="w-6 h-6 bg-white/10 rounded-full flex items-center justify-center text-ink/40 hover:text-violet-400 transition">
               <FontAwesomeIcon icon={faSmile} className="text-xs" />
             </button>
@@ -276,7 +276,7 @@ function CreateGroupModal({ onClose, onCreated }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/70  flex items-end justify-center" onClick={onClose}>
       <div className="bg-bg-elevated border border-ink/10 w-full max-w-lg rounded-t-3xl overflow-hidden"
         style={{ maxHeight: "85vh" }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-ink/5">
@@ -284,16 +284,16 @@ function CreateGroupModal({ onClose, onCreated }) {
             <FontAwesomeIcon icon={faUserGroup} className="text-violet-400" />
             <h2 className="text-base font-bold text-ink">New Group</h2>
           </div>
-          <button onClick={onClose} className="text-ink/30 hover:text-ink transition">
+          <button aria-label="Close" onClick={onClose} className="text-ink/30 hover:text-ink transition">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
 
         <div className="overflow-y-auto" style={{ maxHeight: "calc(85vh - 140px)" }}>
           <div className="px-5 pt-4 pb-2">
-            <input value={name} onChange={e => setName(e.target.value)}
+            <input aria-label="Group name" value={name} onChange={e => setName(e.target.value)}
               placeholder="Group name..."
-              className="w-full bg-white/5 border border-ink/10 rounded-xl px-4 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 mb-4"
+              className="w-full bg-white/5 border border-ink/10 rounded-xl px-4 py-2.5 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 mb-4"
               maxLength={50} />
 
             {selected.length > 0 && (
@@ -303,7 +303,7 @@ function CreateGroupModal({ onClose, onCreated }) {
                     <img src={safeAvatar(u.photoURL, u.displayName)} className="w-5 h-5 rounded-full object-cover" alt=""
                       onError={e => avatarError(e, u.displayName)} />
                     <span className="text-xs text-violet-400 font-medium">{u.displayName}</span>
-                    <button onClick={() => toggleMember(u)} className="text-violet-400/60 hover:text-violet-300 ml-0.5">
+                    <button aria-label="Remove member" onClick={() => toggleMember(u)} className="text-violet-400/60 hover:text-violet-300 ml-0.5">
                       <FontAwesomeIcon icon={faXmark} className="text-xs" />
                     </button>
                   </div>
@@ -313,8 +313,8 @@ function CreateGroupModal({ onClose, onCreated }) {
 
             <div className="relative mb-2">
               <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/20 text-xs" />
-              <input value={search} onChange={handleSearchChange} placeholder="Search members..."
-                className="w-full pl-8 pr-3 py-2 bg-white/5 border border-ink/10 rounded-xl text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
+              <input aria-label="Search members" value={search} onChange={handleSearchChange} placeholder="Search members..."
+                className="w-full pl-8 pr-3 py-2 bg-white/5 border border-ink/10 rounded-xl text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 transition" />
               {searching && <FontAwesomeIcon icon={faSpinner} spin className="absolute right-3 top-1/2 -translate-y-1/2 text-ink/30 text-xs" />}
             </div>
           </div>
@@ -386,13 +386,13 @@ function SearchMessagesPanel({ roomId, onClose, onJumpTo }) {
   return (
     <div className="absolute inset-0 bg-bg z-20 flex flex-col">
       <div className="flex items-center gap-3 px-4 py-3 border-b border-ink/5 shrink-0">
-        <button onClick={onClose} className="text-ink/40 hover:text-violet-400 transition">
+        <button aria-label="Close" onClick={onClose} className="text-ink/40 hover:text-violet-400 transition">
           <FontAwesomeIcon icon={faChevronLeft} />
         </button>
         <div className="relative flex-1">
           <FontAwesomeIcon icon={faMagnifyingGlass} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/20 text-xs" />
-          <input autoFocus value={query} onChange={handleChange} placeholder="Search messages..."
-            className="w-full pl-8 pr-3 py-2 bg-white/5 border border-ink/10 rounded-xl text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
+          <input aria-label="Search messages" autoFocus value={query} onChange={handleChange} placeholder="Search messages..."
+            className="w-full pl-8 pr-3 py-2 bg-white/5 border border-ink/10 rounded-xl text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 transition" />
         </div>
         {loading && <FontAwesomeIcon icon={faSpinner} spin className="text-violet-400 text-sm shrink-0" />}
       </div>
@@ -450,7 +450,7 @@ function MediaGalleryPanel({ roomId, onClose }) {
   return (
     <div className="absolute inset-0 bg-bg z-20 flex flex-col">
       <div className="flex items-center gap-3 px-4 py-3 border-b border-ink/5 shrink-0">
-        <button onClick={onClose} className="text-ink/40 hover:text-violet-400 transition">
+        <button aria-label="Close" onClick={onClose} className="text-ink/40 hover:text-violet-400 transition">
           <FontAwesomeIcon icon={faChevronLeft} />
         </button>
         <h2 className="font-semibold text-ink text-sm flex-1">Media & Files</h2>
@@ -846,7 +846,7 @@ function ChatRoom({ room, dbUserId, onBack, onOpenWallpaper, onlineUsers }) {
 
       {/* Header */}
       <div className="bg-bg-elevated border-b border-ink/5 px-4 py-3 flex items-center gap-3 shrink-0">
-        <button onClick={onBack} className="text-ink/40 hover:text-violet-400 transition md:hidden">
+        <button aria-label="Back" onClick={onBack} className="text-ink/40 hover:text-violet-400 transition md:hidden">
           <FontAwesomeIcon icon={faChevronLeft} />
         </button>
         {room.isGroup ? (
@@ -875,15 +875,15 @@ function ChatRoom({ room, dbUserId, onBack, onOpenWallpaper, onlineUsers }) {
           }
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={() => setShowSearch(true)}
+          <button aria-label="Search in conversation" onClick={() => setShowSearch(true)}
             className="w-8 h-8 rounded-full bg-white/5 border border-white/[0.06] flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/30 transition">
             <FontAwesomeIcon icon={faMagnifyingGlass} className="text-sm" />
           </button>
-          <button onClick={() => setShowMedia(true)}
+          <button aria-label="Shared media" onClick={() => setShowMedia(true)}
             className="w-8 h-8 rounded-full bg-white/5 border border-white/[0.06] flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/30 transition">
             <FontAwesomeIcon icon={faPhotoFilm} className="text-sm" />
           </button>
-          <button onClick={onOpenWallpaper}
+          <button aria-label="Change wallpaper" onClick={onOpenWallpaper}
             className="w-8 h-8 rounded-full bg-white/5 border border-white/[0.06] flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/30 transition">
             <FontAwesomeIcon icon={faPalette} className="text-sm" />
           </button>
@@ -935,7 +935,7 @@ function ChatRoom({ room, dbUserId, onBack, onOpenWallpaper, onlineUsers }) {
       {(uploadError || sendError) && (
         <div className="bg-pink-500/10 border-t border-pink-500/20 px-4 py-2 flex items-center justify-between shrink-0">
           <p className="text-xs text-pink-400">{uploadError || sendError}</p>
-          <button onClick={() => { setUploadError(null); setSendError(null); }} className="text-pink-400 hover:text-pink-300">
+          <button aria-label="Dismiss error" onClick={() => { setUploadError(null); setSendError(null); }} className="text-pink-400 hover:text-pink-300">
             <FontAwesomeIcon icon={faXmark} className="text-xs" />
           </button>
         </div>
@@ -953,37 +953,37 @@ function ChatRoom({ room, dbUserId, onBack, onOpenWallpaper, onlineUsers }) {
               </p>
             </div>
           </div>
-          <button onClick={() => setReplyTo(null)} className="text-ink/30 hover:text-ink/60">
+          <button aria-label="Cancel reply" onClick={() => setReplyTo(null)} className="text-ink/30 hover:text-ink/60">
             <FontAwesomeIcon icon={faTimes} className="text-xs" />
           </button>
         </div>
       )}
 
       {/* Input */}
-      <div className="bg-bg-elevated border-t border-ink/5 px-3 py-3 flex items-end gap-2 shrink-0">
+      <div className="bg-bg-elevated border-t border-line px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex items-end gap-2 shrink-0">
         <div className="flex gap-1">
-          <label className="w-9 h-9 bg-white/5 border border-ink/10 rounded-full flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/40 transition cursor-pointer">
-            <FontAwesomeIcon icon={faImage} />
-            <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+          <label className="relative w-10 h-10 bg-white/5 border border-ink/10 rounded-full flex items-center justify-center text-muted hover:text-violet-400 hover:border-violet-500/40 focus-within:outline focus-within:outline-2 focus-within:outline-violet-400 transition cursor-pointer">
+            <FontAwesomeIcon icon={faImage} aria-hidden="true" />
+            <input type="file" accept="image/*" aria-label="Send a photo" className="absolute inset-0 h-full w-full cursor-pointer opacity-0" onChange={handleImageUpload} />
           </label>
-          <label className="w-9 h-9 bg-white/5 border border-ink/10 rounded-full flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/40 transition cursor-pointer">
-            <FontAwesomeIcon icon={faFile} />
-            <input type="file" className="hidden" onChange={handleFileUpload} />
+          <label className="relative w-10 h-10 bg-white/5 border border-ink/10 rounded-full flex items-center justify-center text-muted hover:text-violet-400 hover:border-violet-500/40 focus-within:outline focus-within:outline-2 focus-within:outline-violet-400 transition cursor-pointer">
+            <FontAwesomeIcon icon={faFile} aria-hidden="true" />
+            <input type="file" aria-label="Send a file" className="absolute inset-0 h-full w-full cursor-pointer opacity-0" onChange={handleFileUpload} />
           </label>
         </div>
-        <input
+        <input aria-label="Type a message"
           value={text}
           onChange={handleTyping}
           onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendMessage()}
           placeholder="Type a message..."
-          className="flex-1 bg-white/5 border border-ink/10 rounded-2xl px-4 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/40 transition"
+          className="min-w-0 flex-1 bg-white/5 border border-ink/10 rounded-2xl px-4 py-2.5 text-base sm:text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/40 transition"
         />
         {uploading ? (
           <div className="w-10 h-10 flex items-center justify-center text-violet-400">
             <FontAwesomeIcon icon={faSpinner} spin />
           </div>
         ) : text.trim() ? (
-          <button onClick={() => sendMessage()}
+          <button aria-label="Send message" onClick={() => sendMessage()}
             className="w-10 h-10 bg-violet-500 hover:bg-violet-400 text-white rounded-full flex items-center justify-center transition">
             <FontAwesomeIcon icon={faPaperPlane} />
           </button>
@@ -1041,19 +1041,19 @@ function StatusCreator({ onClose, onPosted }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/80  flex items-end justify-center" onClick={onClose}>
       <div className="bg-bg-elevated border border-ink/10 w-full max-w-lg rounded-t-3xl overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="relative w-full h-56 flex items-center justify-center rounded-t-3xl overflow-hidden"
           style={{ backgroundColor: mode === "text" ? bgColor : "#0d0d14" }}>
           {mode === "text" && (
-            <textarea value={text} onChange={e => setText(e.target.value)}
+            <textarea aria-label="What's on your mind?" value={text} onChange={e => setText(e.target.value)}
               placeholder="What's on your mind?"
-              className="bg-transparent text-ink text-center text-xl font-semibold placeholder-white/40 outline-none resize-none w-full px-6 text-center"
+              className="bg-transparent text-ink text-center text-xl font-semibold placeholder:text-muted outline-none resize-none w-full px-6 text-center"
               rows={3} style={{ caretColor: "white" }} />
           )}
           {mode === "image" && mediaPreview && <img src={mediaPreview} className="h-full w-full object-cover" alt="preview" />}
           {mode === "video" && mediaPreview && <video src={mediaPreview} className="h-full w-full object-cover" autoPlay muted loop />}
-          <button onClick={onClose} className="absolute top-3 right-3 text-ink/60 hover:text-ink">
+          <button aria-label="Close" onClick={onClose} className="absolute top-3 right-3 text-ink/60 hover:text-ink">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
@@ -1090,9 +1090,9 @@ function StatusCreator({ onClose, onPosted }) {
             </div>
           )}
           {(mode === "image" || mode === "video") && (
-            <input value={text} onChange={e => setText(e.target.value)}
+            <input aria-label="Add a caption" value={text} onChange={e => setText(e.target.value)}
               placeholder="Add a caption (optional)..."
-              className="w-full bg-white/5 border border-ink/10 rounded-xl px-4 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 mb-4" />
+              className="w-full bg-white/5 border border-ink/10 rounded-xl px-4 py-2.5 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 mb-4" />
           )}
           {error && <p className="text-pink-400 text-xs text-center mb-3">{error}</p>}
           <button onClick={handlePost}
@@ -1116,7 +1116,7 @@ function StatusViewer({ status, onClose, onView }) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={bgStyle}>
       <div className="flex items-center gap-3 px-4 py-4">
-        <button onClick={onClose} className="text-ink"><FontAwesomeIcon icon={faChevronLeft} /></button>
+        <button aria-label="Close" onClick={onClose} className="text-ink"><FontAwesomeIcon icon={faChevronLeft} /></button>
         <img src={safeAvatar(status.user?.photoURL, status.user?.displayName)}
           className="w-8 h-8 rounded-full object-cover border border-ink/20" alt=""
           onError={(e) => avatarError(e, status.user?.displayName)} />
@@ -1148,10 +1148,6 @@ function StatusViewer({ status, onClose, onView }) {
 function EmptyState({ onCreateGroup }) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center text-center p-8 gap-4">
-      {/* Ambient orb */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-violet-600 rounded-full opacity-5 blur-[80px]" />
-      </div>
       <div className="relative w-20 h-20 bg-violet-500/10 border border-violet-500/20 rounded-3xl flex items-center justify-center">
         <FontAwesomeIcon icon={faComments} className="text-violet-400 text-3xl" />
         <span className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-400 rounded-full border-2 border-[#0a0a0f]" />
@@ -1297,11 +1293,6 @@ function Chat() {
   return (
     <div className="min-h-screen bg-bg text-ink flex flex-col">
 
-      {/* Ambient orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
-        <div className="absolute bottom-0 right-0 w-72 h-72 bg-emerald-500 rounded-full opacity-[0.06] blur-[100px]" />
-      </div>
 
       {/* Create Group Modal */}
       {showCreateGroup && (
@@ -1316,7 +1307,7 @@ function Chat() {
       )}
 
       {/* HEADER */}
-      <header className="fixed top-0 left-0 w-full z-40 bg-bg/80 backdrop-blur-md border-b border-ink/5">
+      <header className="fixed top-0 left-0 w-full z-40 bg-bg border-b border-ink/5">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between px-4 py-2.5">
             <div className="flex items-center gap-3">
@@ -1379,9 +1370,9 @@ function Chat() {
               <div className="px-3 py-2 border-b border-white/[0.04] shrink-0">
                 <div className="relative">
                   <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/20 text-xs" />
-                  <input value={userSearch} onChange={handleSearchChange}
+                  <input aria-label="Search by name or @username" value={userSearch} onChange={handleSearchChange}
                     placeholder="Search by name or @username..."
-                    className="w-full pl-8 pr-3 py-2 bg-white/[0.03] border border-white/[0.06] rounded-xl text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/40 transition" />
+                    className="w-full pl-8 pr-3 py-2 bg-white/[0.03] border border-white/[0.06] rounded-xl text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/40 transition" />
                   {searching && <FontAwesomeIcon icon={faSpinner} spin className="absolute right-3 top-1/2 -translate-y-1/2 text-ink/30 text-xs" />}
                 </div>
                 {searchResults.length > 0 && (
@@ -1454,7 +1445,7 @@ function Chat() {
                     <img src={safeAvatar(user?.photoURL, user?.displayName)}
                       className="w-12 h-12 rounded-full object-cover border border-ink/10" alt=""
                       onError={(e) => avatarError(e, user?.displayName)} />
-                    <button onClick={() => setShowStatusCreate(true)}
+                    <button aria-label="Add a status" onClick={() => setShowStatusCreate(true)}
                       className="absolute -bottom-1 -right-1 w-5 h-5 bg-violet-500 rounded-full flex items-center justify-center text-ink border-2 border-[#0a0a0f]">
                       <FontAwesomeIcon icon={faPlus} className="text-xs" />
                     </button>
@@ -1518,14 +1509,14 @@ function Chat() {
         <StatusViewer status={viewingStatus} onClose={() => setViewingStatus(null)} onView={handleViewStatus} />
       )}
       {showWallpaperPicker && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end justify-center" onClick={() => setShowWallpaperPicker(false)}>
+        <div className="fixed inset-0 z-50 bg-black/70  flex items-end justify-center" onClick={() => setShowWallpaperPicker(false)}>
           <div className="bg-bg-elevated border border-ink/10 w-full max-w-lg rounded-t-3xl p-6 pb-10" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-base font-bold text-ink">
                 <FontAwesomeIcon icon={faPalette} className="mr-2 text-violet-400" />
                 Chat Wallpaper
               </h2>
-              <button onClick={() => setShowWallpaperPicker(false)} className="text-ink/30 hover:text-ink transition">
+              <button aria-label="Close" onClick={() => setShowWallpaperPicker(false)} className="text-ink/30 hover:text-ink transition">
                 <FontAwesomeIcon icon={faXmark} />
               </button>
             </div>

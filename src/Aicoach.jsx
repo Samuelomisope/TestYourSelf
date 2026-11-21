@@ -65,7 +65,6 @@ function AICoach({ plan, progress, stats, busy = false }) {
 
   return (
     <section className="relative overflow-hidden rounded-[2rem] border border-violet-500/15 bg-gradient-to-br from-violet-500/[0.08] to-white/[0.02] p-5 sm:p-6">
-      <div className="absolute -right-12 -top-12 w-40 h-40 rounded-full bg-violet-500/10 blur-3xl pointer-events-none" />
       <div className="relative flex items-start gap-4">
         <div className="w-11 h-11 rounded-2xl bg-violet-500/15 border border-violet-500/15 text-violet-300 flex items-center justify-center shrink-0">
           <FontAwesomeIcon icon={faWandMagicSparkles} />

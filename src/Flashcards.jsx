@@ -125,11 +125,11 @@ function CreateDeckModal({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/60  z-50 flex items-end sm:items-center justify-center p-4">
       <div className="bg-bg-elevated border border-ink/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-ink/5 shrink-0">
           <h2 className="font-bold text-ink">New Flashcard Deck</h2>
-          <button onClick={() => onClose(false)} className="text-ink/30 hover:text-ink transition">
+          <button aria-label="Close" onClick={() => onClose(false)} className="text-ink/30 hover:text-ink transition">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
@@ -139,23 +139,23 @@ function CreateDeckModal({ onClose }) {
 
           <div className="mb-3">
             <label className="text-xs text-ink/30 mb-1 block">Title</label>
-            <input
+            <input aria-label="Title"
               type="text"
               placeholder="e.g. Organic Chemistry — Reactions"
               value={title}
               onChange={e => setTitle(e.target.value)}
-              className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+              className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 transition"
             />
           </div>
 
           <div className="mb-4">
             <label className="text-xs text-ink/30 mb-1 block">Description (optional)</label>
-            <textarea
+            <textarea aria-label="What's this deck about?"
               placeholder="What's this deck about?"
               value={description}
               onChange={e => setDescription(e.target.value)}
               rows={2}
-              className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
+              className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 resize-none transition"
             />
           </div>
 
@@ -201,12 +201,12 @@ function CreateDeckModal({ onClose }) {
           {mode === "ai" && (
             <div className="mb-5 bg-white/[0.03] border border-ink/10 rounded-xl p-4">
               <label className="text-xs text-ink/30 mb-1 block">Paste your notes</label>
-              <textarea
+              <textarea aria-label="Paste text to generate flashcards from"
                 placeholder="Paste text to generate flashcards from…"
                 value={aiText}
                 onChange={e => setAiText(e.target.value)}
                 rows={4}
-                className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition mb-3"
+                className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 resize-none transition mb-3"
               />
               <label className="text-xs text-ink/30 mb-1 block">Or upload a file (image, PDF, video)</label>
               <input
@@ -217,7 +217,7 @@ function CreateDeckModal({ onClose }) {
               />
               <div className="flex items-center gap-3 mb-3">
                 <label className="text-xs text-ink/30">Number of cards</label>
-                <input
+                <input aria-label="Number of cards"
                   type="number"
                   min={1}
                   max={30}
@@ -244,26 +244,26 @@ function CreateDeckModal({ onClose }) {
                 {cards.map((card, i) => (
                   <div key={i} className="bg-white/[0.03] border border-ink/10 rounded-xl p-3 relative">
                     {cards.length > 1 && (
-                      <button
+                      <button aria-label="Remove card"
                         onClick={() => removeCard(i)}
                         className="absolute top-2 right-2 w-6 h-6 bg-pink-500/15 text-pink-400 rounded-full flex items-center justify-center hover:bg-pink-500/25 transition"
                       >
                         <FontAwesomeIcon icon={faXmark} className="text-xs" />
                       </button>
                     )}
-                    <input
+                    <input aria-label="Front"
                       type="text"
                       placeholder="Front (question)"
                       value={card.front}
                       onChange={e => updateCard(i, "front", e.target.value)}
-                      className="w-full bg-black/40 border border-ink/10 rounded-lg px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 mb-2 transition"
+                      className="w-full bg-black/40 border border-ink/10 rounded-lg px-3 py-2 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 mb-2 transition"
                     />
-                    <input
+                    <input aria-label="Back"
                       type="text"
                       placeholder="Back (answer)"
                       value={card.back}
                       onChange={e => updateCard(i, "back", e.target.value)}
-                      className="w-full bg-black/40 border border-ink/10 rounded-lg px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+                      className="w-full bg-black/40 border border-ink/10 rounded-lg px-3 py-2 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 transition"
                     />
                   </div>
                 ))}
@@ -336,13 +336,13 @@ function ReviewSession({ deckId, onClose }) {
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/80  z-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-between mb-4">
           <p className="text-xs text-ink/40">
             {dueCards ? `${Math.min(index + 1, dueCards.length)} of ${dueCards.length}` : "Loading…"}
           </p>
-          <button onClick={onClose} className="text-ink/30 hover:text-ink transition">
+          <button aria-label="Close" onClick={onClose} className="text-ink/30 hover:text-ink transition">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
@@ -521,12 +521,8 @@ useEffect(() => {
   return (
     <div className="min-h-screen bg-bg text-ink">
 
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
-        <div className="absolute bottom-0 right-0 w-72 h-72 bg-emerald-500 rounded-full opacity-[0.06] blur-[100px]" />
-      </div>
 
-      <header className="fixed top-0 left-0 w-full z-40 bg-bg/80 backdrop-blur-md border-b border-ink/5">
+      <header className="fixed top-0 left-0 w-full z-40 bg-bg border-b border-ink/5">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between px-4 py-2.5">
             <div className="flex items-center gap-3">

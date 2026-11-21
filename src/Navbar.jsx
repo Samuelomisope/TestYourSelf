@@ -67,7 +67,7 @@ export default function Navbar() {
   return (
     <>
       {/* HEADER */}
-      <header className="fixed top-0 left-0 w-full z-40 bg-bg/80 backdrop-blur-md border-b border-ink/5">
+      <header className="fixed top-0 left-0 w-full z-40 bg-bg border-b border-ink/5">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between px-4 py-2.5">
             <div data-tour="sidebar" className="flex items-center gap-3">
@@ -82,7 +82,7 @@ export default function Navbar() {
 
             <div className="flex items-center gap-3">
               <Link
-                data-tour="global-search"
+                data-tour="global-search" aria-label="Search"
                 to="/search"
                 className="w-9 h-9 bg-white/5 border border-ink/10 rounded-xl flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/40 transition"
               >
@@ -129,7 +129,7 @@ export default function Navbar() {
       </header>
 
       {/* OVERLAY */}
-      {menuOpen && <div className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />}
+      {menuOpen && <div className="fixed inset-0 bg-black/60 z-40 " onClick={() => setMenuOpen(false)} />}
 
       {/* SIDEBAR DRAWER */}
       <aside className={`fixed top-0 left-0 h-full w-72 z-50 flex flex-col bg-bg-elevated border-r border-ink/5 shadow-2xl transform transition-transform duration-300 ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}>
@@ -150,7 +150,7 @@ export default function Navbar() {
               <p className="text-xs text-ink/30">{user?.email}</p>
             </div>
           </div>
-          <button onClick={() => setMenuOpen(false)} className="text-ink/30 hover:text-ink transition">
+          <button aria-label="Close" onClick={() => setMenuOpen(false)} className="text-ink/30 hover:text-ink transition">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>

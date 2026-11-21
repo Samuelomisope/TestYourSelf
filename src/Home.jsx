@@ -559,8 +559,8 @@ useEffect(() => {
           </div>
         </div>
         <div className="mt-10 pt-4 border-t border-ink/5 flex justify-between items-center">
-          <p className="text-ink/20 text-sm">© 2026 UNILIB</p>
-          <p className="text-sm text-ink/20">All rights reserved.</p>
+          <p className="text-muted text-sm">© 2026 UNILIB</p>
+          <p className="text-sm text-muted">All rights reserved.</p>
         </div>
         <h1 className="text-center font-extrabold leading-[0.7] text-transparent text-[clamp(3rem,15vw,15rem)] [-webkit-text-stroke:1px_rgba(255,255,255,0.05)] mt-6 select-none">
           UNILIB

@@ -69,11 +69,10 @@ function SellerProfile() {
 
   return (
     <div className="min-h-screen bg-bg text-ink">
-      <div className="fixed inset-0 pointer-events-none"><div className="absolute -top-32 -right-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" /></div>
-
-      <header className="bg-bg/80 backdrop-blur-md border-b border-ink/5 px-4 py-3 sticky top-0 z-40">
+      
+      <header className="bg-bg border-b border-ink/5 px-4 py-3 sticky top-0 z-40">
         <div className="max-w-3xl mx-auto flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="text-ink/40 hover:text-violet-400 transition"><FontAwesomeIcon icon={faChevronLeft} /></button>
+          <button aria-label="Back" onClick={() => navigate(-1)} className="text-ink/40 hover:text-violet-400 transition"><FontAwesomeIcon icon={faChevronLeft} /></button>
           <h1 className="text-base font-bold text-ink">Seller Profile</h1>
         </div>
       </header>

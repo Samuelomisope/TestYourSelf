@@ -272,8 +272,6 @@ function DashboardHero({ plan, progress, stats, todayEntry }) {
 
   return (
     <section className="relative overflow-hidden rounded-[2rem] border border-violet-500/20 bg-gradient-to-br from-violet-600/[0.17] via-violet-500/[0.06] to-white/[0.02] p-5 sm:p-7">
-      <div className="absolute -top-28 -right-20 w-80 h-80 rounded-full bg-violet-600/15 blur-[100px] pointer-events-none" />
-      <div className="absolute -bottom-40 left-1/3 w-72 h-72 rounded-full bg-fuchsia-500/[0.06] blur-[100px] pointer-events-none" />
 
       <div className="relative grid lg:grid-cols-[1fr_auto] gap-7 items-center">
         <div>
@@ -685,7 +683,6 @@ function AICoach({ plan, progress, stats, busy = false }) {
 
   return (
     <section className="relative overflow-hidden rounded-[2rem] border border-violet-500/15 bg-gradient-to-br from-violet-500/[0.08] to-white/[0.02] p-5 sm:p-6">
-      <div className="absolute -right-12 -top-12 w-40 h-40 rounded-full bg-violet-500/10 blur-3xl pointer-events-none" />
       <div className="relative flex items-start gap-4">
         <div className="w-11 h-11 rounded-2xl bg-violet-500/15 border border-violet-500/15 text-violet-300 flex items-center justify-center shrink-0">
           <FontAwesomeIcon icon={faWandMagicSparkles} />
@@ -1120,14 +1117,9 @@ function StudyPlan() {
 
   return (
     <div className="min-h-screen bg-bg text-ink">
-      {/* Ambient background */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-48 -left-40 w-[34rem] h-[34rem] rounded-full bg-violet-600/[0.07] blur-[140px]" />
-        <div className="absolute top-[45%] -right-48 w-[30rem] h-[30rem] rounded-full bg-fuchsia-500/[0.035] blur-[140px]" />
-      </div>
 
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-bg/85 backdrop-blur-2xl border-b border-white/[0.05]">
+      <header className="fixed top-0 left-0 right-0 z-40 bg-bg border-b border-white/[0.05]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="h-[68px] flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
