@@ -64,7 +64,7 @@ html[data-theme="sepia"] body { background-color: #f4ecd8; }
  * text-muted, lift those steps to the accessible secondary-text colour, keeping
  * the lightest steps (<=25) as a visibly softer "decorative / disabled" tone.
  * ------------------------------------------------------------------------- */
-.text-ink\/5, .text-ink\/10, .text-ink\/15, .text-ink\/20, .text-ink\/25 { color: rgb(var(--ink) / 0.55); }
+.text-ink\/5, .text-ink\/10, .text-ink\/15, .text-ink\/20, .text-ink\/25 { color: rgb(var(--ink) / 0.6); }
 .text-ink\/30, .text-ink\/35, .text-ink\/40, .text-ink\/45, .text-ink\/50,
 .text-ink\/55, .text-ink\/60, .text-ink\/65 { color: rgb(var(--ink) / var(--muted-a)); }
 

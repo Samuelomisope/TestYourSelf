@@ -28,6 +28,7 @@ import UniversityWelcomePage from "./UniversityWelcomePage";
 import StudyPlan from "./StudyPlan";
 import Premium from "./Premium";
 import PastQuestions from "./PastQuestions";
+import Unsubscribe from "./Unsubscribe";
 import Classroom from "./Classroom";
 import FeedbackProvider from "./ui/Feedback.jsx";
 import { OnboardingProvider } from "./onboarding/OnboardingContext";
@@ -57,6 +58,7 @@ function App() {
         <Route path="/schools/:universitySlug" element={<ProtectedRoute><UniversityWelcomePage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/feedback" element={<ProtectedRoute><Feedback /></ProtectedRoute>} />
+        <Route path="/unsubscribe" element={<Unsubscribe />} />
         <Route path="/privacy" element={<ProtectedRoute><Privacy /></ProtectedRoute>} />
         <Route path="/terms" element={<ProtectedRoute><Terms /></ProtectedRoute>} />
         <Route path="/flashcards" element={<ProtectedRoute><Flashcards /></ProtectedRoute>} />
