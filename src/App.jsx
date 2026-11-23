@@ -31,6 +31,7 @@ import Premium from "./Premium";
 import { OnboardingProvider } from "./onboarding/OnboardingContext";
 import OnboardingLayer from "./onboarding/OnboardingLayer";
 import PastQuestions from "./PastQuestions";
+import Unsubscribe from "./Unsubscribe";
 
 // The Classroom pages are large (lesson rendering, voice, tutor) and only some students open them, so they load on demand.
 const Classroom = lazy(() => import("./Classroom"));
@@ -65,6 +66,7 @@ function App() {
         <Route path="/schools/:universitySlug" element={<ProtectedRoute><UniversityWelcomePage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/feedback" element={<ProtectedRoute><Feedback /></ProtectedRoute>} />
+        <Route path="/unsubscribe" element={<Unsubscribe />} />
         <Route path="/privacy" element={<ProtectedRoute><Privacy /></ProtectedRoute>} />
         <Route path="/terms" element={<ProtectedRoute><Terms /></ProtectedRoute>} />
         <Route path="/flashcards" element={<ProtectedRoute><Flashcards /></ProtectedRoute>} />

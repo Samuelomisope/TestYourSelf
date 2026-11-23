@@ -4,6 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { auth } from "./firebase";
 import { updateProfile } from "firebase/auth";
 import { apiGet, apiPatch } from "./api";
+import { notify } from "./ui/feedbackContext.js";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowLeft, faPen, faTimes, faCamera,
@@ -48,6 +49,18 @@ export default function Profile() {
       finally { setLoading(false); }
     })();
   }, [user]);
+
+  const toggleReminders = async () => {
+    const next = pgUser.emailReminders === false;
+    setPgUser((u) => ({ ...u, emailReminders: next }));
+    try {
+      await apiPatch("/users/me/email-reminders", { enabled: next });
+      notify.success(next ? "Study reminder emails are on." : "Study reminder emails are off.");
+    } catch {
+      setPgUser((u) => ({ ...u, emailReminders: !next }));
+      notify.error("Could not change that setting. Please try again.");
+    }
+  };
 
   const handlePhotoChange = (e) => {
     const f = e.target.files[0];
@@ -258,6 +271,20 @@ export default function Profile() {
             </div>
           ))}
         </div>
+
+        {/* Email reminders */}
+        {pgUser && (
+          <div className="flex items-center justify-between gap-4 rounded-2xl border border-ink/10 bg-white/[0.03] p-4">
+            <div>
+              <p id="reminders-label" className="text-sm font-semibold text-ink">Study reminder emails</p>
+              <p className="text-xs text-muted">One a day at 6pm, only when you have plan tasks or flashcards waiting.</p>
+            </div>
+            <button type="button" role="switch" aria-checked={pgUser.emailReminders !== false} aria-labelledby="reminders-label" onClick={toggleReminders}
+              className={`relative h-7 w-12 shrink-0 rounded-full transition ${pgUser.emailReminders !== false ? "bg-violet-500" : "bg-ink/20"}`}>
+              <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white transition-all ${pgUser.emailReminders !== false ? "left-[22px]" : "left-0.5"}`} />
+            </button>
+          </div>
+        )}
 
         {/* Leaderboard score */}
         {stats?.leaderboardScore > 0 && (
