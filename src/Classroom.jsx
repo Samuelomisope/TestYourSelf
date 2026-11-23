@@ -26,6 +26,7 @@ import TutorStage from "./classroom/TutorStage";
 import useRendererChoice from "./classroom/useRendererChoice";
 import { tutorState } from "./classroom/tutorState";
 import ErrorNotice from "./classroom/QuotaNotice";
+import { usageLine, usageWarning } from "./classroom/usage";
 import { browserStorage, loadVoicePrefs, saveVoicePrefs } from "./classroom/voicePrefs";
 import { DOC_STATUS, MODE_LABEL, currentStep, describeError, readObjectives, readOutline, shouldKeepRequestKey, sleep, isScan, pickDocuments, truncationNote } from "./classroom/classroomUtils";
 
@@ -132,6 +133,13 @@ function ClassroomInner({ sessionId }) {
     apiGet("/billing/status").then((status) => { if (!cancelled) setPremium(status?.isPremium === true); }).catch(() => {});
     return () => { cancelled = true; };
   }, []);
+  // Today's allowance, shown as exact numbers. A failure just hides the line; nothing depends on it.
+  const [usage, setUsage] = useState(null);
+  const loadUsage = useCallback(() => {
+    apiGet("/classroom/usage").then((value) => { if (alive.current) setUsage(value); }).catch(() => {});
+  }, []);
+  useEffect(() => { const timer = window.setTimeout(loadUsage, 0); return () => window.clearTimeout(timer); }, [loadUsage]);
+  useEffect(() => { if (error) { const timer = window.setTimeout(loadUsage, 0); return () => window.clearTimeout(timer); } return undefined; }, [error, loadUsage]);
   const renderer = useRendererChoice({ premium, preference: voicePrefs.tutorView });
   function changeVoicePrefs(patch) {
     setVoicePrefs((current) => { const next = { ...current, ...patch }; saveVoicePrefs(browserStorage(), next); return next; });
@@ -248,7 +256,7 @@ function ClassroomInner({ sessionId }) {
       });
       const result = await waitForReply(first);
       const status = result?.request?.status;
-      if (status === "COMPLETED") { pendingSend.current = null; await refreshLesson(); scrollToEnd(); return true; }
+      if (status === "COMPLETED") { pendingSend.current = null; await refreshLesson(); loadUsage(); scrollToEnd(); return true; }
       if (status === "FAILED") {
         pendingSend.current = null; await refreshLesson();
         setError("The tutor couldn't answer that. Please try again.");
@@ -463,13 +471,14 @@ function ClassroomInner({ sessionId }) {
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-600 dark:text-violet-400">UniLib learning</p>
           <h1 className="mt-2 text-3xl font-black">AI Classroom</h1>
           <p className="mt-2 max-w-xl text-sm text-ink/55">Start a guided lesson, attach your notes, and return to saved lessons whenever you’re ready.</p>
+          {usageLine(usage) && <p className="mt-2 text-sm text-ink/70">{usageLine(usage)}{usageWarning(usage) && <span className="ml-2 font-semibold text-amber-600 dark:text-amber-400">· {usageWarning(usage)}</span>}</p>}
           <Link to="/classroom/learning" className="mt-3 inline-block text-sm font-semibold text-violet-600 dark:text-violet-400">My learning and progress →</Link>
         </header>
         <ResumeNudge />
         <section className={`${card} mb-8`} aria-labelledby="new-lesson">
           <h2 id="new-lesson" className="mb-4 text-lg font-bold">Start a lesson</h2>
           <SetupWizard onCreate={createSession} busy={busy} />
-          <ErrorNotice error={error} premium={premium} />
+          <ErrorNotice error={error} premium={premium} usage={usage} />
         </section>
         <section>
           <h2 className="mb-3 text-lg font-bold">Your lessons</h2>
@@ -489,7 +498,7 @@ function ClassroomInner({ sessionId }) {
               ))}
             </div>
           ) : <div className={card}><p className="text-sm text-ink/55">No saved lessons yet. Start with a topic above.</p></div>}
-          {!sessions.length && !loading && <ErrorNotice error={error} premium={premium} />}
+          {!sessions.length && !loading && <ErrorNotice error={error} premium={premium} usage={usage} />}
         </section>
       </> : <>
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -503,7 +512,7 @@ function ClassroomInner({ sessionId }) {
             <button onClick={() => setDialog("delete")} disabled={busy || !session} className="rounded-lg border border-red-500/20 px-3 py-2 text-sm text-red-600 transition hover:bg-red-500/5 disabled:opacity-50 dark:text-red-400">Delete lesson</button>
           </div>
         </div>
-        <ErrorNotice error={error} premium={premium} />
+        <ErrorNotice error={error} premium={premium} usage={usage} />
         <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className="min-w-0 space-y-4">
           {isClassroom && (
