@@ -6,6 +6,8 @@ import { auth } from "./firebase";
 import { apiGet, apiPatch, apiPost } from "./api";
 import { useAuth } from "./useAuth";
 import { useDarkMode } from "./DarkModeContext.jsx";
+import Button from "./ui/Button.jsx";
+import Card from "./ui/Card.jsx";
 import { useOnboarding } from "./onboarding/context";
 import { useConfirm, notify } from "./ui/feedbackContext.js";
 import { browserStorage, loadVoicePrefs, saveVoicePrefs } from "./classroom/voicePrefs.js";
@@ -19,10 +21,10 @@ const THEMES = [
 
 function Section({ id, title, children }) {
   return (
-    <section aria-labelledby={id} className="rounded-2xl border border-line bg-surface p-4">
+    <Card as="section" padding="sm" aria-labelledby={id}>
       <h2 id={id} className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">{title}</h2>
       <div className="space-y-4">{children}</div>
-    </section>
+    </Card>
   );
 }
 
@@ -39,10 +41,13 @@ function Row({ label, hint, children, labelId }) {
 }
 
 function Switch({ checked, onChange, labelledBy, disabled }) {
+  // The button is the 44px touch target; the visible track inside it stays small.
   return (
     <button type="button" role="switch" aria-checked={checked} aria-labelledby={labelledBy} disabled={disabled} onClick={onChange}
-      className={`relative h-7 w-12 shrink-0 rounded-full transition disabled:opacity-50 ${checked ? "bg-violet-500" : "bg-ink/20"}`}>
-      <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white transition-all ${checked ? "left-[22px]" : "left-0.5"}`} />
+      className="flex min-h-11 min-w-14 shrink-0 items-center justify-center disabled:opacity-50">
+      <span className={`relative block h-7 w-12 rounded-full transition ${checked ? "bg-violet-500" : "bg-ink/20"}`}>
+        <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white transition-all ${checked ? "left-[22px]" : "left-0.5"}`} />
+      </span>
     </button>
   );
 }
@@ -160,7 +165,7 @@ export default function Settings() {
             </Row>
             <Link to="/profile" className={linkRow}>Edit my profile, faculty and department <span aria-hidden="true">→</span></Link>
             <Row label="Plan" hint={premium ? (premiumUntil ? `Premium until ${premiumUntil}` : "Premium is active") : "Free"}>
-              <Link to="/premium" className="inline-flex min-h-11 items-center rounded-xl border border-line px-4 text-sm font-semibold hover:border-violet-500/50">{premium ? "Manage" : "See Premium"}</Link>
+              <Button to="/premium" variant="secondary" size="sm">{premium ? "Manage" : "See Premium"}</Button>
             </Row>
           </Section>
 
@@ -174,8 +179,8 @@ export default function Settings() {
           </Section>
 
           <Section id="session" title="Sign out">
-            <button type="button" onClick={finishSignOut} className="min-h-11 w-full rounded-xl border border-line px-4 text-sm font-semibold hover:bg-ink/5">Sign out of this device</button>
-            <button type="button" onClick={signOutEverywhere} className="min-h-11 w-full rounded-xl border border-red-500/40 px-4 text-sm font-semibold text-red-600 hover:bg-red-500/5 dark:text-red-400">Sign out of all devices</button>
+            <Button variant="secondary" block onClick={finishSignOut}>Sign out of this device</Button>
+            <Button variant="danger" block onClick={signOutEverywhere}>Sign out of all devices</Button>
           </Section>
         </div>
       </main>
