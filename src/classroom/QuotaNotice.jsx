@@ -1,10 +1,14 @@
 import { Link } from "react-router-dom";
 import { PREMIUM_CLASSROOM_BENEFITS, quotaKind, quotaNotice } from "./quota";
+import { turnsLimitBody } from "./usage";
 
 // Shows a plain error, or, when the server says a daily limit is reached, a clear message with the way forward.
-export default function ErrorNotice({ error, premium }) {
+export default function ErrorNotice({ error, premium, usage }) {
   if (!error) return null;
-  const notice = quotaNotice(quotaKind(error), premium);
+  const kind = quotaKind(error);
+  const base = quotaNotice(kind, premium);
+  const exact = kind === "turns" ? turnsLimitBody(usage, premium) : null;
+  const notice = base && exact ? { ...base, body: exact } : base;
   if (!notice) {
     return <p role="alert" className="mt-3 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">{error}</p>;
   }

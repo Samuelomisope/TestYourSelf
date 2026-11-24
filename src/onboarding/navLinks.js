@@ -1,4 +1,4 @@
-import { faHouse, faBook, faRobot, faBookOpen, faComments, faLayerGroup, faChalkboard, faCrown, faCommentDots, faStore, faCalendarCheck } from "@fortawesome/free-solid-svg-icons";
+import { faHouse, faBook, faRobot, faBookOpen, faComments, faLayerGroup, faChalkboard, faCrown, faCommentDots, faStore, faCalendarCheck, faStopwatch, faGear } from "@fortawesome/free-solid-svg-icons";
 
 // One source for the top tabs and the side menu, used by Navbar and Home. `id` becomes data-tour="tab-<id>" /
 // "side-<id>", which the tour points at. `feature` links an item to a FEATURES entry for the NEW badge.
@@ -18,8 +18,10 @@ export const SIDEBAR_LINKS = [
   { id: "ai", name: "AI Assistant", href: "/ai", icon: faRobot },
   { id: "classroom", name: "AI Classroom", href: "/classroom", icon: faChalkboard, feature: "feature:classroom" },
   { id: "planner", name: "Study Planner", href: "/study-plan", icon: faCalendarCheck },
+  { id: "practice", name: "Past questions", href: "/practice", icon: faStopwatch },
   { id: "premium", name: "Premium", href: "/premium", icon: faCrown },
   { id: "chat", name: "Chat", href: "/chat", icon: faComments },
   { id: "marketplace", name: "Marketplace", href: "/marketplace", icon: faStore },
+  { id: "settings", name: "Settings", href: "/settings", icon: faGear },
   { id: "feedback", name: "Feedback", href: "/feedback", icon: faCommentDots },
 ];

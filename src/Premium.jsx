@@ -21,8 +21,12 @@ export default function Premium() {
       try {
         if (reference) {
           setMessage("Confirming your payment securely…");
-          await apiPost("/billing/verify", { reference });
-          if (!cancelled) setMessage("Payment confirmed. Premium is active on your account.");
+          const result = await apiPost("/billing/verify", { reference });
+          if (!cancelled) {
+            setMessage(result?.verified && result?.isPremium
+              ? "Payment confirmed. Premium is active on your account."
+              : "We have not received a successful payment for this checkout. If you cancelled, you can try again. If you were charged, wait a minute and refresh this page, or contact support before paying again.");
+          }
         }
         const nextStatus = await apiGet("/billing/status");
         if (!cancelled) setStatus(nextStatus);
