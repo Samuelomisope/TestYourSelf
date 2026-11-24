@@ -3,6 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCheck, faCrown, faPrint, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import Navbar from "./Navbar";
+import Button from "./ui/Button.jsx";
+import Card from "./ui/Card.jsx";
 import { useModal } from "./ui/useModal.js";
 import { apiGet, apiPost } from "./api";
 import { PREMIUM_CLASSROOM_BENEFITS } from "./classroom/quota";
@@ -62,7 +64,7 @@ export default function Premium() {
     <div className="min-h-screen bg-bg text-ink">
       <div className="print:hidden"><Navbar /></div>
       <main className="max-w-3xl mx-auto px-4 pt-36 pb-16 print:hidden">
-        <section className="rounded-3xl border border-violet-500/20 bg-bg-elevated p-6 sm:p-10 shadow-xl">
+        <Card as="section" tone="elevated" padding="lg" className="border-violet-500/20 shadow-xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-sm text-violet-300">
             <FontAwesomeIcon icon={faCrown} /> UniLib Premium
           </div>
@@ -94,19 +96,17 @@ export default function Premium() {
                 Premium is active{status.premiumUntil ? ` until ${new Date(status.premiumUntil).toLocaleDateString()}` : " on your account"}.
               </div>
             ) : status?.checkoutAvailable ? (
-              <button onClick={startCheckout} disabled={openingCheckout} className="w-full rounded-xl bg-violet-600 px-5 py-3 font-bold text-white transition hover:bg-violet-500 disabled:opacity-60">
-                {openingCheckout ? <><FontAwesomeIcon icon={faSpinner} spin className="mr-2" />Opening secure checkout…</> : "Subscribe securely with Paystack"}
-              </button>
+              <Button block size="lg" onClick={startCheckout} loading={openingCheckout}>{openingCheckout ? "Opening secure checkout…" : "Subscribe securely with Paystack"}</Button>
             ) : (
               <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200">
                 Premium checkout is not open yet. We’re finishing the subscription and AI allowance setup.
               </div>
             )}
           </div>
-        </section>
+        </Card>
 
         {payments.length > 0 && (
-          <section aria-labelledby="payments-heading" className="mt-8 rounded-3xl border border-ink/10 bg-bg-elevated p-6 print:hidden">
+          <Card as="section" tone="elevated" aria-labelledby="payments-heading" className="mt-8 print:hidden">
             <h2 id="payments-heading" className="text-lg font-bold">Your payments</h2>
             <ul className="mt-4 divide-y divide-ink/10">
               {payments.map((p) => (
@@ -115,13 +115,13 @@ export default function Premium() {
                     <p className="text-sm font-semibold">{formatMoney(p.amount, p.currency)} · {formatDate(p.paidAt)}</p>
                     <p className="truncate text-xs text-ink/60">Ref {shortReference(p.reference)}</p>
                   </div>
-                  <button type="button" onClick={() => setReceipt(p)} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-ink/15 px-4 text-sm font-semibold hover:border-violet-500/50">
+                  <Button variant="secondary" size="sm" onClick={() => setReceipt(p)}>
                     <FontAwesomeIcon icon={faPrint} aria-hidden="true" /> Receipt
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>
-          </section>
+          </Card>
         )}
       </main>
 
@@ -137,8 +137,8 @@ export default function Premium() {
             </dl>
             <p className="mt-4 text-xs text-ink/60">Paid securely with Paystack. Keep this receipt for your records.</p>
             <div className="mt-6 flex gap-3 print:hidden">
-              <button type="button" autoFocus onClick={() => window.print()} className="min-h-11 flex-1 rounded-xl bg-violet-600 px-4 text-sm font-bold text-white hover:bg-violet-500">Print or save as PDF</button>
-              <button type="button" onClick={() => setReceipt(null)} className="min-h-11 rounded-xl border border-ink/15 px-4 text-sm font-semibold">Close</button>
+              <Button autoFocus className="flex-1" onClick={() => window.print()}>Print or save as PDF</Button>
+              <Button variant="secondary" onClick={() => setReceipt(null)}>Close</Button>
             </div>
           </div>
         </div>
