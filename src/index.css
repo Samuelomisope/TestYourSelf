@@ -219,6 +219,10 @@ html:not(.dark) .text-emerald-400,
 html:not(.dark) .hover\:text-emerald-400:hover,
 html:not(.dark) .text-emerald-500,
 html:not(.dark) .hover\:text-emerald-500:hover { color: #047857; }
+/* The green tint on sepia is darker than on white, so the green text needs one more step. */
+html[data-theme="sepia"] .text-emerald-300,
+html[data-theme="sepia"] .text-emerald-400,
+html[data-theme="sepia"] .text-emerald-500 { color: #065f46; }
 html:not(.dark) .text-teal-300,
 html:not(.dark) .hover\:text-teal-300:hover,
 html:not(.dark) .text-teal-400,
