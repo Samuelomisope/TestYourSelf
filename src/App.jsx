@@ -33,6 +33,7 @@ import OnboardingLayer from "./onboarding/OnboardingLayer";
 import PastQuestions from "./PastQuestions";
 import Unsubscribe from "./Unsubscribe";
 import Settings from "./Settings";
+import VisitTracker from "./analytics/VisitTracker.jsx";
 
 // The Classroom pages are large (lesson rendering, voice, tutor) and only some students open them, so they load on demand.
 const Classroom = lazy(() => import("./Classroom"));
@@ -46,6 +47,7 @@ function App() {
   return (
     <BrowserRouter>
       <OnboardingProvider>
+      <VisitTracker />
       <Suspense fallback={pageLoading}>
       <Routes>
         <Route path="/" element={<Login />} />

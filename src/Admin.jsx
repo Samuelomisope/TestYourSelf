@@ -1,4 +1,5 @@
 import { useModal } from "./ui/useModal.js";
+import FeatureUsageTab from "./admin/FeatureUsageTab.jsx";
 import { notify } from "./ui/feedbackContext.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect, useCallback } from 'react';
@@ -1318,6 +1319,7 @@ function Admin() {
   const tabs = [
     { id: "overview",       label: "Overview",       icon: <FontAwesomeIcon icon={faChartBar} /> },
     { id: "analytics",      label: "Analytics",      icon: <FontAwesomeIcon icon={faChartLine} /> },
+    { id: "usage",          label: "Feature usage",  icon: <FontAwesomeIcon icon={faChartBar} /> },
     { id: "users",          label: "Users",          icon: <FontAwesomeIcon icon={faUsers} /> },
     { id: "materials",      label: "Materials",      icon: <FontAwesomeIcon icon={faBook} /> },
     { id: "products",       label: "Products",       icon: <FontAwesomeIcon icon={faShoppingBag} /> },
@@ -1432,6 +1434,7 @@ function Admin() {
         )}
 
         {activeTab === "analytics"      && <AnalyticsTab />}
+        {activeTab === "usage"          && <FeatureUsageTab />}
         {activeTab === "users"          && <UsersTab />}
         {activeTab === "materials"      && <MaterialsTab />}
         {activeTab === "products"       && <ProductsTab />}

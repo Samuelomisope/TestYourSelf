@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
 
-const LAST_UPDATED = "August 1, 2026";
+const LAST_UPDATED = "November 25, 2026";
 const APP_NAME = "UniLib";
 const CONTACT_EMAIL = "unilibng@gmail.com";
 const APP_URL = "https://unilib.com.ng";
@@ -59,7 +59,7 @@ function Privacy() {
               { label: "Account information", desc: "Your name, email address, and profile photo when you sign up via Google or email." },
               { label: "Study materials", desc: "Files you upload (PDFs, videos, documents) and metadata like title, course name, and university." },
               { label: "Google Drive access", desc: "If you choose to import files from Google Drive, we request access only to files you explicitly select through the Google Picker. We cannot access any other files in your Drive." },
-              { label: "Usage data", desc: "Basic interaction data such as pages visited and features used, to help us improve the product." },
+              { label: "Usage data", desc: "Basic interaction data to help us improve the product. Each day we count which section you open (for example Flashcards or the Library) so we can see which parts of UniLib are used most. We record only the section name, not the pages you view or what you do inside them." },
             ].map((item) => (
               <li key={item.label} className="flex gap-2">
                 <span className="text-violet-400 mt-0.5">→</span>
