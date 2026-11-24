@@ -31,11 +31,12 @@ function getAuthHeaders() {
 }
 
 async function request(path, options = {}, retried = false) {
+  const { parse, ...fetchOptions } = options;
   const authHeaders = getAuthHeaders();
   if (typeof FormData !== "undefined" && options.body instanceof FormData) delete authHeaders["Content-Type"];
   const headers = { ...authHeaders, ...(options.headers || {}) };
   const res = await fetch(`${BASE_URL}${path}`, {
-    ...options,
+    ...fetchOptions,
     headers,
     credentials: "include",
   });
@@ -55,6 +56,7 @@ async function request(path, options = {}, retried = false) {
     throw Object.assign(new Error(`API error: ${res.status}`), { status: res.status, serverMessage });
   }
   if (res.status === 204) return null; // no content (for example a saved position)
+  if (parse === "blob") return res.blob(); // audio
   return res.json();
 }
 
@@ -68,6 +70,11 @@ export async function apiFetch(path, options = {}) {
 
 export async function apiPost(path, body) {
   return request(path, { method: "POST", body: JSON.stringify(body) });
+}
+
+/** POST that returns a Blob (the server voice's audio). Errors carry status and serverMessage like the other helpers. */
+export async function apiPostBlob(path, body) {
+  return request(path, { method: "POST", body: JSON.stringify(body), parse: "blob" });
 }
 
 export async function apiPostForm(path, formData) {

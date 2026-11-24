@@ -31,16 +31,29 @@ const RISE = 0.05; // seconds for the mouth to open on a word
 const FALL = 0.28; // seconds for it to close again
 const PEAK = 0.8;
 const QUIET_AFTER = 0.5; // seconds without a word signal before the rhythm takes over
+const LEVEL_FRESH = 0.15; // seconds a loudness reading stays current
+
+/** Loud sound opens the mouth wide ("aa"), soft sound rounds it ("ou"): a rough guide to how speech looks. */
+export function mouthFromLevel(amount) {
+  const a = Math.min(Math.max(Number.isFinite(amount) ? amount : 0, 0), 1);
+  const viseme = a > 0.5 ? "aa" : a > 0.28 ? "ih" : "ou";
+  return { viseme, amount: a < 0.04 ? 0 : Math.min(1, 0.15 + a * 0.85) };
+}
 
 /** A small record of the latest word signal. Written when a word starts, read every frame; no React state involved. */
 export function createMouthCues() {
   let cue = null;
+  let level = null;
   return {
     push(viseme, seconds) { if (Number.isFinite(seconds)) cue = { viseme, at: seconds }; },
-    clear() { cue = null; },
-    /** The mouth at time `seconds`: { viseme, amount } from the latest word, or null when there is no recent word. */
+    /** The loudness of real audio (0 to 1) measured just now. It takes over from word signals while it keeps arriving. */
+    pushLevel(amount, seconds) { if (Number.isFinite(amount) && Number.isFinite(seconds)) level = { amount: Math.min(Math.max(amount, 0), 1), at: seconds }; },
+    clear() { cue = null; level = null; },
+    /** The mouth at time `seconds`: { viseme, amount } from the latest word or sound, or null when there is nothing recent. */
     read(seconds) {
-      if (!cue || !Number.isFinite(seconds)) return null;
+      if (!Number.isFinite(seconds)) return null;
+      if (level && seconds - level.at >= 0 && seconds - level.at <= LEVEL_FRESH) return mouthFromLevel(level.amount);
+      if (!cue) return null;
       const age = seconds - cue.at;
       if (age < 0 || age > QUIET_AFTER) return null;
       const amount = age < RISE ? PEAK * (age / RISE) : Math.max(0, PEAK * (1 - (age - RISE) / FALL));

@@ -116,10 +116,13 @@ function ClassroomInner({ sessionId }) {
   const pagesRef = useRef([]);
   const playingTurn = useRef(null);
   const seenReply = useRef(undefined); // undefined until the lesson has loaded, so opening a lesson never starts speaking
+  // Whether the tutor may use the server voice; filled in below once the account and the tutor view are known.
+  const serverVoiceRef = useRef(null);
   const voice = useLessonVoice({
     rate: voicePrefs.rate,
     voiceName: voicePrefs.voiceName,
     gender: session?.tutorVoice,
+    serverVoiceRef,
   });
   // Dictation fills the question box (the student reads it and presses Send); starting it silences the tutor.
   const speechInput = useSpeechInput({
@@ -141,6 +144,15 @@ function ClassroomInner({ sessionId }) {
   useEffect(() => { const timer = window.setTimeout(loadUsage, 0); return () => window.clearTimeout(timer); }, [loadUsage]);
   useEffect(() => { if (error) { const timer = window.setTimeout(loadUsage, 0); return () => window.clearTimeout(timer); } return undefined; }, [error, loadUsage]);
   const renderer = useRendererChoice({ premium, preference: voicePrefs.tutorView });
+  // The server voice is for the 3D tutor: Premium or admin, the allowance switched on and not used up, and the 3D tutor showing.
+  const speechLeft = usage?.speech ? usage.speech.remainingChars > 0 : false;
+  useEffect(() => {
+    serverVoiceRef.current = {
+      enabled: premium && renderer.mode === "3d" && voicePrefs.showTutor && speechLeft,
+      sessionId: session?.id,
+      voice: session?.tutorVoice === "MALE" ? "male" : "female",
+    };
+  }, [premium, renderer.mode, voicePrefs.showTutor, speechLeft, session?.id, session?.tutorVoice]);
   function changeVoicePrefs(patch) {
     setVoicePrefs((current) => { const next = { ...current, ...patch }; saveVoicePrefs(browserStorage(), next); return next; });
   }
@@ -552,7 +564,7 @@ function ClassroomInner({ sessionId }) {
               {voice.supported && isClassroom && started && replyEvents.length > 0 && (
                 <VoiceBar
                   state={tutorState({ sending, listening: speechInput.listening, celebrating, playerStatus: voice.player.status, speaking: voice.speaking })}
-                  status={voice.player.status} caption={caption} error={voice.error} canListen={!sending}
+                  status={voice.player.status} caption={caption} error={voice.error || voice.voiceNote} canListen={!sending}
                   rate={voicePrefs.rate} onRate={(rate) => changeVoicePrefs({ rate })}
                   voices={voice.voices} voice={voice.voice} voiceName={voicePrefs.voiceName} onVoice={(voiceName) => changeVoicePrefs({ voiceName })}
                   autoSpeak={voicePrefs.autoSpeak} onAutoSpeak={(autoSpeak) => changeVoicePrefs({ autoSpeak })}
