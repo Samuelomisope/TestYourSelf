@@ -1,3 +1,4 @@
+import Button from "./ui/Button";
 import { getAccessToken } from "./token";
 // MarketplaceDetail.jsx - dark theme
 import { useState, useEffect } from "react";
@@ -141,15 +142,15 @@ function MarketplaceDetail() {
             <div className="flex gap-2">
   {!contactRevealed ? (
     (chatSnapUsername || whatsapp) ? (
-      <button onClick={() => setShowDisclaimer(true)} className="flex items-center gap-1.5 px-3 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-xs font-medium transition">
+      <Button size="sm" onClick={() => setShowDisclaimer(true)}>
         <FontAwesomeIcon icon={faCommentDots} /> Contact Seller
-      </button>
+      </Button>
     ) : (
       <span className="text-xs text-ink/20">No contact info</span>
     )
   ) : (
     <>
-      {chatSnapUsername && <button onClick={() => navigate(`/chat?dm=${seller.id}`)} className="flex items-center gap-1.5 px-3 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-xs font-medium transition"><FontAwesomeIcon icon={faCommentDots} /> Chat</button>}
+      {chatSnapUsername && <Button size="sm" onClick={() => navigate(`/chat?dm=${seller.id}`)}><FontAwesomeIcon icon={faCommentDots} /> Chat</Button>}
       {whatsapp && <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-medium hover:bg-emerald-500/30 transition">WhatsApp</a>}
     </>
   )}
@@ -171,9 +172,9 @@ function MarketplaceDetail() {
             <StarRating value={rating} onChange={setRating} />
             <textarea aria-label="Write a comment" value={comment} onChange={e => setComment(e.target.value)} placeholder="Write a comment (optional)..." rows={2}
               className="w-full mt-2 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/40 resize-none transition" />
-            <button onClick={submitReview} disabled={!rating || submitting} className="mt-2 flex items-center gap-1.5 px-4 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-xs font-medium transition disabled:opacity-40">
+            <Button size="sm" className="mt-2" onClick={submitReview} loading={submitting} disabled={!rating}>
               <FontAwesomeIcon icon={faPaperPlane} /> Submit Review
-            </button>
+            </Button>
           </div>
           {item.reviews?.length === 0 ? (
             <p className="text-ink/20 text-sm text-center py-4">No reviews yet. Be the first!</p>
