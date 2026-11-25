@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "./useAuth";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import Button from "./ui/Button.jsx";
 import { auth } from "./firebase";
 import { updateProfile } from "firebase/auth";
 import { apiGet, apiPatch } from "./api";
@@ -321,9 +322,9 @@ export default function Profile() {
                 <div className="w-14 h-14 bg-violet-500/10 rounded-2xl flex items-center justify-center text-violet-400 text-2xl mx-auto mb-3"><FontAwesomeIcon icon={faBookOpen} /></div>
                 <p className="font-bold text-ink text-sm mb-1">No materials yet</p>
                 <p className="text-xs text-ink/30 mb-4">Upload study materials to share with your campus</p>
-                <Link to="/study-material" className="inline-flex items-center gap-2 px-5 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm font-semibold transition">
-                  <FontAwesomeIcon icon={faFile} /> Upload a File
-                </Link>
+                <Button to="/study-material">
+                  <FontAwesomeIcon icon={faFile} aria-hidden="true" /> Upload a File
+                </Button>
               </div>
             ) : (
               materials.map((m, i) => (
@@ -357,9 +358,9 @@ export default function Profile() {
             <div className="w-14 h-14 bg-violet-500/10 rounded-2xl flex items-center justify-center text-violet-400 text-2xl mx-auto mb-3"><FontAwesomeIcon icon={faShoppingBag} /></div>
             <p className="font-bold text-ink text-sm mb-1">No listings yet</p>
             <p className="text-xs text-ink/30 mb-4">List items on the marketplace to sell to fellow students</p>
-            <Link to="/marketplace" className="inline-flex items-center gap-2 px-5 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm font-semibold transition">
-              <FontAwesomeIcon icon={faShoppingBag} /> Go to Marketplace
-            </Link>
+            <Button to="/marketplace">
+              <FontAwesomeIcon icon={faShoppingBag} aria-hidden="true" /> Go to Marketplace
+            </Button>
           </div>
         )}
       </main>

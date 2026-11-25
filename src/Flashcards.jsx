@@ -1,4 +1,5 @@
 import { useModal } from "./ui/useModal.js";
+import Button from "./ui/Button.jsx";
 import { useConfirm } from "./ui/feedbackContext.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect } from "react";
@@ -361,9 +362,7 @@ function ReviewSession({ deckId, onClose }) {
             <p className="text-4xl mb-3 text-emerald-400"><FontAwesomeIcon icon={faCheck} /></p>
             <p className="text-ink font-semibold mb-1">All caught up!</p>
             <p className="text-ink/40 text-sm">No cards are due for review right now.</p>
-            <button onClick={onClose} className="mt-5 px-6 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm transition">
-              Close
-            </button>
+            <Button className="mt-5" onClick={onClose}>Close</Button>
           </div>
         )}
 
@@ -372,9 +371,7 @@ function ReviewSession({ deckId, onClose }) {
             <p className="text-4xl mb-3 text-violet-400"><FontAwesomeIcon icon={faCheck} /></p>
             <p className="text-ink font-semibold mb-1">Session complete</p>
             <p className="text-ink/40 text-sm">You reviewed {reviewedCount} card{reviewedCount === 1 ? "" : "s"}.</p>
-            <button onClick={onClose} className="mt-5 px-6 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm transition">
-              Done
-            </button>
+            <Button className="mt-5" onClick={onClose}>Done</Button>
           </div>
         )}
 
@@ -511,7 +508,7 @@ useEffect(() => {
     try {
       const data = await authedFetch(path);
       if (!cancelled) setDecks(data);
-    } catch (err) {
+    } catch {
       if (!cancelled) setDecks([]);
     } finally {
       if (!cancelled) setLoading(false);
