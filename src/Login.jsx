@@ -1,3 +1,4 @@
+import { MARKETPLACE_ENABLED } from "./features.js";
 import { useEffect, useState, useContext, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
@@ -12,7 +13,7 @@ const FEATURES = [
   { icon: <FontAwesomeIcon icon={faBookOpen} />, label: "Study Material", desc: "Upload and organise your course files" },
   { icon: <FontAwesomeIcon icon={faRobot} />, label: "AI Assistant", desc: "Ask questions, get summaries, generate quizzes" },
   { icon: <FontAwesomeIcon icon={faLayerGroup} />, label: "Flashcards", desc: "Create and review cards to retain more" },
-  { icon: <FontAwesomeIcon icon={faStore} />, label: "Marketplace", desc: "Buy and sell materials with your campus" },
+  ...(MARKETPLACE_ENABLED ? [{ icon: <FontAwesomeIcon icon={faStore} />, label: "Marketplace", desc: "Buy and sell materials with your campus" }] : []),
 ];
 
 function Login() {

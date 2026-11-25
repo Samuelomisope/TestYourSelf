@@ -1,17 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { cardPlacement, featureForPath, isFeatureNew, isNewAccount, isValidKey, newFeatures, readLegacyTourSeen, shouldAutoStartTour, stepLabel } from "./logic.js";
+import { MARKETPLACE_ENABLED } from "../features.js";
 import { FEATURES, TOUR_KEY, TOUR_STEPS } from "./registry.js";
 
 const NOW = new Date("2026-11-20T12:00:00Z").getTime();
 const daysAgo = (d) => new Date(NOW - d * 86400000).toISOString();
 
-test("registry: keys are valid and unique, tour has 12 steps with unique ids and real targets", () => {
+test("registry: keys are valid and unique, tour has 12 steps (11 while the marketplace is hidden) with unique ids and real targets", () => {
   const keys = FEATURES.map((f) => f.key);
   assert.equal(new Set(keys).size, keys.length);
   for (const k of [...keys, TOUR_KEY]) assert.ok(isValidKey(k), k);
-  assert.equal(TOUR_STEPS.length, 12);
-  assert.equal(new Set(TOUR_STEPS.map((s) => s.id)).size, 12);
+  const steps = MARKETPLACE_ENABLED ? 12 : 11;
+  assert.equal(TOUR_STEPS.length, steps);
+  assert.equal(new Set(TOUR_STEPS.map((s) => s.id)).size, steps);
   for (const s of TOUR_STEPS) assert.ok(s.target && s.title && s.desc, s.id);
   for (const s of TOUR_STEPS.filter((x) => x.feature)) assert.ok(keys.includes(s.feature));
 });

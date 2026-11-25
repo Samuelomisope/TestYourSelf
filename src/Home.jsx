@@ -1,3 +1,4 @@
+import { MARKETPLACE_ENABLED } from "./features.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect } from "react";
 import { useAuth } from "./useAuth";
@@ -56,7 +57,7 @@ const EXPLORE = [
   { title: "Flashcards", hint: "Spaced repetition decks", href: "/flashcards", icon: faLayerGroup },
   { title: "Study Plans", hint: "A day-by-day plan to your exam", href: "/study-plan", icon: faCalendarCheck },
   { title: "Past questions", hint: "Timed exam practice", href: "/practice", icon: faStopwatch },
-  { title: "Marketplace", hint: "Buy and sell on campus", href: "/marketplace", icon: faCartShopping },
+  ...(MARKETPLACE_ENABLED ? [{ title: "Marketplace", hint: "Buy and sell on campus", href: "/marketplace", icon: faCartShopping }] : []),
   { title: "Chat", hint: "Talk to students at your school", href: "/chat", icon: faComments },
   { title: "Novels", hint: "Read and write stories", href: "/novels", icon: faBookOpen },
 ];
@@ -313,7 +314,7 @@ useEffect(() => {
   const cards = [
     { title: "Study Material", icon: <FontAwesomeIcon icon={faBookOpen} className="text-violet-400 text-2xl" />, href: "/study-material", content: lastMaterial ? `Last uploaded: ${lastMaterial.title}` : "No file uploaded yet.\nNo file viewed yet." },
     { title: "AI Assistant", icon: <FontAwesomeIcon icon={faRobot} className="text-violet-400 text-2xl" />, href: "/ai", content: `${greeting()}, ${user?.displayName?.split(" ")[0] || "there"}! Ready to help you study smarter today.` },
-    { title: "Marketplace", icon: <FontAwesomeIcon icon={faCartShopping} className="text-violet-400 text-2xl" />, href: "/marketplace", content: "Browse and list items for your campus community." },
+    ...(MARKETPLACE_ENABLED ? [{ title: "Marketplace", icon: <FontAwesomeIcon icon={faCartShopping} className="text-violet-400 text-2xl" />, href: "/marketplace", content: "Browse and list items for your campus community." }] : []),
     { title: "Chat", icon: <FontAwesomeIcon icon={faComments} className="text-violet-400 text-2xl" />, href: "/chat", content: "Connect and study with students from your university." },
     { title: "Flashcards", icon: <FontAwesomeIcon icon={faLayerGroup} className="text-violet-400 text-2xl" />, href: "/flashcards", content: "Create and study with flashcards." },
   ];
@@ -552,7 +553,7 @@ useEffect(() => {
               <ul className="space-y-2 text-sm text-ink/50">
                 <li><Link to="/study-material" className="hover:text-violet-400 transition">Library</Link></li>
                 <li><Link to="/ai" className="hover:text-violet-400 transition">AI</Link></li>
-                <li><Link to="/marketplace" className="hover:text-violet-400 transition">Marketplace</Link></li>
+                {MARKETPLACE_ENABLED && <li><Link to="/marketplace" className="hover:text-violet-400 transition">Marketplace</Link></li>}
                 <li><Link to="/chat" className="hover:text-violet-400 transition">Chat</Link></li>
               </ul>
             </div>

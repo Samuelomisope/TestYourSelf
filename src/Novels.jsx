@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { MARKETPLACE_ENABLED } from "./features.js";
 import { useAuth } from "./useAuth";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -15,7 +16,7 @@ const TAB_LINKS = [
   { href: "/novels",         label: "Novels", icon: faBookOpen },
   { href: "/ai",             label: "AI",     icon: faRobot },
   { href: "/chat",           label: "Chat",   icon: faComments },
-  { href: "/marketplace",    label: "Market", icon: faStore },
+  ...(MARKETPLACE_ENABLED ? [{ href: "/marketplace",    label: "Market", icon: faStore }] : []),
 ];
 
 const GENRE_LABELS = {

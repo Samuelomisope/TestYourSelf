@@ -1,3 +1,4 @@
+import { MARKETPLACE_ENABLED } from "../features.js";
 import { faHouse, faBook, faRobot, faBookOpen, faComments, faLayerGroup, faChalkboard, faCrown, faCommentDots, faStore, faCalendarCheck, faStopwatch, faGear } from "@fortawesome/free-solid-svg-icons";
 
 // One source for the top tabs and the side menu, used by Navbar and Home. `id` becomes data-tour="tab-<id>" /
@@ -21,7 +22,7 @@ export const SIDEBAR_LINKS = [
   { id: "practice", name: "Past questions", href: "/practice", icon: faStopwatch },
   { id: "premium", name: "Premium", href: "/premium", icon: faCrown },
   { id: "chat", name: "Chat", href: "/chat", icon: faComments },
-  { id: "marketplace", name: "Marketplace", href: "/marketplace", icon: faStore },
+  ...(MARKETPLACE_ENABLED ? [{ id: "marketplace", name: "Marketplace", href: "/marketplace", icon: faStore }] : []),
   { id: "settings", name: "Settings", href: "/settings", icon: faGear },
   { id: "feedback", name: "Feedback", href: "/feedback", icon: faCommentDots },
 ];

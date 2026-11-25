@@ -1,3 +1,4 @@
+import { MARKETPLACE_ENABLED } from "../features.js";
 // The one place that says what is new and what the tour covers. Adding a feature later is one entry in FEATURES;
 // the menu badge, dot, first-use tip and "What's new" panel all read from it.
 
@@ -33,7 +34,7 @@ export const TOUR_STEPS = [
   { id: "tools", target: "side-flashcards", menu: true, title: "AI study tools", desc: "Turn your materials into flashcards and quizzes, so you test yourself instead of only re-reading.", href: "/flashcards" },
   { id: "classroom", target: "tab-classroom", title: "AI Classroom", desc: "A live AI lesson built from your notes, with a whiteboard, quick check-ins and a My learning page that shows what to revise.", href: "/classroom", feature: "feature:classroom" },
   { id: "planner", target: "side-planner", menu: true, title: "Study planner", desc: "Plan your revision around your exam dates so the work is spread out, not crammed.", href: "/study-plan" },
-  { id: "marketplace", target: "side-marketplace", menu: true, title: "Marketplace", desc: "Buy and sell textbooks and other academic items with students on your campus.", href: "/marketplace" },
+  ...(MARKETPLACE_ENABLED ? [{ id: "marketplace", target: "side-marketplace", menu: true, title: "Marketplace", desc: "Buy and sell textbooks and other academic items with students on your campus.", href: "/marketplace" }] : []),
   { id: "novels", target: "tab-novels", title: "Novels", desc: "Read stories by student writers, or become a writer and publish your own.", href: "/novels" },
   { id: "chat", target: "tab-chat", title: "Chat", desc: "Message other students, share voice notes and media, and set up study groups.", href: "/chat" },
   { id: "notifications", target: "notifications", title: "Notifications", desc: "Replies, messages and updates from UniLib show up here. A number on the bell means something is waiting." },

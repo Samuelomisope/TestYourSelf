@@ -1,4 +1,5 @@
 import { useModal } from "./ui/useModal.js";
+import { MARKETPLACE_ENABLED } from "./features.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
@@ -69,7 +70,7 @@ const TAB_LINKS = [
   { href: "/study-material", label: "Study",  icon: faBook },
   { href: "/ai",             label: "AI",     icon: faRobot },
   { href: "/chat",           label: "Chat",   icon: faComments },
-  { href: "/marketplace",    label: "Market", icon: faStore },
+  ...(MARKETPLACE_ENABLED ? [{ href: "/marketplace",    label: "Market", icon: faStore }] : []),
 ];
 
 // ── Read Receipt ───────────────────────────────────────────────────

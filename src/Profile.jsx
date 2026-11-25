@@ -1,3 +1,4 @@
+import { MARKETPLACE_ENABLED } from "./features.js";
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "./useAuth";
 import { useNavigate } from "react-router-dom";
@@ -305,7 +306,7 @@ export default function Profile() {
         <div className="flex gap-2">
           {[
             { id: "materials", label: "Study Materials", icon: faBookOpen },
-            { id: "listings",  label: "Listings",        icon: faShoppingBag },
+            ...(MARKETPLACE_ENABLED ? [{ id: "listings",  label: "Listings",        icon: faShoppingBag }] : []),
           ].map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`flex-1 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 border transition ${activeTab === tab.id ? "bg-violet-500 text-white border-violet-500" : "bg-white/[0.03] border-ink/10 text-ink/40 hover:border-violet-500/30 hover:text-violet-400"}`}>

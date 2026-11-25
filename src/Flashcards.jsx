@@ -1,4 +1,5 @@
 import { useModal } from "./ui/useModal.js";
+import { MARKETPLACE_ENABLED } from "./features.js";
 import Button from "./ui/Button.jsx";
 import { useConfirm } from "./ui/feedbackContext.js";
 import { getAccessToken } from "./token";
@@ -23,7 +24,7 @@ const TAB_LINKS = [
   { href: "/ai",             label: "AI",     icon: faRobot },
    { href: "/novels",         label: "Novels", icon: faBookOpen },
   { href: "/chat",           label: "Chat",   icon: faComments },
-  { href: "/marketplace",    label: "Market", icon: faStore },
+  ...(MARKETPLACE_ENABLED ? [{ href: "/marketplace",    label: "Market", icon: faStore }] : []),
 ];
 
 const formatDate = (ts) => {
