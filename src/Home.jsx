@@ -515,7 +515,7 @@ useEffect(() => {
                   ) : (
                     <>
                       <div><dt className="text-xs text-muted">Files uploaded</dt><dd className="text-2xl font-bold">{stats.files}</dd></div>
-                      <div><dt className="text-xs text-muted">Listings</dt><dd className="text-2xl font-bold">{stats.products}</dd></div>
+                      {MARKETPLACE_ENABLED && <div><dt className="text-xs text-muted">Listings</dt><dd className="text-2xl font-bold">{stats.products}</dd></div>}
                       <div><dt className="text-xs text-muted">Messages sent</dt><dd className="text-2xl font-bold">{stats.messages}</dd></div>
                     </>
                   )}
