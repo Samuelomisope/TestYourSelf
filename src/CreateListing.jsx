@@ -4,7 +4,6 @@ import { getAccessToken } from "./token";
 // ── CreateListing.jsx (dark theme) ────────────────────────────────
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth } from "./firebase";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChevronLeft, faPlus, faImage, faTag, faTimes, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { uploadMultiple } from "./useUpload";

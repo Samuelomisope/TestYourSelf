@@ -11,7 +11,6 @@ import {
   faBookOpen,
   faRobot,
   faComments,
-  faStore,
   faPaperPlane,
   faMicrophone,
   faMicrophoneSlash,
@@ -178,6 +177,9 @@ const TAB_LINKS = [
 ];
 
 // ─── Spinner ──────────────────────────────────────────────────────────────────
+// Wall-clock time for quiz timing. Kept out of the component body because it only runs from event handlers.
+const nowMs = () => Date.now();
+
 function Spinner({ label = "UniLib AI is thinking…" }) {
   return (
     <div className="flex items-center gap-2 text-violet-400 text-sm">
@@ -299,7 +301,7 @@ function beginQuiz(qs, ctx = {}) {
   setQuestions(qs);
   setSavedDeck("idle");
   setAnswers({});
-  const now = Date.now();
+  const now = nowMs();
   quizCtxRef.current = { ...ctx, startedAt: now, lastAt: now };
   trackEvent("student_started_quiz", {
     materialId: ctx.materialId,
@@ -323,7 +325,7 @@ useEffect(() => {
         (m) => m.fileType === "application/pdf" || m.fileType === "pdf"
       );
       setMaterials(pdfs);
-    } catch (err) {
+    } catch {
       if (!cancelled) setMaterials([]);
     } finally {
       if (!cancelled) setMaterialsLoading(false);
@@ -394,7 +396,7 @@ useEffect(() => {
 
   const ctx = quizCtxRef.current;
   if (!ctx) return;
-  const now = Date.now();
+  const now = nowMs();
   trackEvent("student_answered_question", {
     materialId: ctx.materialId,
     courseId: ctx.courseId,
@@ -887,10 +889,8 @@ if (data.sessionId) setSessionId(data.sessionId);
     await logActivity("ai", msg.slice(0, 80) || fileToSend?.name || "AI conversation", "/ai");
 
     if (ttsEnabled) {
-      setSpeakingIndex((prev) => {
-        speak(aiText);
-        return messages.length + 1;
-      });
+      speak(aiText);
+      setSpeakingIndex(messages.length + 1);
       const check = setInterval(() => {
         if (!window.speechSynthesis.speaking) {
           setSpeakingIndex(null);

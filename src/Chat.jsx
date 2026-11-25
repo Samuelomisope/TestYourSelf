@@ -2,7 +2,7 @@ import { useModal } from "./ui/useModal.js";
 import { MARKETPLACE_ENABLED } from "./features.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { useAuth } from "./useAuth";
 import { io } from "socket.io-client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -1187,7 +1187,6 @@ function EmptyState({ onCreateGroup }) {
 // ── Main Chat Component ────────────────────────────────────────────
 function Chat() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
   const [tab, setTab] = useState("chats");
   const [rooms, setRooms] = useState([]);
@@ -1281,7 +1280,7 @@ function Chat() {
     try {
       const data = await apiFetch(`/chat/users/search?q=${encodeURIComponent(q)}`);
       setSearchResults(data);
-    } catch { }
+    } catch { /* a failed search just leaves the list as it was */ }
     setSearching(false);
   };
 

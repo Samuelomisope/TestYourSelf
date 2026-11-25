@@ -8,7 +8,7 @@ import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faFileLines, faLock, faVideo, faBox, faFile, faNoteSticky, faUser, faGlobe,
-  faHouse, faBook, faRobot, faComments, faStore, faChevronDown, faXmark,
+  faHouse, faBook, faRobot, faComments, faChevronDown, faXmark,
   faCalculator, faUpload, faGrip, faChevronRight, faLayerGroup, faPlus, faChalkboard,
  faBookOpen, faDownload, faCheck, faTrash, faTriangleExclamation, faShareNodes,
 } from '@fortawesome/free-solid-svg-icons';
@@ -24,7 +24,6 @@ import MostOpened from "./library/MostOpened";
 import { snippetLabel } from "./library/libraryLinks.js";
 import { canViewInApp, downloadName } from "./library/pdfPages.js";
 import { listDownloadedMaterials, getOfflineBlobUrl } from "./offlineStorage";
-import { useParams } from "react-router-dom";
 import { trackEvent } from "./api";
 import Button from "./ui/Button";
 
@@ -55,10 +54,6 @@ async function apiPost(path, body) {
   return res.json();
 }
 // TODO: fill in your real contact details — shown on empty faculty cards.
-const DEVELOPER_CONTACT = {
-  whatsapp: "https://wa.me/2349056296658",
-};
-
 const LEVEL_ORDER = ["100", "200", "300", "400", "500"];
 const SEMESTER_ORDER = ["first", "second"];
 const SEMESTER_LABELS = { first: "First Semester", second: "Second Semester" };
@@ -113,8 +108,6 @@ const TAB_LINKS = [
 const OfflineContext = createContext({ downloadedIds: new Set() });
 
 const CARD = "bg-bg-elevated shadow-[0_1px_2px_rgba(0,0,0,0.3),0_8px_24px_-12px_rgba(0,0,0,0.5)] rounded-2xl";
-const BADGE_NEUTRAL = "px-2.5 py-1 bg-ink/[0.06] text-ink/50 rounded-full text-xs font-medium";
-const BADGE_ACCENT = "px-2.5 py-1 bg-violet-500/10 text-violet-400 rounded-full text-xs font-medium";
 
 function evaluateMath(expression) {
   const tokens = expression.match(/(?:\d+(?:\.\d+)?|\.\d+|sin|cos|tan|sqrt|log|ln|π|[()+\-*/^])/g);
@@ -1238,7 +1231,6 @@ function StudyMaterial() {
   const [universitiesList, setUniversitiesList] = useState([]);
   const [successMessage, setSuccessMessage] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
-  const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const universitySlugParam = searchParams.get("university");
   const courseIdParam = searchParams.get("courseId");
@@ -1429,11 +1421,6 @@ const grouped = useMemo(() => {
   return g;
 }, [filtered]);
 
-  const pendingReviewCount = useMemo(
-    () => filtered.filter(f => !f.courseRef?.program?.department?.school?.name).length,
-    [filtered]
-  );
-
   const sortedFaculties = Object.keys(grouped).sort();
   const isSearching = debouncedSearch.trim().length > 0;
   const loadPopular = useCallback(() => apiGet("/study-material/popular?limit=8"), []);
@@ -1459,10 +1446,11 @@ const rosterFaculties = useMemo(
 
   // Auto-expand the user's own faculty (matched against the roster) so
   // it's visible without any clicks; falls back to nothing pre-expanded.
+  const userFaculty = user?.faculty;
   const myFacultyIndex = useMemo(() => {
-    if (!user?.faculty) return -1;
-    return rosterFaculties.findIndex(f => f.name.toLowerCase() === String(user.faculty).toLowerCase());
-  }, [rosterFaculties, user?.faculty]);
+    if (!userFaculty) return -1;
+    return rosterFaculties.findIndex(f => f.name.toLowerCase() === String(userFaculty).toLowerCase());
+  }, [rosterFaculties, userFaculty]);
 
   return (
     <OfflineContext.Provider value={{ downloadedIds }}>

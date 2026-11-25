@@ -1027,11 +1027,7 @@ function NovelsTab() {
 }, []);
 
 useEffect(() => {
-  let cancelled = false;
-  (async () => {
-    await load();
-  })();
-  return () => { cancelled = true; };
+  load();
 }, [load]);
 
 const deleteNovel = async (id) => {

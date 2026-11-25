@@ -1,5 +1,4 @@
 import { getAccessToken } from "./token";
-import { auth } from "./firebase";
 
 import { API } from "./config";
 

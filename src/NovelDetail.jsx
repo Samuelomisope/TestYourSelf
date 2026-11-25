@@ -135,7 +135,7 @@ const loadNovel = useCallback(async () => {
     const n = await apiGet(`/novels/${requestedId}`);
     if (idRef.current !== requestedId) return; // stale — a newer id is now active
     setNovel(n);
-  } catch (err) {
+  } catch {
     if (idRef.current !== requestedId) return;
     setError(true);
   }
@@ -147,7 +147,7 @@ const loadReviews = useCallback(async () => {
     const r = await apiGet(`/novels/${requestedId}/reviews`);
     if (idRef.current !== requestedId) return;
     setReviews(r);
-  } catch (err) {
+  } catch {
     if (idRef.current !== requestedId) return;
     setReviews([]);
   }
