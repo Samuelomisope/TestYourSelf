@@ -36,6 +36,7 @@ import {
   faChalkboard,
 } from "@fortawesome/free-solid-svg-icons";
 import { apiGet, apiPost, trackEvent } from "./api";
+import Button from "./ui/Button";
 import "katex/dist/katex.min.css";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -257,20 +258,13 @@ function CameraModal({ onCapture, onClose }) {
           )}
         </div>
         <div className="flex gap-3 px-5 py-4">
-          <button
-            onClick={onClose}
-            className="flex-1 py-2.5 rounded-2xl border border-ink/10 text-ink/50 text-sm hover:border-ink/20 transition"
-          >
+          <Button variant="secondary" className="flex-1" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={capture}
-            disabled={!streaming}
-            className="flex-1 py-2.5 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-2xl text-sm font-bold transition flex items-center justify-center gap-2"
-          >
+          </Button>
+          <Button className="flex-1" onClick={capture} disabled={!streaming}>
             <FontAwesomeIcon icon={faCamera} />
             Capture
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -572,13 +566,9 @@ useEffect(() => {
           <option>Medium</option>
           <option>Hard</option>
         </select>
-        <button
-          onClick={generate}
-          disabled={loading}
-          className="px-5 py-2.5 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-2xl text-sm font-bold transition whitespace-nowrap"
-        >
+        <Button className="whitespace-nowrap" onClick={generate} disabled={loading}>
           Generate
-        </button>
+        </Button>
       </div>
 
       {loading && <Spinner label="Generating quiz…" />}
@@ -1213,7 +1203,7 @@ if (data.sessionId) setSessionId(data.sessionId);
             <FontAwesomeIcon icon={faPaperPlane} />
           </button>
         </div>
-       <p className="text-xs text-ink/20 text-center">
+       <p className="text-xs text-ink/60 text-center">
     Snap a photo or attach a PDF — AI will explain it all.
   </p>
       </div>
@@ -1313,13 +1303,9 @@ function SummarizeTab() {
           <option>Short paragraph</option>
           <option>Key terms only</option>
         </select>
-        <button
-          onClick={summarize}
-          disabled={loading || (!text.trim() && !attachedFile)}
-          className="px-5 py-2.5 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-2xl text-sm font-bold transition whitespace-nowrap"
-        >
+        <Button className="whitespace-nowrap" onClick={summarize} disabled={loading || (!text.trim() && !attachedFile)}>
           Summarize
-        </button>
+        </Button>
       </div>
       {loading && <Spinner label="Summarizing…" />}
       {error && (
@@ -1490,13 +1476,9 @@ function RevisionTab() {
         </div>
       )}
 
-      <button
-        onClick={generate}
-        disabled={loading || (mode === "text" ? (!text.trim() && !attachedFile) : !selectedMaterial)}
-        className="w-full py-3 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-2xl text-sm font-bold transition"
-      >
+      <Button block onClick={generate} disabled={loading || (mode === "text" ? (!text.trim() && !attachedFile) : !selectedMaterial)}>
         {loading ? "Generating…" : "Generate Revision Sheet"}
-      </button>
+      </Button>
 
       {error && (
         <p className="text-pink-400 text-sm flex items-center gap-2">
@@ -1669,13 +1651,9 @@ function PracticeTab() {
           <option>Medium</option>
           <option>Hard</option>
         </select>
-        <button
-          onClick={generate}
-          disabled={loading || (mode === "text" ? (!text.trim() && !attachedFile) : !selectedMaterial)}
-          className="px-5 py-2.5 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-2xl text-sm font-bold transition whitespace-nowrap"
-        >
+        <Button className="whitespace-nowrap" onClick={generate} disabled={loading || (mode === "text" ? (!text.trim() && !attachedFile) : !selectedMaterial)}>
           Generate
-        </button>
+        </Button>
       </div>
 
       {loading && <Spinner label="Generating practice problems…" />}
@@ -1908,13 +1886,9 @@ function ExplainTab() {
           <option>Detailed</option>
           <option>Like I'm 5</option>
         </select>
-        <button
-          onClick={explain}
-          disabled={loading || (mode === "text" ? (!text.trim() && !attachedFile) : !selectedMaterial)}
-          className="px-5 py-2.5 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-2xl text-sm font-bold transition whitespace-nowrap"
-        >
+        <Button className="whitespace-nowrap" onClick={explain} disabled={loading || (mode === "text" ? (!text.trim() && !attachedFile) : !selectedMaterial)}>
           Explain
-        </button>
+        </Button>
       </div>
 
       {loading && <Spinner label="Explaining…" />}
@@ -1950,11 +1924,7 @@ function ExplainTab() {
       )}
       {isTruncated && (
         <div className="px-4 pb-4 bg-black/20">
-          <button
-            onClick={continueExplaining}
-            disabled={continuing}
-            className="w-full py-2.5 rounded-xl border border-violet-500/30 text-violet-400 text-sm font-semibold hover:border-violet-500/50 hover:bg-violet-500/10 disabled:opacity-40 transition flex items-center justify-center gap-2"
-          >
+          <Button variant="secondary" block onClick={continueExplaining} disabled={continuing}>
             {continuing ? (
               <>
                 <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
@@ -1963,7 +1933,7 @@ function ExplainTab() {
             ) : (
               "Continue explanation"
             )}
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -2103,13 +2073,9 @@ function StudyPlanTab() {
         {attachedFile && <FileChip file={attachedFile} onRemove={() => setAttachedFile(null)} />}
       </div>
 
-      <button
-        onClick={generate}
-        disabled={loading || !subject.trim()}
-        className="w-full py-3 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-2xl text-sm font-bold transition"
-      >
+      <Button block onClick={generate} disabled={loading || !subject.trim()}>
         {loading ? "Generating…" : "Generate Study Plan"}
-      </button>
+      </Button>
 
       {error && (
         <p className="text-pink-400 text-sm flex items-center gap-2">
@@ -2236,7 +2202,7 @@ function AI() {
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between px-4 py-2.5">
             <div className="flex items-center gap-3">
-  <Link to="/home" className="text-ink/40 hover:text-violet-400 transition">
+  <Link to="/home" aria-label="Back to Home" className="grid h-11 w-11 place-items-center text-ink/60 hover:text-violet-400 transition">
     <FontAwesomeIcon icon={faChevronDown} className="rotate-90" />
   </Link>
   <h1 className="text-lg font-black tracking-tight">
