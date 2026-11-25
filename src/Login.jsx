@@ -128,9 +128,9 @@ function Login() {
             <div className="w-full border-t border-ink/5 pt-4 text-center">
               <p className="text-xs text-ink/20">
                 By signing in, you agree to our{" "}
-                <a href="/terms" className="text-violet-400 hover:underline">Terms of Service</a>
+                <a href="/terms" className="text-violet-400 underline underline-offset-2">Terms of Service</a>
                 {" "}and{" "}
-                <a href="/privacy" className="text-violet-400 hover:underline">Privacy Policy</a>.
+                <a href="/privacy" className="text-violet-400 underline underline-offset-2">Privacy Policy</a>.
               </p>
             </div>
           </div>

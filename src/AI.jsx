@@ -178,7 +178,7 @@ const TAB_LINKS = [
 ];
 
 // ─── Spinner ──────────────────────────────────────────────────────────────────
-function Spinner({ label = "TESTYOURSELF AI is thinking…" }) {
+function Spinner({ label = "UniLib AI is thinking…" }) {
   return (
     <div className="flex items-center gap-2 text-violet-400 text-sm">
       <FontAwesomeIcon icon={faSpinner} className="animate-spin" />

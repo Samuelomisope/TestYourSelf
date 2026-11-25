@@ -175,7 +175,7 @@ const myReview = user ? reviews.find(r => r.user?.id === user.id) : null;
             <FontAwesomeIcon icon={faChevronDown} className="rotate-90" />
           </Link>
           <h1 className="text-lg font-black tracking-tight">
-            TEST<span className="text-violet-400">YOURSELF</span>
+            UNI<span className="text-violet-400">LIB</span>
           </h1>
         </div>
       </header>

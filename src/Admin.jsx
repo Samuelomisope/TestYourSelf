@@ -1335,7 +1335,7 @@ function Admin() {
             <FontAwesomeIcon icon={faChevronLeft} />
           </button>
           <h1 className="text-lg font-black tracking-tight">
-            TEST<span className="text-violet-400">YOURSELF</span>
+            UNI<span className="text-violet-400">LIB</span>
             <span className="ml-2 text-xs font-semibold bg-pink-500/15 text-pink-400 border border-pink-500/20 px-2 py-0.5 rounded-full align-middle">Admin</span>
           </h1>
         </div>

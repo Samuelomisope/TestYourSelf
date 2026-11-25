@@ -1186,7 +1186,6 @@ function EmptyState({ onCreateGroup }) {
 
 // ── Main Chat Component ────────────────────────────────────────────
 function Chat() {
-  const modalRef = useModal(() => setShowWallpaperPicker(false), !!showWallpaperPicker);
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -1204,6 +1203,7 @@ function Chat() {
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [showWallpaperPicker, setShowWallpaperPicker] = useState(false);
+  const modalRef = useModal(() => setShowWallpaperPicker(false), !!showWallpaperPicker);
   const [wallpaper, setWallpaper] = useState(null);
   const searchDebounceRef = useRef(null);
 
@@ -1317,7 +1317,7 @@ function Chat() {
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between px-4 py-2.5">
             <div className="flex items-center gap-3">
-              <Link to="/home" className="text-ink/40 hover:text-violet-400 transition">
+              <Link to="/home" aria-label="Back to Home" className="grid h-11 w-11 place-items-center text-ink/60 hover:text-violet-400 transition">
                 <FontAwesomeIcon icon={faChevronDown} className="rotate-90" />
               </Link>
               <h1 className="text-lg font-black tracking-tight">
@@ -1353,7 +1353,7 @@ function Chat() {
       </header>
 
       {/* Body */}
-      <div className="relative z-10 flex-1 max-w-6xl w-full mx-auto flex pt-[97px]" style={{ height: "100dvh" }}>
+      <div className="relative z-10 flex-1 max-w-6xl w-full mx-auto flex pt-[117px]" style={{ height: "100dvh" }}>
 
         {/* Sidebar */}
         <div className={`w-full md:w-80 border-r border-ink/5 bg-bg flex flex-col shrink-0 ${activeRoom ? "hidden md:flex" : "flex"}`}>
