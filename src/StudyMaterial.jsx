@@ -1547,7 +1547,7 @@ const rosterFaculties = useMemo(
         </div>
       </header>
 
-      <main className="relative z-10 pt-32 px-6 pb-14 max-w-6xl mx-auto">
+      <main className="relative z-10 pt-36 px-6 pb-14 max-w-6xl mx-auto">
 
         {/* Offline / fallback banner */}
         {(!isOnline || usingOfflineFallback) && (
