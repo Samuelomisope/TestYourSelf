@@ -1,3 +1,5 @@
+import { useModal } from "./ui/useModal.js";
+import { looksLikePastQuestion } from "./library/examLogic.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect, useRef } from "react";
 import { auth } from "./firebase";
@@ -66,12 +68,14 @@ function loadGoogleApis() {
 
 // ─── Upload Modal ──────────────────────────────────────────────────
 export function UploadModal({ onClose, universitiesList = [] }) {
+  const modalRef = useModal(() => onClose(false));
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [progresses, setProgresses] = useState({});
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [isPublic, setIsPublic] = useState(false);
+  const [isPastQuestion, setIsPastQuestion] = useState(false);
   const [driveLoading, setDriveLoading] = useState(false);
   const fileRef = useRef();
 
@@ -382,6 +386,7 @@ const loadZipPrograms = async (departmentId) => {
       formData.append("level", item.level);
       formData.append("semester", item.semester);
       formData.append("isPublic", String(isPublic));
+      if (isPastQuestion) formData.append("isPastQuestion", "true");
       if (item.university) formData.append("university", item.university);
       const xhr = new XMLHttpRequest();
       xhr.open(
@@ -485,13 +490,13 @@ const handleZipUpload = async () => {
 
   // ── Render ───────────────────────────────────────────────────────
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Upload study material" tabIndex={-1} className="fixed inset-0 bg-black/60  z-50 flex items-end sm:items-center justify-center p-4">
       <div className="bg-bg-elevated border border-ink/10 rounded-3xl w-full max-w-md shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
 
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <h2 className="font-bold text-ink text-lg">Upload Files</h2>
-          <button onClick={onClose} className="text-ink/30 hover:text-ink transition">
+          <button aria-label="Close" onClick={onClose} className="text-ink/30 hover:text-ink transition">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
@@ -596,7 +601,7 @@ const handleZipUpload = async () => {
                         )}
                       </div>
                       {!uploading && (
-                        <button
+                        <button aria-label="Remove file"
                           onClick={(e) => { e.stopPropagation(); removeFile(i); }}
                           className="text-pink-400 hover:text-pink-300 transition text-xs"
                         >
@@ -607,8 +612,8 @@ const handleZipUpload = async () => {
 
                     {expandedIndex === i && (
                       <div className="px-3 pb-3 pt-1 border-t border-ink/5 bg-white/[0.02] space-y-2">
-                        <input type="text" placeholder="Title *" value={item.title} onChange={(e) => updateMeta(i, "title", e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition" />
-                        <select
+                        <input aria-label="Title *" type="text" placeholder="Title *" value={item.title} onChange={(e) => updateMeta(i, "title", e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 transition" />
+                        <select aria-label="Select University"
   value={item.universityId}
   onChange={(e) => {
     const uni = universitiesList.find((u) => u.id === e.target.value);
@@ -621,7 +626,7 @@ const handleZipUpload = async () => {
   {universitiesList.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
 </select>
 
-<select
+<select aria-label="Select School"
   value={item.schoolId}
   disabled={!item.universityId}
   onChange={(e) => loadDepartments(i, e.target.value)}
@@ -631,7 +636,7 @@ const handleZipUpload = async () => {
   {item.schools.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
 </select>
 
-<select
+<select aria-label="Select Department"
   value={item.departmentId}
   disabled={!item.schoolId}
   onChange={(e) => {
@@ -644,7 +649,7 @@ const handleZipUpload = async () => {
   {item.departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
 </select>
 
-<select
+<select aria-label="Select Program"
   value={item.programId}
   disabled={!item.departmentId}
   onChange={(e) => loadCourses(i, e.target.value)}
@@ -656,7 +661,7 @@ const handleZipUpload = async () => {
 
 {item.programId && (
   <>
-    <select
+    <select aria-label="Select existing course"
       value={item.courseId}
       onChange={(e) => {
         const c = item.courses.find((c) => c.id === e.target.value);
@@ -671,19 +676,19 @@ const handleZipUpload = async () => {
     {!item.courseId && (
       <div className="border border-violet-500/20 rounded-xl p-3 space-y-2 bg-violet-500/5">
         <p className="text-xs text-ink/40">Course not in the list? Create it:</p>
-        <input
+        <input aria-label="Course code"
           type="text"
           placeholder="Course code e.g. CHM 101"
           value={item.courseCode}
           onChange={(e) => updateMeta(i, "courseCode", e.target.value)}
-          className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+          className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 transition"
         />
-        <input
+        <input aria-label="Course title"
           type="text"
           placeholder="Course title e.g. General Chemistry"
           value={item.courseTitle}
           onChange={(e) => updateMeta(i, "courseTitle", e.target.value)}
-          className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+          className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 transition"
         />
         <button
           type="button"
@@ -698,17 +703,17 @@ const handleZipUpload = async () => {
 )}
 
 <div className="flex gap-2">
-  <select value={item.level} onChange={(e) => updateMeta(i, "level", e.target.value)} className="flex-1 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
+  <select aria-label="Level" value={item.level} onChange={(e) => updateMeta(i, "level", e.target.value)} className="flex-1 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
     <option value="">Level</option>
     {LEVELS.map(l => <option key={l} value={l}>{l} Level</option>)}
   </select>
-  <select value={item.semester} onChange={(e) => updateMeta(i, "semester", e.target.value)} className="flex-1 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
+  <select aria-label="Semester" value={item.semester} onChange={(e) => updateMeta(i, "semester", e.target.value)} className="flex-1 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
     <option value="">Semester</option>
     <option value="first">1st Semester</option>
     <option value="second">2nd Semester</option>
   </select>
 </div>
-                        <textarea placeholder="Description (optional)" value={item.description} onChange={(e) => updateMeta(i, "description", e.target.value)} rows={2} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition" />
+                        <textarea aria-label="Description" placeholder="Description (optional)" value={item.description} onChange={(e) => updateMeta(i, "description", e.target.value)} rows={2} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 resize-none transition" />
                       </div>
                     )}
                   </div>
@@ -737,32 +742,32 @@ const handleZipUpload = async () => {
               <input ref={zipRef} type="file" className="hidden" accept=".zip" onChange={(e) => setZipFile(e.target.files[0] || null)} />
             </div>
 
-           <select value={zipMeta.universityId} onChange={(e) => loadZipSchools(e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition mb-2">
+           <select aria-label="Select University" value={zipMeta.universityId} onChange={(e) => loadZipSchools(e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition mb-2">
   <option value="">Select University</option>
   {universitiesList.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
 </select>
 
-<select value={zipMeta.schoolId} disabled={!zipMeta.universityId} onChange={(e) => loadZipDepartments(e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition mb-2 disabled:opacity-40">
+<select aria-label="Select School" value={zipMeta.schoolId} disabled={!zipMeta.universityId} onChange={(e) => loadZipDepartments(e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition mb-2 disabled:opacity-40">
   <option value="">Select School</option>
   {zipSchools.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
 </select>
 
-<select value={zipMeta.departmentId} disabled={!zipMeta.schoolId} onChange={(e) => loadZipPrograms(e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition mb-2 disabled:opacity-40">
+<select aria-label="Select Department" value={zipMeta.departmentId} disabled={!zipMeta.schoolId} onChange={(e) => loadZipPrograms(e.target.value)} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition mb-2 disabled:opacity-40">
   <option value="">Select Department</option>
   {zipDepartments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
 </select>
 
-<select value={zipMeta.programId} disabled={!zipMeta.departmentId} onChange={(e) => setZipMeta((m) => ({ ...m, programId: e.target.value }))} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition mb-2 disabled:opacity-40">
+<select aria-label="Select Program" value={zipMeta.programId} disabled={!zipMeta.departmentId} onChange={(e) => setZipMeta((m) => ({ ...m, programId: e.target.value }))} className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition mb-2 disabled:opacity-40">
   <option value="">Select Program</option>
   {zipPrograms.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
 </select>
 
             <div className="flex gap-2 mb-2">
-              <select value={zipMeta.level} onChange={(e) => setZipMeta((m) => ({ ...m, level: e.target.value }))} className="flex-1 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
+              <select aria-label="Level" value={zipMeta.level} onChange={(e) => setZipMeta((m) => ({ ...m, level: e.target.value }))} className="flex-1 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
                 <option value="">Level</option>
                 {LEVELS.map((l) => <option key={l} value={l}>{l} Level</option>)}
               </select>
-              <select value={zipMeta.semester} onChange={(e) => setZipMeta((m) => ({ ...m, semester: e.target.value }))} className="flex-1 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
+              <select aria-label="Semester" value={zipMeta.semester} onChange={(e) => setZipMeta((m) => ({ ...m, semester: e.target.value }))} className="flex-1 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink/70 outline-none focus:border-violet-500/60 transition">
                 <option value="">Semester</option>
                 <option value="first">1st Semester</option>
                 <option value="second">2nd Semester</option>
@@ -807,6 +812,13 @@ const handleZipUpload = async () => {
             <FontAwesomeIcon icon={faGlobe} className="mr-1" /> Public
           </button>
         </div>
+
+        {mode === "files" && (
+          <label className="mb-5 flex min-h-11 cursor-pointer items-center gap-3 text-sm text-ink/70">
+            <input type="checkbox" checked={isPastQuestion} onChange={(e) => setIsPastQuestion(e.target.checked)} className="h-4 w-4 accent-violet-500" />
+            <span>These are past question papers {!isPastQuestion && files.some((f) => looksLikePastQuestion(f.title || f.file?.name)) && <button type="button" onClick={() => setIsPastQuestion(true)} className="ml-1 text-violet-400 underline">Looks like it. Tick this?</button>}</span>
+          </label>
+        )}
 
         {/* Upload button */}
         <button

@@ -1,4 +1,6 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { MARKETPLACE_ENABLED } from "./features.js";
+import { lazy, Suspense } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./Login";
 import Home from "./Home";
 import StudyMaterial from "./StudyMaterial";
@@ -28,25 +30,48 @@ import WriterRoute from "./WriterRoute";
 import UniversityWelcomePage from "./UniversityWelcomePage";
 import StudyPlan from "./StudyPlan";
 import Premium from "./Premium";
-import Classroom from "./Classroom";
+import { OnboardingProvider } from "./onboarding/OnboardingContext";
+import OnboardingLayer from "./onboarding/OnboardingLayer";
+import PastQuestions from "./PastQuestions";
+import Unsubscribe from "./Unsubscribe";
+import Settings from "./Settings";
+import VisitTracker from "./analytics/VisitTracker.jsx";
 
+// The Classroom pages are large (lesson rendering, voice, tutor) and only some students open them, so they load on demand.
+const Classroom = lazy(() => import("./Classroom"));
+const MyLearning = lazy(() => import("./MyLearning"));
+const pageLoading = (
+  <p role="status" className="px-4 pt-36 text-center text-sm text-ink/50">
+    Loading…
+  </p>
+);
 function App() {
   return (
     <BrowserRouter>
+      <OnboardingProvider>
+      <VisitTracker />
+      <Suspense fallback={pageLoading}>
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/study-material" element={<ProtectedRoute><StudyMaterial /></ProtectedRoute>} />        
         <Route path="/ai" element={<ProtectedRoute><AI /></ProtectedRoute>} />
         <Route path="/classroom" element={<ProtectedRoute><Classroom /></ProtectedRoute>} />
+        <Route path="/classroom/learning" element={<ProtectedRoute><MyLearning /></ProtectedRoute>} />
         <Route path="/classroom/:sessionId" element={<ProtectedRoute><Classroom /></ProtectedRoute>} />
         <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-        <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
-        <Route path="/marketplace/create" element={<ProtectedRoute><CreateListing /></ProtectedRoute>} />
-        <Route path="/marketplace/my-listings" element={<ProtectedRoute><MyListings /></ProtectedRoute>} />
-        <Route path="/marketplace/onboarding" element={<ProtectedRoute><MarketplaceOnboarding /></ProtectedRoute>} />
-        <Route path="/marketplace/seller/:userId" element={<ProtectedRoute><SellerProfile /></ProtectedRoute>} />
-        <Route path="/marketplace/:id" element={<ProtectedRoute><MarketplaceDetail /></ProtectedRoute>} />
+        {MARKETPLACE_ENABLED ? (
+          <>
+            <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+          <Route path="/marketplace/create" element={<ProtectedRoute><CreateListing /></ProtectedRoute>} />
+          <Route path="/marketplace/my-listings" element={<ProtectedRoute><MyListings /></ProtectedRoute>} />
+          <Route path="/marketplace/onboarding" element={<ProtectedRoute><MarketplaceOnboarding /></ProtectedRoute>} />
+          <Route path="/marketplace/seller/:userId" element={<ProtectedRoute><SellerProfile /></ProtectedRoute>} />
+          <Route path="/marketplace/:id" element={<ProtectedRoute><MarketplaceDetail /></ProtectedRoute>} />
+          </>
+        ) : (
+          <Route path="/marketplace/*" element={<Navigate to="/home" replace />} />
+        )}
         <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         <Route path="/schools/:universitySlug" element={<ProtectedRoute><UniversityWelcomePage /></ProtectedRoute>} />
@@ -62,6 +87,7 @@ function App() {
         <Route path="/episodes/:id" element={<ProtectedRoute><EpisodeReader /></ProtectedRoute>} />
         <Route path="/study-plan" element={<ProtectedRoute><StudyPlan /></ProtectedRoute>} />
         <Route path="/premium" element={<ProtectedRoute><Premium /></ProtectedRoute>} />
+        <Route path="/practice" element={<ProtectedRoute><PastQuestions /></ProtectedRoute>} />
         <Route path="/writer/dashboard" 
         element={
         <ProtectedRoute>
@@ -70,6 +96,9 @@ function App() {
             </WriterRoute>
             </ProtectedRoute>} />
       </Routes>
+        <OnboardingLayer />
+      </Suspense>
+      </OnboardingProvider>
     </BrowserRouter>
   );
 }

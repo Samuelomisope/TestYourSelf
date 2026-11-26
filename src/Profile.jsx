@@ -1,9 +1,12 @@
+import { MARKETPLACE_ENABLED } from "./features.js";
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "./useAuth";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import Button from "./ui/Button.jsx";
 import { auth } from "./firebase";
 import { updateProfile } from "firebase/auth";
 import { apiGet, apiPatch } from "./api";
+import { notify } from "./ui/feedbackContext.js";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowLeft, faPen, faTimes, faCamera,
@@ -48,6 +51,18 @@ export default function Profile() {
       finally { setLoading(false); }
     })();
   }, [user]);
+
+  const toggleReminders = async () => {
+    const next = pgUser.emailReminders === false;
+    setPgUser((u) => ({ ...u, emailReminders: next }));
+    try {
+      await apiPatch("/users/me/email-reminders", { enabled: next });
+      notify.success(next ? "Study reminder emails are on." : "Study reminder emails are off.");
+    } catch {
+      setPgUser((u) => ({ ...u, emailReminders: !next }));
+      notify.error("Could not change that setting. Please try again.");
+    }
+  };
 
   const handlePhotoChange = (e) => {
     const f = e.target.files[0];
@@ -99,7 +114,7 @@ export default function Profile() {
   const avatar = photoPreview || pgUser?.photoURL ||
     `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(pgUser?.displayName || user?.email || "?")}`;
 
-  const inputCls = "w-full bg-black/40 border border-ink/10 rounded-xl px-4 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/40 transition";
+  const inputCls = "w-full bg-black/40 border border-ink/10 rounded-xl px-4 py-2.5 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/40 transition";
 
   if (loading) return (
     <div className="min-h-screen bg-bg flex items-center justify-center">
@@ -112,21 +127,16 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-bg text-ink">
-      {/* Ambient */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
-        <div className="absolute bottom-0 right-0 w-72 h-72 bg-pink-500 rounded-full opacity-[0.06] blur-[100px]" />
-      </div>
 
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-bg/80 backdrop-blur-md border-b border-ink/5 flex items-center justify-between px-5 py-3.5">
-        <button onClick={() => navigate("/home")} className="w-9 h-9 rounded-xl border border-ink/10 bg-white/5 flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/40 transition text-sm">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-bg border-b border-ink/5 flex items-center justify-between px-5 py-3.5">
+        <button aria-label="Back" onClick={() => navigate("/home")} className="w-9 h-9 rounded-xl border border-ink/10 bg-white/5 flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/40 transition text-sm">
           <FontAwesomeIcon icon={faArrowLeft} />
         </button>
         <span className="font-black tracking-tight text-ink">My <span className="text-violet-400">Profile</span></span>
         {!editing
-          ? <button onClick={() => setEditing(true)} className="w-9 h-9 rounded-xl border border-ink/10 bg-white/5 flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/40 transition text-sm"><FontAwesomeIcon icon={faPen} /></button>
-          : <button onClick={cancelEdit} className="w-9 h-9 rounded-xl border border-ink/10 bg-white/5 flex items-center justify-center text-ink/40 hover:text-pink-400 transition text-sm"><FontAwesomeIcon icon={faTimes} /></button>
+          ? <button aria-label="Edit profile" onClick={() => setEditing(true)} className="w-9 h-9 rounded-xl border border-ink/10 bg-white/5 flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/40 transition text-sm"><FontAwesomeIcon icon={faPen} /></button>
+          : <button aria-label="Cancel editing" onClick={cancelEdit} className="w-9 h-9 rounded-xl border border-ink/10 bg-white/5 flex items-center justify-center text-ink/40 hover:text-pink-400 transition text-sm"><FontAwesomeIcon icon={faTimes} /></button>
         }
 
         <div className="px-6 mt-2">
@@ -144,7 +154,7 @@ export default function Profile() {
             <div className="relative mb-3">
               <img src={avatar} alt="Profile" className="w-24 h-24 rounded-full object-cover border-2 border-violet-500/40 shadow-lg shadow-violet-500/10" />
               {editing && (
-                <button onClick={() => fileRef.current.click()} className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-violet-500 hover:bg-violet-400 border-2 border-[#0a0a0f] flex items-center justify-center text-ink text-xs transition">
+                <button aria-label="Change profile photo" onClick={() => fileRef.current.click()} className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-violet-500 hover:bg-violet-400 border-2 border-[#0a0a0f] flex items-center justify-center text-ink text-xs transition">
                   <FontAwesomeIcon icon={faCamera} />
                 </button>
               )}
@@ -152,7 +162,7 @@ export default function Profile() {
             </div>
 
             {editing ? (
-              <input className={`${inputCls} text-center font-bold text-lg max-w-xs`} value={form.displayName} onChange={e => setForm(f => ({ ...f, displayName: e.target.value }))} placeholder="Your name" />
+              <input aria-label="Your name" className={`${inputCls} text-center font-bold text-lg max-w-xs`} value={form.displayName} onChange={e => setForm(f => ({ ...f, displayName: e.target.value }))} placeholder="Your name" />
             ) : (
               <h2 className="text-xl font-bold text-ink">{pgUser?.displayName || "—"}</h2>
             )}
@@ -188,7 +198,7 @@ export default function Profile() {
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-ink/30 uppercase tracking-wider mb-1.5">Bio</label>
-                <textarea className={`${inputCls} resize-none`} placeholder="Write something about yourself…" value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} rows={3} />
+                <textarea aria-label="Write something about yourself" className={`${inputCls} resize-none`} placeholder="Write something about yourself…" value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} rows={3} />
               </div>
 
               {/* University search */}
@@ -198,7 +208,7 @@ export default function Profile() {
                 </label>
                 <div className="relative">
                   <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/20 text-xs pointer-events-none" />
-                  <input className={`${inputCls} pl-8`} placeholder="Search your university…" value={uniSearch} onChange={e => { setUniSearch(e.target.value); setUniOpen(true); }} onFocus={() => setUniOpen(true)} />
+                  <input aria-label="Search your university" className={`${inputCls} pl-8`} placeholder="Search your university…" value={uniSearch} onChange={e => { setUniSearch(e.target.value); setUniOpen(true); }} onFocus={() => setUniOpen(true)} />
                 </div>
                 {uniOpen && uniSearch.length > 0 && filteredUnis.length > 0 && (
                   <div className="absolute z-10 mt-1 w-full bg-bg-elevated border border-ink/10 rounded-xl overflow-hidden shadow-2xl max-h-48 overflow-y-auto">
@@ -218,11 +228,11 @@ export default function Profile() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-ink/30 uppercase tracking-wider mb-1.5"><FontAwesomeIcon icon={faUserGraduate} className="mr-1" />Faculty</label>
-                  <input className={inputCls} placeholder="e.g. Engineering" value={form.faculty} onChange={e => setForm(f => ({ ...f, faculty: e.target.value }))} />
+                  <input aria-label="Faculty" className={inputCls} placeholder="e.g. Engineering" value={form.faculty} onChange={e => setForm(f => ({ ...f, faculty: e.target.value }))} />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-ink/30 uppercase tracking-wider mb-1.5">Department</label>
-                  <input className={inputCls} placeholder="e.g. Computer Sci." value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value }))} />
+                  <input aria-label="Department" className={inputCls} placeholder="e.g. Computer Sci." value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value }))} />
                 </div>
               </div>
 
@@ -264,6 +274,20 @@ export default function Profile() {
           ))}
         </div>
 
+        {/* Email reminders */}
+        {pgUser && (
+          <div className="flex items-center justify-between gap-4 rounded-2xl border border-ink/10 bg-white/[0.03] p-4">
+            <div>
+              <p id="reminders-label" className="text-sm font-semibold text-ink">Study reminder emails</p>
+              <p className="text-xs text-muted">One a day at 6pm, only when you have plan tasks or flashcards waiting.</p>
+            </div>
+            <button type="button" role="switch" aria-checked={pgUser.emailReminders !== false} aria-labelledby="reminders-label" onClick={toggleReminders}
+              className={`relative h-7 w-12 shrink-0 rounded-full transition ${pgUser.emailReminders !== false ? "bg-violet-500" : "bg-ink/20"}`}>
+              <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white transition-all ${pgUser.emailReminders !== false ? "left-[22px]" : "left-0.5"}`} />
+            </button>
+          </div>
+        )}
+
         {/* Leaderboard score */}
         {stats?.leaderboardScore > 0 && (
           <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4 flex items-center gap-4">
@@ -282,7 +306,7 @@ export default function Profile() {
         <div className="flex gap-2">
           {[
             { id: "materials", label: "Study Materials", icon: faBookOpen },
-            { id: "listings",  label: "Listings",        icon: faShoppingBag },
+            ...(MARKETPLACE_ENABLED ? [{ id: "listings",  label: "Listings",        icon: faShoppingBag }] : []),
           ].map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`flex-1 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 border transition ${activeTab === tab.id ? "bg-violet-500 text-white border-violet-500" : "bg-white/[0.03] border-ink/10 text-ink/40 hover:border-violet-500/30 hover:text-violet-400"}`}>
@@ -299,9 +323,9 @@ export default function Profile() {
                 <div className="w-14 h-14 bg-violet-500/10 rounded-2xl flex items-center justify-center text-violet-400 text-2xl mx-auto mb-3"><FontAwesomeIcon icon={faBookOpen} /></div>
                 <p className="font-bold text-ink text-sm mb-1">No materials yet</p>
                 <p className="text-xs text-ink/30 mb-4">Upload study materials to share with your campus</p>
-                <Link to="/study-material" className="inline-flex items-center gap-2 px-5 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm font-semibold transition">
-                  <FontAwesomeIcon icon={faFile} /> Upload a File
-                </Link>
+                <Button to="/study-material">
+                  <FontAwesomeIcon icon={faFile} aria-hidden="true" /> Upload a File
+                </Button>
               </div>
             ) : (
               materials.map((m, i) => (
@@ -335,9 +359,9 @@ export default function Profile() {
             <div className="w-14 h-14 bg-violet-500/10 rounded-2xl flex items-center justify-center text-violet-400 text-2xl mx-auto mb-3"><FontAwesomeIcon icon={faShoppingBag} /></div>
             <p className="font-bold text-ink text-sm mb-1">No listings yet</p>
             <p className="text-xs text-ink/30 mb-4">List items on the marketplace to sell to fellow students</p>
-            <Link to="/marketplace" className="inline-flex items-center gap-2 px-5 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm font-semibold transition">
-              <FontAwesomeIcon icon={faShoppingBag} /> Go to Marketplace
-            </Link>
+            <Button to="/marketplace">
+              <FontAwesomeIcon icon={faShoppingBag} aria-hidden="true" /> Go to Marketplace
+            </Button>
           </div>
         )}
       </main>

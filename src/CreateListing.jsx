@@ -1,9 +1,9 @@
+import { notify } from "./ui/feedbackContext.js";
 import { getAccessToken } from "./token";
 
 // ── CreateListing.jsx (dark theme) ────────────────────────────────
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth } from "./firebase";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChevronLeft, faPlus, faImage, faTag, faTimes, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { uploadMultiple } from "./useUpload";
@@ -35,7 +35,7 @@ function CreateListing() {
     if (!files.length) return;
     setUploading(true);
     try { const urls = await uploadMultiple(files, "marketplace"); set("images", [...form.images, ...urls]); }
-    catch (err) { console.error(err); alert("Image upload failed."); }
+    catch (err) { console.error(err); notify.error("Image upload failed. Please try again."); }
     setUploading(false);
   };
 
@@ -49,20 +49,19 @@ function CreateListing() {
       message: `Your listing "${form.title}" is now live on the marketplace.`,
     });
     navigate("/marketplace/my-listings");
-  } catch (err) { console.error(err); alert("Failed to create listing. Make sure you belong to a university."); }
+  } catch (err) { console.error(err); notify.error("Failed to create listing. Make sure you belong to a university."); }
   setSubmitting(false);
 };
 
-  const inputCls = "w-full bg-black/40 border border-ink/10 rounded-xl px-4 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/40 transition";
+  const inputCls = "w-full bg-black/40 border border-ink/10 rounded-xl px-4 py-2.5 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/40 transition";
   const selectCls = "w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink/70 outline-none focus:border-violet-500/40 transition";
 
   return (
     <div className="min-h-screen bg-bg text-ink">
-      <div className="fixed inset-0 pointer-events-none"><div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" /></div>
-
-      <header className="bg-bg/80 backdrop-blur-md border-b border-ink/5 px-4 py-3 sticky top-0 z-40">
+      
+      <header className="bg-bg border-b border-ink/5 px-4 py-3 sticky top-0 z-40">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <button onClick={() => navigate("/marketplace")} className="text-ink/40 hover:text-violet-400 transition"><FontAwesomeIcon icon={faChevronLeft} /></button>
+          <button aria-label="Back" onClick={() => navigate("/marketplace")} className="text-ink/40 hover:text-violet-400 transition"><FontAwesomeIcon icon={faChevronLeft} /></button>
           <h1 className="text-base font-bold text-ink">Create Listing</h1>
         </div>
       </header>
@@ -75,7 +74,7 @@ function CreateListing() {
             {form.images.map((url, i) => (
               <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border border-ink/10">
                 <img src={url} alt="" className="w-full h-full object-cover" />
-                <button onClick={() => set("images", form.images.filter((_, j) => j !== i))} className="absolute top-1 right-1 bg-black/60 text-ink rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-500/80 transition"><FontAwesomeIcon icon={faTimes} /></button>
+                <button aria-label="Remove image" onClick={() => set("images", form.images.filter((_, j) => j !== i))} className="absolute top-1 right-1 bg-black/60 text-ink rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-500/80 transition"><FontAwesomeIcon icon={faTimes} /></button>
               </div>
             ))}
             <label className={`w-20 h-20 rounded-xl border-2 border-dashed border-ink/10 flex flex-col items-center justify-center text-ink/30 hover:border-violet-500/40 hover:text-violet-400 transition cursor-pointer ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
@@ -89,32 +88,32 @@ function CreateListing() {
         {/* Basic Info */}
         <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-5 space-y-3">
           <p className="text-sm font-semibold text-ink/50">Basic Info</p>
-          <div><label className="text-xs text-ink/30 mb-1 block">Title *</label><input value={form.title} onChange={e => set("title", e.target.value)} placeholder="What are you selling?" className={inputCls} /></div>
-          <div><label className="text-xs text-ink/30 mb-1 block">Description *</label><textarea value={form.description} onChange={e => set("description", e.target.value)} placeholder="Describe your item..." rows={4} className={`${inputCls} resize-none`} /></div>
-          <div><label className="text-xs text-ink/30 mb-1 block">Price (₦) *</label><input type="number" value={form.price} onChange={e => set("price", e.target.value)} placeholder="0" className={inputCls} /></div>
+          <div><label className="text-xs text-ink/30 mb-1 block">Title *</label><input aria-label="What are you selling?" value={form.title} onChange={e => set("title", e.target.value)} placeholder="What are you selling?" className={inputCls} /></div>
+          <div><label className="text-xs text-ink/30 mb-1 block">Description *</label><textarea aria-label="Describe your item" value={form.description} onChange={e => set("description", e.target.value)} placeholder="Describe your item..." rows={4} className={`${inputCls} resize-none`} /></div>
+          <div><label className="text-xs text-ink/30 mb-1 block">Price (₦) *</label><input aria-label="0" type="number" value={form.price} onChange={e => set("price", e.target.value)} placeholder="0" className={inputCls} /></div>
         </div>
 
         {/* Details */}
         <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-5 space-y-3">
           <p className="text-sm font-semibold text-ink/50">Details</p>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-xs text-ink/30 mb-1 block">Type</label><select value={form.type} onChange={e => set("type", e.target.value)} className={selectCls}>{TYPES.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
-            <div><label className="text-xs text-ink/30 mb-1 block">Condition</label><select value={form.condition} onChange={e => set("condition", e.target.value)} className={selectCls}>{CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+            <div><label className="text-xs text-ink/30 mb-1 block">Type</label><select aria-label="Type" value={form.type} onChange={e => set("type", e.target.value)} className={selectCls}>{TYPES.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
+            <div><label className="text-xs text-ink/30 mb-1 block">Condition</label><select aria-label="Condition" value={form.condition} onChange={e => set("condition", e.target.value)} className={selectCls}>{CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
           </div>
-          <div><label className="text-xs text-ink/30 mb-1 block">Category</label><select value={form.category} onChange={e => set("category", e.target.value)} className={selectCls}><option value="">Select category</option>{CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+          <div><label className="text-xs text-ink/30 mb-1 block">Category</label><select aria-label="Select category" value={form.category} onChange={e => set("category", e.target.value)} className={selectCls}><option value="">Select category</option>{CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
         </div>
 
         {/* Tags */}
         <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-5">
           <p className="text-sm font-semibold text-ink/50 mb-3 flex items-center gap-2"><FontAwesomeIcon icon={faTag} className="text-violet-400" /> Tags</p>
           <div className="flex gap-2 mb-3">
-            <input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && tagInput.trim() && !form.tags.includes(tagInput.trim())) { set("tags", [...form.tags, tagInput.trim()]); setTagInput(""); }}} placeholder="Add a tag..." className={inputCls} />
-            <button onClick={() => { if (tagInput.trim() && !form.tags.includes(tagInput.trim())) { set("tags", [...form.tags, tagInput.trim()]); setTagInput(""); }}} className="px-3 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm transition"><FontAwesomeIcon icon={faPlus} /></button>
+            <input aria-label="Add a tag" value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && tagInput.trim() && !form.tags.includes(tagInput.trim())) { set("tags", [...form.tags, tagInput.trim()]); setTagInput(""); }}} placeholder="Add a tag..." className={inputCls} />
+            <button aria-label="Add tag" onClick={() => { if (tagInput.trim() && !form.tags.includes(tagInput.trim())) { set("tags", [...form.tags, tagInput.trim()]); setTagInput(""); }}} className="px-3 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm transition"><FontAwesomeIcon icon={faPlus} /></button>
           </div>
           <div className="flex flex-wrap gap-2">
             {form.tags.map(tag => (
               <span key={tag} className="flex items-center gap-1.5 px-3 py-1 bg-violet-500/15 text-violet-400 border border-violet-500/20 rounded-full text-xs">
-                {tag}<button onClick={() => set("tags", form.tags.filter(t => t !== tag))}><FontAwesomeIcon icon={faTimes} className="text-violet-400/60 hover:text-pink-400 transition" /></button>
+                {tag}<button aria-label="Remove tag" onClick={() => set("tags", form.tags.filter(t => t !== tag))}><FontAwesomeIcon icon={faTimes} className="text-violet-400/60 hover:text-pink-400 transition" /></button>
               </span>
             ))}
           </div>

@@ -1,7 +1,13 @@
+import { useModal } from "./ui/useModal.js";
+import { MARKETPLACE_ENABLED } from "./features.js";
+import Button from "./ui/Button.jsx";
+import { useConfirm } from "./ui/feedbackContext.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect } from "react";
 import { useAuth } from "./useAuth";
 import { Link, useLocation } from "react-router-dom";
+import { rememberOpened } from "./library/lastOpened.js";
+import { dueByDeck, dueHeadline, streakText } from "./library/studySummary.js";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faChevronDown, faXmark, faPlus, faLayerGroup, faHouse, faBook, faRobot,
@@ -18,7 +24,7 @@ const TAB_LINKS = [
   { href: "/ai",             label: "AI",     icon: faRobot },
    { href: "/novels",         label: "Novels", icon: faBookOpen },
   { href: "/chat",           label: "Chat",   icon: faComments },
-  { href: "/marketplace",    label: "Market", icon: faStore },
+  ...(MARKETPLACE_ENABLED ? [{ href: "/marketplace",    label: "Market", icon: faStore }] : []),
 ];
 
 const formatDate = (ts) => {
@@ -53,6 +59,7 @@ async function authedFetchForm(path, formData) {
 
 // ─── Create Deck Modal ──────────────────────────────────────────────
 function CreateDeckModal({ onClose }) {
+  const modalRef = useModal(onClose);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(true);
@@ -122,11 +129,11 @@ function CreateDeckModal({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Create flashcard deck" tabIndex={-1} className="fixed inset-0 bg-black/60  z-50 flex items-end sm:items-center justify-center p-4">
       <div className="bg-bg-elevated border border-ink/10 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-ink/5 shrink-0">
           <h2 className="font-bold text-ink">New Flashcard Deck</h2>
-          <button onClick={() => onClose(false)} className="text-ink/30 hover:text-ink transition">
+          <button aria-label="Close" onClick={() => onClose(false)} className="text-ink/30 hover:text-ink transition">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
@@ -136,23 +143,23 @@ function CreateDeckModal({ onClose }) {
 
           <div className="mb-3">
             <label className="text-xs text-ink/30 mb-1 block">Title</label>
-            <input
+            <input aria-label="Title"
               type="text"
               placeholder="e.g. Organic Chemistry — Reactions"
               value={title}
               onChange={e => setTitle(e.target.value)}
-              className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+              className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 transition"
             />
           </div>
 
           <div className="mb-4">
             <label className="text-xs text-ink/30 mb-1 block">Description (optional)</label>
-            <textarea
+            <textarea aria-label="What's this deck about?"
               placeholder="What's this deck about?"
               value={description}
               onChange={e => setDescription(e.target.value)}
               rows={2}
-              className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
+              className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 resize-none transition"
             />
           </div>
 
@@ -198,12 +205,12 @@ function CreateDeckModal({ onClose }) {
           {mode === "ai" && (
             <div className="mb-5 bg-white/[0.03] border border-ink/10 rounded-xl p-4">
               <label className="text-xs text-ink/30 mb-1 block">Paste your notes</label>
-              <textarea
+              <textarea aria-label="Paste text to generate flashcards from"
                 placeholder="Paste text to generate flashcards from…"
                 value={aiText}
                 onChange={e => setAiText(e.target.value)}
                 rows={4}
-                className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition mb-3"
+                className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 resize-none transition mb-3"
               />
               <label className="text-xs text-ink/30 mb-1 block">Or upload a file (image, PDF, video)</label>
               <input
@@ -214,7 +221,7 @@ function CreateDeckModal({ onClose }) {
               />
               <div className="flex items-center gap-3 mb-3">
                 <label className="text-xs text-ink/30">Number of cards</label>
-                <input
+                <input aria-label="Number of cards"
                   type="number"
                   min={1}
                   max={30}
@@ -241,26 +248,26 @@ function CreateDeckModal({ onClose }) {
                 {cards.map((card, i) => (
                   <div key={i} className="bg-white/[0.03] border border-ink/10 rounded-xl p-3 relative">
                     {cards.length > 1 && (
-                      <button
+                      <button aria-label="Remove card"
                         onClick={() => removeCard(i)}
                         className="absolute top-2 right-2 w-6 h-6 bg-pink-500/15 text-pink-400 rounded-full flex items-center justify-center hover:bg-pink-500/25 transition"
                       >
                         <FontAwesomeIcon icon={faXmark} className="text-xs" />
                       </button>
                     )}
-                    <input
+                    <input aria-label="Front"
                       type="text"
                       placeholder="Front (question)"
                       value={card.front}
                       onChange={e => updateCard(i, "front", e.target.value)}
-                      className="w-full bg-black/40 border border-ink/10 rounded-lg px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 mb-2 transition"
+                      className="w-full bg-black/40 border border-ink/10 rounded-lg px-3 py-2 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 mb-2 transition"
                     />
-                    <input
+                    <input aria-label="Back"
                       type="text"
                       placeholder="Back (answer)"
                       value={card.back}
                       onChange={e => updateCard(i, "back", e.target.value)}
-                      className="w-full bg-black/40 border border-ink/10 rounded-lg px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+                      className="w-full bg-black/40 border border-ink/10 rounded-lg px-3 py-2 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 transition"
                     />
                   </div>
                 ))}
@@ -292,6 +299,7 @@ function CreateDeckModal({ onClose }) {
 
 // ─── Review Session ─────────────────────────────────────────────────
 function ReviewSession({ deckId, onClose }) {
+  const modalRef = useModal(onClose);
   const [dueCards, setDueCards] = useState(null);
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -333,13 +341,13 @@ function ReviewSession({ deckId, onClose }) {
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Flashcard review" tabIndex={-1} className="fixed inset-0 bg-black/80  z-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-between mb-4">
           <p className="text-xs text-ink/40">
             {dueCards ? `${Math.min(index + 1, dueCards.length)} of ${dueCards.length}` : "Loading…"}
           </p>
-          <button onClick={onClose} className="text-ink/30 hover:text-ink transition">
+          <button aria-label="Close" onClick={onClose} className="text-ink/30 hover:text-ink transition">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
@@ -355,9 +363,7 @@ function ReviewSession({ deckId, onClose }) {
             <p className="text-4xl mb-3 text-emerald-400"><FontAwesomeIcon icon={faCheck} /></p>
             <p className="text-ink font-semibold mb-1">All caught up!</p>
             <p className="text-ink/40 text-sm">No cards are due for review right now.</p>
-            <button onClick={onClose} className="mt-5 px-6 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm transition">
-              Close
-            </button>
+            <Button className="mt-5" onClick={onClose}>Close</Button>
           </div>
         )}
 
@@ -366,9 +372,7 @@ function ReviewSession({ deckId, onClose }) {
             <p className="text-4xl mb-3 text-violet-400"><FontAwesomeIcon icon={faCheck} /></p>
             <p className="text-ink font-semibold mb-1">Session complete</p>
             <p className="text-ink/40 text-sm">You reviewed {reviewedCount} card{reviewedCount === 1 ? "" : "s"}.</p>
-            <button onClick={onClose} className="mt-5 px-6 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm transition">
-              Done
-            </button>
+            <Button className="mt-5" onClick={onClose}>Done</Button>
           </div>
         )}
 
@@ -418,7 +422,8 @@ function ReviewSession({ deckId, onClose }) {
 }
 
 // ─── Deck Card ───────────────────────────────────────────────────────
-function DeckCard({ deck, user, onStudy, onDelete }) {
+function DeckCard({ deck, user, onStudy, onDelete, due }) {
+  const confirm = useConfirm();
   const isOwner = deck.userId === user?.uid || deck.user?.displayName === user?.displayName;
   return (
     <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4 hover:border-violet-500/30 transition group relative">
@@ -426,7 +431,7 @@ function DeckCard({ deck, user, onStudy, onDelete }) {
         <button
           onClick={async (e) => {
             e.stopPropagation();
-            if (!window.confirm("Delete this deck?")) return;
+            if (!(await confirm({ title: "Delete this deck?", message: "Its cards and your progress on them will be removed.", confirmLabel: "Delete", danger: true }))) return;
             try {
               await authedFetch(`/flashcards/decks/${deck.id}`, { method: "DELETE" });
               onDelete();
@@ -444,6 +449,7 @@ function DeckCard({ deck, user, onStudy, onDelete }) {
       {deck.description && <p className="text-xs text-ink/30 mb-2 line-clamp-2">{deck.description}</p>}
       <div className="flex items-center gap-2 mb-3">
         <span className="text-xs px-2 py-0.5 bg-white/5 text-ink/40 rounded-full">{deck.cards?.length || 0} cards</span>
+        {due > 0 && <span className="text-xs px-2 py-0.5 bg-amber-500/15 text-amber-500 rounded-full">{due} due</span>}
         {deck.sourceType === "AI_GENERATED" && (
           <span className="text-xs px-2 py-0.5 bg-violet-500/15 text-violet-400 rounded-full flex items-center gap-1">
             <FontAwesomeIcon icon={faWandMagicSparkles} className="text-[10px]" /> AI
@@ -475,10 +481,23 @@ function Flashcards() {
   const location = useLocation();
   const [decks, setDecks] = useState([]);
   const [loading, setLoading] = useState(true);
-const [tab, setTab] = useState("all"); // "all" | "mine"
+const [tab, setTab] = useState(() => (new URLSearchParams(location.search).get("tab") === "mine" ? "mine" : "all")); // "all" | "mine"
 const [showCreate, setShowCreate] = useState(false);
-const [studyingDeckId, setStudyingDeckId] = useState(null);
+const [studyingDeckId, setStudyingDeckId] = useState(() => new URLSearchParams(location.search).get("deck"));
+const [summary, setSummary] = useState(null);
 const [refreshKey, setRefreshKey] = useState(0);
+
+// Due cards and streak. A failure only hides the badges.
+useEffect(() => {
+  if (!user) return;
+  authedFetch(`/flashcards/summary?tz=${-new Date().getTimezoneOffset()}`).then(setSummary).catch(() => {});
+}, [user, refreshKey, studyingDeckId]);
+
+// Remember the deck being studied so Home can offer "Continue studying". Device only.
+useEffect(() => {
+  const deck = decks.find((d) => d.id === studyingDeckId);
+  if (deck && user?.id) { try { rememberOpened(window.localStorage, user.id, "deck", { id: deck.id, title: deck.title }); } catch { /* blocked */ } }
+}, [studyingDeckId, decks, user?.id]);
 
 useEffect(() => {
   if (!user) return;
@@ -490,7 +509,7 @@ useEffect(() => {
     try {
       const data = await authedFetch(path);
       if (!cancelled) setDecks(data);
-    } catch (err) {
+    } catch {
       if (!cancelled) setDecks([]);
     } finally {
       if (!cancelled) setLoading(false);
@@ -503,12 +522,8 @@ useEffect(() => {
   return (
     <div className="min-h-screen bg-bg text-ink">
 
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
-        <div className="absolute bottom-0 right-0 w-72 h-72 bg-emerald-500 rounded-full opacity-[0.06] blur-[100px]" />
-      </div>
 
-      <header className="fixed top-0 left-0 w-full z-40 bg-bg/80 backdrop-blur-md border-b border-ink/5">
+      <header className="fixed top-0 left-0 w-full z-40 bg-bg border-b border-ink/5">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between px-4 py-2.5">
             <div className="flex items-center gap-3">
@@ -516,7 +531,7 @@ useEffect(() => {
                 <FontAwesomeIcon icon={faChevronDown} className="rotate-90" />
               </Link>
               <h1 className="text-lg font-black tracking-tight">
-                TEST<span className="text-violet-400">YOURSELF</span>
+                UNI<span className="text-violet-400">LIB</span>
                 <span className="ml-2 text-xs font-semibold bg-violet-500/20 text-violet-400 border border-violet-500/30 px-2 py-0.5 rounded-full align-middle">Flashcards</span>
               </h1>
             </div>
@@ -567,6 +582,13 @@ useEffect(() => {
           </button>
         </div>
 
+        {dueHeadline(summary) && (
+          <p className="mb-4 text-sm text-ink/60" aria-live="polite">
+            <span className="font-semibold text-ink">{dueHeadline(summary)}</span>
+            {streakText(summary) && <span className="text-ink/40"> · {streakText(summary)}</span>}
+          </p>
+        )}
+
         {loading && (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {[1,2,3,4].map(i => (
@@ -597,6 +619,7 @@ useEffect(() => {
                 deck={deck}
                 user={user}
                 onStudy={setStudyingDeckId}
+                due={dueByDeck(summary).get(deck.id) || 0}
                 onDelete={() => setRefreshKey(k => k + 1)}
               />
             ))}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { MARKETPLACE_ENABLED } from "./features.js";
 import { useAuth } from "./useAuth";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -15,7 +16,7 @@ const TAB_LINKS = [
   { href: "/novels",         label: "Novels", icon: faBookOpen },
   { href: "/ai",             label: "AI",     icon: faRobot },
   { href: "/chat",           label: "Chat",   icon: faComments },
-  { href: "/marketplace",    label: "Market", icon: faStore },
+  ...(MARKETPLACE_ENABLED ? [{ href: "/marketplace",    label: "Market", icon: faStore }] : []),
 ];
 
 const GENRE_LABELS = {
@@ -83,20 +84,16 @@ const isWriter = user?.isWriter;
   return (
     <div className="min-h-screen bg-bg text-ink">
 
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
-        <div className="absolute bottom-0 right-0 w-72 h-72 bg-emerald-500 rounded-full opacity-[0.06] blur-[100px]" />
-      </div>
 
-      <header className="fixed top-0 left-0 w-full z-40 bg-bg/80 backdrop-blur-md border-b border-ink/5">
+      <header className="fixed top-0 left-0 w-full z-40 bg-bg border-b border-ink/5">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between px-4 py-2.5">
             <div className="flex items-center gap-3">
-              <Link to="/home" className="text-ink/40 hover:text-violet-400 transition">
+              <Link to="/home" aria-label="Back to Home" className="grid h-11 w-11 place-items-center text-ink/60 hover:text-violet-400 transition">
                 <FontAwesomeIcon icon={faChevronDown} className="rotate-90" />
               </Link>
               <h1 className="text-lg font-black tracking-tight">
-                TEST<span className="text-violet-400">YOURSELF</span>
+                UNI<span className="text-violet-400">LIB</span>
                 <span className="ml-2 text-xs font-semibold bg-violet-500/20 text-violet-400 border border-violet-500/30 px-2 py-0.5 rounded-full align-middle">Novels</span>
               </h1>
             </div>

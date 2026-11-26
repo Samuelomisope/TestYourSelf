@@ -1,3 +1,4 @@
+import { useModal } from "./ui/useModal.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -23,6 +24,7 @@ function MyListings() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [confirm, setConfirm] = useState(null);
+  const modalRef = useModal(() => setConfirm(null), !!confirm);
 
   useEffect(() => {
     apiFetch("/marketplace/my").then(setListings).catch(console.error).finally(() => setLoading(false));
@@ -42,16 +44,12 @@ function MyListings() {
 
   return (
     <div className="min-h-screen bg-bg text-ink">
-      {/* Ambient */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
-      </div>
 
       {/* Header */}
-      <header className="bg-bg/80 backdrop-blur-md border-b border-ink/5 px-4 py-3 sticky top-0 z-40">
+      <header className="bg-bg border-b border-ink/5 px-4 py-3 sticky top-0 z-40">
         <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate("/marketplace")} className="text-ink/40 hover:text-violet-400 transition">
+            <button aria-label="Back" onClick={() => navigate("/marketplace")} className="text-ink/40 hover:text-violet-400 transition">
               <FontAwesomeIcon icon={faChevronLeft} />
             </button>
             <h1 className="text-base font-bold text-ink flex items-center gap-2">
@@ -130,7 +128,7 @@ function MyListings() {
 
       {/* Confirm Delete */}
       {confirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Confirm delete" tabIndex={-1} className="fixed inset-0 bg-black/60  z-50 flex items-center justify-center p-4">
           <div className="bg-bg-elevated border border-ink/10 rounded-2xl p-6 max-w-sm w-full shadow-xl">
             <p className="text-ink/70 text-sm mb-5">Are you sure you want to delete this listing? This cannot be undone.</p>
             <div className="flex gap-3">

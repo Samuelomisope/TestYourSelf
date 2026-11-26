@@ -1,3 +1,7 @@
+import Button from "./ui/Button";
+import { useModal } from "./ui/useModal.js";
+import FeatureUsageTab from "./admin/FeatureUsageTab.jsx";
+import { notify } from "./ui/feedbackContext.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from "react-router-dom";
@@ -32,7 +36,7 @@ function isActive(lastActiveAt) {
 }
 
 // ── Shared styles ──────────────────────────────────────────────────
-const inputCls = "w-full bg-black/40 border border-ink/10 rounded-xl px-4 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/40 transition";
+const inputCls = "w-full bg-black/40 border border-ink/10 rounded-xl px-4 py-2.5 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/40 transition";
 const thCls = "px-4 py-3 text-left text-xs font-semibold text-ink/30 uppercase tracking-wider";
 const tdCls = "px-4 py-3 text-sm text-ink/60";
 
@@ -57,17 +61,18 @@ function StatCard({ label, value, icon, accent = "violet" }) {
 }
 
 function ConfirmModal({ message, onConfirm, onCancel, confirmLabel = "Delete", confirmColor = "pink" }) {
+  const modalRef = useModal(onCancel);
   const colorCls = {
     pink: "bg-pink-500/80 hover:bg-pink-500",
     yellow: "bg-yellow-500/80 hover:bg-yellow-500",
     emerald: "bg-emerald-500/80 hover:bg-emerald-500",
   };
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Confirm action" tabIndex={-1} className="fixed inset-0 bg-black/60  z-50 flex items-center justify-center p-4">
       <div className="bg-bg-elevated border border-ink/10 rounded-2xl p-6 max-w-sm w-full shadow-xl">
         <p className="text-ink/60 text-sm mb-5">{message}</p>
         <div className="flex gap-3">
-          <button onClick={onCancel} className="flex-1 py-2 rounded-xl border border-ink/10 text-sm text-ink/40 hover:border-ink/20 transition">Cancel</button>
+          <Button variant="secondary" className="flex-1" onClick={onCancel}>Cancel</Button>
           <button onClick={onConfirm} className={`flex-1 py-2 rounded-xl text-white text-sm transition ${colorCls[confirmColor] || colorCls.pink}`}>{confirmLabel}</button>
         </div>
       </div>
@@ -160,7 +165,7 @@ function AnnouncementsTab() {
         {mode === "one" && (
           <div>
             <label className="text-xs text-ink/30 mb-1.5 block">User email</label>
-            <input
+            <input aria-label="user@example.com"
               type="email"
               placeholder="user@example.com"
               value={email}
@@ -172,7 +177,7 @@ function AnnouncementsTab() {
 
         <div>
           <label className="text-xs text-ink/30 mb-1.5 block">Subject line</label>
-          <input
+          <input aria-label="Subject line"
             type="text"
             placeholder="e.g. Study Material Page Updated"
             value={title}
@@ -183,7 +188,7 @@ function AnnouncementsTab() {
 
         <div>
           <label className="text-xs text-ink/30 mb-1.5 block">Message body</label>
-          <textarea
+          <textarea aria-label="Describe the update — what changed and why users should care"
             placeholder="Describe the update — what changed and why users should care..."
             value={description}
             onChange={e => setDescription(e.target.value)}
@@ -199,14 +204,10 @@ function AnnouncementsTab() {
           </div>
         )}
 
-        <button
-          onClick={send}
-          disabled={sending}
-          className="flex items-center gap-2 px-5 py-2.5 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-xl text-sm font-medium transition"
-        >
+        <Button onClick={send} disabled={sending}>
           <FontAwesomeIcon icon={faBullhorn} />
           {sending ? "Sending..." : mode === "all" ? "Send to all users" : "Send to this user"}
-        </button>
+        </Button>
       </div>
 
       {/* History */}
@@ -371,7 +372,7 @@ function NewsTab() {
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        <select
+        <select aria-label="University"
           value={universityId}
           onChange={(e) => setUniversityId(e.target.value)}
           className={`${inputCls} max-w-xs`}
@@ -380,12 +381,9 @@ function NewsTab() {
             <option key={u.id} value={u.id}>{u.name}</option>
           ))}
         </select>
-        <button
-          onClick={openCreate}
-          className="px-4 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium transition whitespace-nowrap"
-        >
+        <Button className="whitespace-nowrap" onClick={openCreate}>
           + New post
-        </button>
+        </Button>
       </div>
 
       {editingId && (
@@ -393,21 +391,21 @@ function NewsTab() {
           <p className="text-xs font-semibold text-ink/30 uppercase tracking-wider">
             {editingId === "new" ? "New news item" : "Edit news item"}
           </p>
-          <input
+          <input aria-label="Title"
             type="text"
             placeholder="Title"
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             className={inputCls}
           />
-          <textarea
+          <textarea aria-label="Excerpt — short teaser shown in the news list"
             placeholder="Excerpt — short teaser shown in the news list"
             rows={2}
             value={form.excerpt}
             onChange={(e) => setForm((f) => ({ ...f, excerpt: e.target.value }))}
             className={`${inputCls} resize-none`}
           />
-          <textarea
+          <textarea aria-label="Full body"
             placeholder="Full body"
             rows={5}
             value={form.body}
@@ -422,7 +420,7 @@ function NewsTab() {
               <img src={form.coverImageUrl} alt="Cover preview" className="mt-2 h-20 w-20 rounded-xl object-cover" />
             )}
           </div>
-          <input
+          <input aria-label="Source link"
             type="url"
             placeholder="Source link (optional)"
             value={form.sourceUrl}
@@ -432,7 +430,7 @@ function NewsTab() {
           <div className="flex gap-3">
             <div className="flex-1">
               <label className="text-xs text-ink/30 mb-1.5 block">Publish date (optional)</label>
-              <input
+              <input aria-label="Publish date"
                 type="date"
                 value={form.publishedAt}
                 onChange={(e) => setForm((f) => ({ ...f, publishedAt: e.target.value }))}
@@ -441,7 +439,7 @@ function NewsTab() {
             </div>
             <div className="flex-1">
               <label className="text-xs text-ink/30 mb-1.5 block">Status</label>
-              <select
+              <select aria-label="Status"
                 value={form.status}
                 onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
                 className={inputCls}
@@ -457,16 +455,12 @@ function NewsTab() {
             </div>
           )}
           <div className="flex gap-3">
-            <button
-              onClick={save}
-              disabled={saving || uploadingImage}
-              className="px-5 py-2.5 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white rounded-xl text-sm font-medium transition"
-            >
+            <Button onClick={save} disabled={saving || uploadingImage}>
               {saving ? "Saving…" : "Save"}
-            </button>
-            <button onClick={closeForm} className="px-5 py-2.5 border border-ink/10 text-ink/40 rounded-xl text-sm hover:border-ink/20 transition">
+            </Button>
+            <Button variant="secondary" onClick={closeForm}>
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -528,7 +522,7 @@ const toggleBan = async (id) => {
     setUsers(prev => prev.map(x => x.id === id ? { ...x, isBanned: updated.isBanned } : x));
   } catch (err) {
     console.error(err);
-    alert("Failed to update ban status — please try again.");
+    notify.error("Failed to update ban status — please try again.");
   }
 };
 
@@ -544,7 +538,7 @@ const toggleBan = async (id) => {
 
   return (
     <div>
-      <input type="text" placeholder="Search users..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className={`${inputCls} mb-4`} />
+      <input aria-label="Search users" type="text" placeholder="Search users..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className={`${inputCls} mb-4`} />
       {loading ? <p className="text-ink/20 text-sm text-center py-10">Loading...</p> : (
         <>
           <div className="overflow-x-auto rounded-2xl border border-ink/10">
@@ -582,8 +576,8 @@ const toggleBan = async (id) => {
                             method: 'POST',
                             body: JSON.stringify({ userId: u.id, subject, message }),
                           })
-                            .then(() => alert(`Message sent to ${u.displayName}!`))
-                            .catch(() => alert('Failed to send message'));
+                            .then(() => notify.success(`Message sent to ${u.displayName}.`))
+                            .catch(() => notify.error('Failed to send message'));
                         }}
                         className="text-violet-400 hover:text-violet-300 text-xs font-medium transition"
                       >
@@ -687,7 +681,7 @@ const toggleBan = async (id) => {
   return (
     <div>
 <div className="flex items-center gap-3 mb-4">
-        <input type="text" placeholder="Search materials..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className={`${inputCls} flex-1`} />
+        <input aria-label="Search materials" type="text" placeholder="Search materials..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className={`${inputCls} flex-1`} />
         <button
           onClick={() => { setMissingOnly(m => !m); setPage(1); }}
           className={`px-3.5 py-2.5 rounded-xl text-xs font-medium whitespace-nowrap transition ${missingOnly ? "bg-violet-500 text-white" : "bg-white/5 text-ink/40 hover:text-violet-400"}`}
@@ -738,18 +732,18 @@ const toggleBan = async (id) => {
       {selectedIds.size > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-bg-elevated shadow-xl rounded-2xl px-5 py-3 flex items-center gap-2 z-50 flex-wrap justify-center max-w-[90vw]">
           <span className="text-sm text-ink/60 mr-1">{selectedIds.size} selected</span>
-          <input placeholder="Faculty" onKeyDown={e => e.key === "Enter" && applyBulkEdit({ faculty: e.target.value })} className="w-32 bg-white/5 border border-ink/10 rounded-lg px-2 py-1.5 text-xs text-ink outline-none focus:border-violet-500/40" />
-          <input placeholder="Department" onKeyDown={e => e.key === "Enter" && applyBulkEdit({ department: e.target.value })} className="w-32 bg-white/5 border border-ink/10 rounded-lg px-2 py-1.5 text-xs text-ink outline-none focus:border-violet-500/40" />
-          <select onChange={e => e.target.value && applyBulkEdit({ level: e.target.value })} defaultValue="" className="bg-white/5 border border-ink/10 rounded-lg px-2 py-1.5 text-xs text-ink/70 outline-none">
+          <input aria-label="Faculty" placeholder="Faculty" onKeyDown={e => e.key === "Enter" && applyBulkEdit({ faculty: e.target.value })} className="w-32 bg-white/5 border border-ink/10 rounded-lg px-2 py-1.5 text-xs text-ink outline-none focus:border-violet-500/40" />
+          <input aria-label="Department" placeholder="Department" onKeyDown={e => e.key === "Enter" && applyBulkEdit({ department: e.target.value })} className="w-32 bg-white/5 border border-ink/10 rounded-lg px-2 py-1.5 text-xs text-ink outline-none focus:border-violet-500/40" />
+          <select aria-label="Level" onChange={e => e.target.value && applyBulkEdit({ level: e.target.value })} defaultValue="" className="bg-white/5 border border-ink/10 rounded-lg px-2 py-1.5 text-xs text-ink/70 outline-none">
             <option value="" disabled>Level</option>
             {["100","200","300","400","500"].map(l => <option key={l} value={l}>{l}</option>)}
           </select>
-          <select onChange={e => e.target.value && applyBulkEdit({ semester: e.target.value })} defaultValue="" className="bg-white/5 border border-ink/10 rounded-lg px-2 py-1.5 text-xs text-ink/70 outline-none">
+          <select aria-label="Semester" onChange={e => e.target.value && applyBulkEdit({ semester: e.target.value })} defaultValue="" className="bg-white/5 border border-ink/10 rounded-lg px-2 py-1.5 text-xs text-ink/70 outline-none">
             <option value="" disabled>Semester</option>
             <option value="first">1st</option>
             <option value="second">2nd</option>
           </select>
-          <input placeholder="Course code" onKeyDown={e => e.key === "Enter" && applyBulkEdit({ course: e.target.value })} className="w-28 bg-white/5 border border-ink/10 rounded-lg px-2 py-1.5 text-xs text-ink outline-none focus:border-violet-500/40" />
+          <input aria-label="Course code" placeholder="Course code" onKeyDown={e => e.key === "Enter" && applyBulkEdit({ course: e.target.value })} className="w-28 bg-white/5 border border-ink/10 rounded-lg px-2 py-1.5 text-xs text-ink outline-none focus:border-violet-500/40" />
           {bulkSaving && <span className="text-xs text-violet-400">Saving…</span>}
           <button onClick={() => setSelectedIds(new Set())} className="text-xs text-ink/40 hover:text-ink/70 ml-1">Clear</button>
         </div>
@@ -779,7 +773,7 @@ function ProductsTab() {
 
   return (
     <div>
-      <input type="text" placeholder="Search products..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className={`${inputCls} mb-4`} />
+      <input aria-label="Search products" type="text" placeholder="Search products..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className={`${inputCls} mb-4`} />
       {loading ? <p className="text-ink/20 text-sm text-center py-10">Loading...</p> : (
         <>
           <div className="overflow-x-auto rounded-2xl border border-ink/10">
@@ -835,9 +829,9 @@ function UniversitiesTab() {
   return (
     <div>
       <div className="flex gap-2 mb-4">
-        <input type="text" placeholder="University full name *" value={newName} onChange={e => setNewName(e.target.value)} className={`flex-1 ${inputCls}`} />
-        <input type="text" placeholder="Short name e.g. UNILAG" value={newShort} onChange={e => setNewShort(e.target.value)} className="w-36 bg-black/40 border border-ink/10 rounded-xl px-4 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/40 transition" />
-        <button onClick={addUniversity} disabled={adding} className="bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink px-4 py-2.5 rounded-xl text-sm transition">Add</button>
+        <input aria-label="University full name *" type="text" placeholder="University full name *" value={newName} onChange={e => setNewName(e.target.value)} className={`flex-1 ${inputCls}`} />
+        <input aria-label="Short name" type="text" placeholder="Short name e.g. UNILAG" value={newShort} onChange={e => setNewShort(e.target.value)} className="w-36 bg-black/40 border border-ink/10 rounded-xl px-4 py-2.5 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/40 transition" />
+        <Button onClick={addUniversity} disabled={adding}>Add</Button>
       </div>
       {loading ? <p className="text-ink/20 text-sm text-center py-10">Loading...</p> : (
         <div className="overflow-x-auto rounded-2xl border border-ink/10">
@@ -860,7 +854,7 @@ function UniversitiesTab() {
         setUniversities(prev => prev.map(x => x.id === u.id ? { ...x, isVerified: updated.isVerified } : x));
       } catch (err) {
         console.error(err);
-        alert("Failed to update verification status — please try again.");
+        notify.error("Failed to update verification status — please try again.");
       }
     }}
     className={`px-3 py-1 rounded-full text-xs font-medium transition flex items-center gap-1 ${u.isVerified ? "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25" : "bg-white/5 text-ink/30 hover:bg-white/10"}`}
@@ -1033,11 +1027,7 @@ function NovelsTab() {
 }, []);
 
 useEffect(() => {
-  let cancelled = false;
-  (async () => {
-    await load();
-  })();
-  return () => { cancelled = true; };
+  load();
 }, [load]);
 
 const deleteNovel = async (id) => {
@@ -1065,7 +1055,7 @@ const deleteNovel = async (id) => {
 
   return (
     <div>
-      <input type="text" placeholder="Search novels or authors..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className={`${inputCls} mb-4`} />
+      <input aria-label="Search novels or authors" type="text" placeholder="Search novels or authors..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className={`${inputCls} mb-4`} />
       {loading ? <p className="text-ink/20 text-sm text-center py-10">Loading...</p> : (
         <>
           <div className="overflow-x-auto rounded-2xl border border-ink/10">
@@ -1169,7 +1159,7 @@ function FeedbackTab() {
 
   return (
     <div>
-      <input type="text" placeholder="Search feedback..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className={`${inputCls} mb-4`} />
+      <input aria-label="Search feedback" type="text" placeholder="Search feedback..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className={`${inputCls} mb-4`} />
       {loading ? <p className="text-ink/20 text-sm text-center py-10">Loading...</p> : (
         <>
           <div className="overflow-x-auto rounded-2xl border border-ink/10">
@@ -1315,6 +1305,7 @@ function Admin() {
   const tabs = [
     { id: "overview",       label: "Overview",       icon: <FontAwesomeIcon icon={faChartBar} /> },
     { id: "analytics",      label: "Analytics",      icon: <FontAwesomeIcon icon={faChartLine} /> },
+    { id: "usage",          label: "Feature usage",  icon: <FontAwesomeIcon icon={faChartBar} /> },
     { id: "users",          label: "Users",          icon: <FontAwesomeIcon icon={faUsers} /> },
     { id: "materials",      label: "Materials",      icon: <FontAwesomeIcon icon={faBook} /> },
     { id: "products",       label: "Products",       icon: <FontAwesomeIcon icon={faShoppingBag} /> },
@@ -1332,20 +1323,15 @@ function Admin() {
 
   return (
     <div className="min-h-screen bg-bg text-ink">
-      {/* Ambient */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
-        <div className="absolute bottom-0 right-0 w-72 h-72 bg-pink-500 rounded-full opacity-[0.06] blur-[100px]" />
-      </div>
 
       {/* Header */}
-      <header className="bg-bg/80 backdrop-blur-md border-b border-ink/5 px-6 py-3 flex items-center justify-between sticky top-0 z-40">
+      <header className="bg-bg border-b border-ink/5 px-6 py-3 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/home")} className="text-ink/40 hover:text-violet-400 transition">
+          <button aria-label="Back" onClick={() => navigate("/home")} className="text-ink/40 hover:text-violet-400 transition">
             <FontAwesomeIcon icon={faChevronLeft} />
           </button>
           <h1 className="text-lg font-black tracking-tight">
-            TEST<span className="text-violet-400">YOURSELF</span>
+            UNI<span className="text-violet-400">LIB</span>
             <span className="ml-2 text-xs font-semibold bg-pink-500/15 text-pink-400 border border-pink-500/20 px-2 py-0.5 rounded-full align-middle">Admin</span>
           </h1>
         </div>
@@ -1416,24 +1402,15 @@ function Admin() {
                 <p className="text-sm font-semibold text-ink/50">Inactive Users</p>
                 <p className="text-xs text-ink/30 mt-1">Send a re-engagement email to users inactive for 7+ days</p>
               </div>
-              <button
-                onClick={async () => {
-                  try {
-                    const res = await apiFetch('/admin/notify-inactive', { method: 'POST' });
-                    alert(`Sent emails to ${res.sent} inactive users!`);
-                  } catch {
-                    alert(`Failed to send emails`);
-                  }
-                }}
-                className="shrink-0 px-4 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium transition"
-              >
+              <Button className="shrink-0" onClick={async () => { try { const res = await apiFetch('/admin/notify-inactive', { method: 'POST' }); notify.success(`Sent emails to ${res.sent} inactive users.`); } catch { notify.error("Failed to send emails"); } }}>
                 Notify Inactive Users
-              </button>
+              </Button>
             </div>
           </div>
         )}
 
         {activeTab === "analytics"      && <AnalyticsTab />}
+        {activeTab === "usage"          && <FeatureUsageTab />}
         {activeTab === "users"          && <UsersTab />}
         {activeTab === "materials"      && <MaterialsTab />}
         {activeTab === "products"       && <ProductsTab />}

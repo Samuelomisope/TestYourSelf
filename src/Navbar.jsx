@@ -6,40 +6,22 @@ import { signOut } from "firebase/auth";
 import NotificationPanel from "./NotificationPanel";
 import { useNotifications } from "./useNotifications";
 import ThemeToggle from "./components/ThemeToggle";
+import { TAB_LINKS, SIDEBAR_LINKS } from "./onboarding/navLinks";
+import { useOnboarding, useMenuEvent } from "./onboarding/context";
+import { NewBadge, NewDot } from "./onboarding/NewBadge";
+import HelpMenu from "./onboarding/HelpMenu";
 import { getAccessToken } from "./token";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faRobot, faBookOpen, faComments, faCamera,
-  faHouse, faBook, faStore, faBell, faSearch, faBars, faXmark,
-  faLayerGroup,
-  faCommentDots,
-  faCrown,
-  faChalkboard,
-} from "@fortawesome/free-solid-svg-icons";
+  faCamera,
+  faBell, faSearch, faBars, faXmark,
+  } from "@fortawesome/free-solid-svg-icons";
 
 // ─── Shared Nav Links ──────────────────────────────────────────────
 // Single source of truth now — update here and every page picks it up.
-const TAB_LINKS = [
-  { href: "/home",           label: "Home",   icon: faHouse },
-  { href: "/study-material", label: "Library",  icon: faBook,     tour: "nav-study" },
-  { href: "/ai",             label: "AI",     icon: faRobot,    tour: "nav-ai" },
-  { href: "/classroom",      label: "Classroom", icon: faChalkboard },
-  { href: "/novels",         label: "Novels", icon: faBookOpen },
-  { href: "/chat",           label: "Chat",   icon: faComments, tour: "nav-chat" },
-  /*{ href: "/marketplace",    label: "Market", icon: faStore,    tour: "nav-market" },*/
-];
 
-const sidebarLinks = [
-  { name: "Home", href: "/home", icon: faHouse },
-  { name: "Library", href: "/study-material", icon: faBook },
-  { name: "Flashcards", href: "/flashcards", icon: faLayerGroup },
-  { name: "AI Assistant", href: "/ai", icon: faRobot },
-  { name: "AI Classroom", href: "/classroom", icon: faChalkboard },
-  { name: "Premium", href: "/premium", icon: faCrown },
-  { name: "Chat", href: "/chat", icon: faComments },
-  /*{ name: "Marketplace", href: "/marketplace", icon: faStore },*/
-  { name: "Feedback", href: "/feedback", icon: faCommentDots },
-];
+
+
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -48,6 +30,8 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const { unreadCount } = useNotifications();
+  const { isNew, unseen } = useOnboarding();
+  useMenuEvent(setMenuOpen);
 
   const handleLogout = async () => {
     await logout();
@@ -83,12 +67,13 @@ export default function Navbar() {
   return (
     <>
       {/* HEADER */}
-      <header className="fixed top-0 left-0 w-full z-40 bg-bg/80 backdrop-blur-md border-b border-ink/5">
+      <header className="fixed top-0 left-0 w-full z-40 bg-bg border-b border-ink/5">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between px-4 py-2.5">
             <div data-tour="sidebar" className="flex items-center gap-3">
-              <button onClick={() => setMenuOpen(true)} className="text-ink/40 hover:text-violet-400 transition">
+              <button onClick={() => setMenuOpen(true)} aria-label="Open menu" className="relative text-ink/40 hover:text-violet-400 transition">
                 <FontAwesomeIcon icon={faBars} className="w-5 h-5" />
+                {unseen.length > 0 && <NewDot className="absolute -right-1 -top-1" />}
               </button>
               <h1 className="text-lg font-black tracking-tight">
                 UNI<span className="text-violet-400">LIB</span>
@@ -97,15 +82,15 @@ export default function Navbar() {
 
             <div className="flex items-center gap-3">
               <Link
-                data-tour="global-search"
+                data-tour="global-search" aria-label="Search"
                 to="/search"
                 className="w-9 h-9 bg-white/5 border border-ink/10 rounded-xl flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/40 transition"
               >
                 <FontAwesomeIcon icon={faSearch} className="w-4 h-4" />
               </Link>
 
-              <div className="relative">
-                <button onClick={() => setShowNotifications(!showNotifications)} className="w-9 h-9 bg-white/5 border border-ink/10 rounded-xl flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/40 transition">
+              <div className="relative" data-tour="notifications">
+                <button aria-label="Notifications" onClick={() => setShowNotifications(!showNotifications)} className="w-9 h-9 bg-white/5 border border-ink/10 rounded-xl flex items-center justify-center text-ink/40 hover:text-violet-400 hover:border-violet-500/40 transition">
                   <FontAwesomeIcon icon={faBell} className="w-4 h-4" />
                   {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 bg-violet-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">{unreadCount}</span>
@@ -124,18 +109,18 @@ export default function Navbar() {
           </div>
 
           {/* Nav tabs */}
-          <div className="flex items-center justify-around border-t border-ink/5 px-2">
+          <div className="flex items-stretch border-t border-line">
             {TAB_LINKS.map((tab) => {
               const isActive = location.pathname === tab.href;
               return (
                 <Link
                   key={tab.href}
                   to={tab.href}
-                  data-tour={tab.tour || undefined}
+                  data-tour={`tab-${tab.id}`}
                   className={`flex flex-col items-center py-2 px-4 border-b-2 transition text-xs gap-0.5 ${isActive ? "border-violet-500 text-violet-400" : "border-transparent text-ink/30 hover:text-ink/60"}`}
                 >
                   <FontAwesomeIcon icon={tab.icon} className="w-4 h-4" />
-                  <span>{tab.label}</span>
+                  <span className="relative">{tab.label}{isNew(tab.feature) && <NewDot className="absolute -right-1.5 -top-2" />}</span>
                 </Link>
               );
             })}
@@ -144,11 +129,11 @@ export default function Navbar() {
       </header>
 
       {/* OVERLAY */}
-      {menuOpen && <div className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />}
+      {menuOpen && <div className="fixed inset-0 bg-black/60 z-40 " onClick={() => setMenuOpen(false)} />}
 
       {/* SIDEBAR DRAWER */}
-      <aside className={`fixed top-0 left-0 h-full w-72 z-50 overflow-y-auto overscroll-contain bg-bg-elevated border-r border-ink/5 shadow-2xl transform transition-transform duration-300 ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-ink/5">
+      <aside className={`fixed top-0 left-0 h-full w-72 z-50 flex flex-col bg-bg-elevated border-r border-ink/5 shadow-2xl transform transition-transform duration-300 ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="flex shrink-0 items-center justify-between px-6 py-4 border-b border-ink/5">
           <div className="flex items-center gap-3">
             <label className="relative cursor-pointer group">
               {user?.photoURL
@@ -165,16 +150,18 @@ export default function Navbar() {
               <p className="text-xs text-ink/30">{user?.email}</p>
             </div>
           </div>
-          <button onClick={() => setMenuOpen(false)} className="text-ink/30 hover:text-ink transition">
+          <button aria-label="Close" onClick={() => setMenuOpen(false)} className="text-ink/30 hover:text-ink transition">
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
-        <nav className="flex flex-col px-4 py-4 pb-28 gap-1">
-          {sidebarLinks.map((link) => (
-            <Link key={link.name} to={link.href} onClick={() => setMenuOpen(false)}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <nav className="flex flex-col px-4 py-4 gap-1">
+          {SIDEBAR_LINKS.map((link) => (
+            <Link key={link.name} to={link.href} data-tour={`side-${link.id}`} onClick={() => setMenuOpen(false)}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${location.pathname === link.href ? "bg-violet-500/15 text-violet-400 border border-violet-500/20" : "text-ink/50 hover:bg-white/5 hover:text-ink"}`}>
               <FontAwesomeIcon icon={link.icon} className="w-4 h-4" />
               {link.name}
+              {isNew(link.feature) && <NewBadge className="ml-auto" />}
             </Link>
           ))}
           {user?.email === "omisope34@gmail.com" && (
@@ -184,12 +171,14 @@ export default function Navbar() {
             </Link>
           )}
         </nav>
+        <HelpMenu onDone={() => setMenuOpen(false)} />
 
         <div className="px-6 mt-2">
           <p className="text-xs text-ink/30 uppercase tracking-widest mb-2">Appearance</p>
           <ThemeToggle />
         </div>
-        <div className="absolute bottom-6 left-0 w-full px-6">
+        </div>
+        <div className="shrink-0 border-t border-ink/5 px-6 py-4">
           <button onClick={handleLogout} className="w-full py-2.5 rounded-2xl bg-white/5 border border-ink/10 text-ink/50 text-sm hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 transition">
             Logout
           </button>

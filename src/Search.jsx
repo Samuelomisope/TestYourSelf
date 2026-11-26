@@ -1,7 +1,7 @@
+import { MARKETPLACE_ENABLED } from "./features.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth } from "./firebase";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch, faBook, faUser, faStore,
@@ -20,13 +20,14 @@ async function searchApi(q, type = "all", page = 1) {
   return res.json();
 }
 
-const TABS = [
+const ALL_TABS = [
   { id: "all", label: "All", icon: faSearch },
   { id: "materials", label: "Materials", icon: faBook },
   { id: "users", label: "Users", icon: faUser },
   { id: "marketplace", label: "Marketplace", icon: faStore },
   { id: "universities", label: "Universities", icon: faUniversity },
 ];
+const TABS = ALL_TABS.filter((t) => MARKETPLACE_ENABLED || t.id !== "marketplace");
 
 function Search() {
   const navigate = useNavigate();
@@ -101,26 +102,22 @@ function Search() {
 
   return (
     <div className="min-h-screen bg-bg text-ink">
-      {/* Ambient */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
-      </div>
 
       {/* Header */}
-      <header className="bg-bg/80 backdrop-blur-md border-b border-ink/5 px-4 py-3 sticky top-0 z-40">
+      <header className="bg-bg border-b border-ink/5 px-4 py-3 sticky top-0 z-40">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="text-ink/40 hover:text-violet-400 transition">
+          <button aria-label="Back" onClick={() => navigate(-1)} className="text-ink/40 hover:text-violet-400 transition">
             <FontAwesomeIcon icon={faChevronLeft} />
           </button>
           <div className="flex-1 relative">
             <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/30 text-sm" />
-            <input
+            <input aria-label="Search everything"
               ref={inputRef} value={query} onChange={e => setQuery(e.target.value)}
               placeholder="Search everything..."
-              className="w-full pl-9 pr-9 py-2.5 bg-white/5 border border-ink/10 rounded-xl text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/40 transition"
+              className="w-full pl-9 pr-9 py-2.5 bg-white/5 border border-ink/10 rounded-xl text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/40 transition"
             />
             {query && (
-              <button onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink/30 hover:text-ink/60 transition">
+              <button aria-label="Clear search" onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink/30 hover:text-ink/60 transition">
                 <FontAwesomeIcon icon={faTimes} className="text-xs" />
               </button>
             )}
@@ -215,7 +212,7 @@ function Search() {
             )}
 
             {/* Marketplace */}
-            {results.marketplace.length > 0 && (activeTab === "all" || activeTab === "marketplace") && (
+            {MARKETPLACE_ENABLED && results.marketplace.length > 0 && (activeTab === "all" || activeTab === "marketplace") && (
               <div>
                 <p className="text-sm font-semibold text-ink/50 mb-3 flex items-center gap-2"><FontAwesomeIcon icon={faStore} className="text-violet-400" /> Marketplace</p>
                 <div className="grid grid-cols-2 gap-3">

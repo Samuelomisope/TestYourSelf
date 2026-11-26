@@ -1,7 +1,7 @@
+import { useModal } from "../ui/useModal.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth } from "./firebase";
 import { useAuth } from "./useAuth";
 
 const ADMIN_EMAILS = ["omisope34@gmail.com"];
@@ -37,8 +37,9 @@ function StatCard({ label, value, icon, color }) {
 
 // ── Confirm Modal ──────────────────────────────────────────────────────────
 function ConfirmModal({ message, onConfirm, onCancel }) {
+  const modalRef = useModal(onCancel);
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+    <div ref={modalRef} role="dialog" aria-modal="true" aria-label="Confirm action" tabIndex={-1} className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
         <p className="text-gray-700 text-sm mb-5">{message}</p>
         <div className="flex gap-3">
@@ -75,7 +76,7 @@ function UsersTab() {
 
   return (
     <div>
-      <input
+      <input aria-label="Search users"
         type="text" placeholder="Search users..." value={search}
         onChange={e => setSearch(e.target.value)}
         className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-4 outline-none focus:border-indigo-400"
@@ -155,7 +156,7 @@ function MaterialsTab() {
 
   return (
     <div>
-      <input
+      <input aria-label="Search materials"
         type="text" placeholder="Search materials..." value={search}
         onChange={e => setSearch(e.target.value)}
         className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-4 outline-none focus:border-indigo-400"
@@ -233,7 +234,7 @@ function ProductsTab() {
 
   return (
     <div>
-      <input
+      <input aria-label="Search products"
         type="text" placeholder="Search products..." value={search}
         onChange={e => setSearch(e.target.value)}
         className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-4 outline-none focus:border-indigo-400"
@@ -325,12 +326,12 @@ function UniversitiesTab() {
     <div>
       {/* Add University */}
       <div className="flex gap-2 mb-4">
-        <input
+        <input aria-label="University full name *"
           type="text" placeholder="University full name *" value={newName}
           onChange={e => setNewName(e.target.value)}
           className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400"
         />
-        <input
+        <input aria-label="Short name"
           type="text" placeholder="Short name e.g. UNILAG" value={newShort}
           onChange={e => setNewShort(e.target.value)}
           className="w-36 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-indigo-400"

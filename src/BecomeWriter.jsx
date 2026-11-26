@@ -74,18 +74,14 @@ function BecomeWriter() {
 
   return (
     <div className="min-h-screen bg-bg text-ink">
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -left-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
-        <div className="absolute bottom-0 right-0 w-72 h-72 bg-emerald-500 rounded-full opacity-[0.06] blur-[100px]" />
-      </div>
 
-      <header className="fixed top-0 left-0 w-full z-40 bg-bg/80 backdrop-blur-md border-b border-ink/5">
+      <header className="fixed top-0 left-0 w-full z-40 bg-bg border-b border-ink/5">
         <div className="max-w-2xl mx-auto flex items-center gap-3 px-4 py-3">
           <Link to="/novels" className="text-ink/40 hover:text-violet-400 transition">
             <FontAwesomeIcon icon={faChevronDown} className="rotate-90" />
           </Link>
           <h1 className="text-lg font-black tracking-tight">
-            TEST<span className="text-violet-400">YOURSELF</span>
+            UNI<span className="text-violet-400">LIB</span>
           </h1>
         </div>
       </header>
@@ -106,12 +102,12 @@ function BecomeWriter() {
 
           <div className="mb-4">
             <label className="text-xs text-ink/30 mb-1 block">Pen name</label>
-            <input
+            <input aria-label="How readers will see your name"
               type="text"
               placeholder="How readers will see your name"
               value={penName}
               onChange={e => setPenName(e.target.value)}
-              className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 transition"
+              className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 transition"
             />
           </div>
 
@@ -143,12 +139,12 @@ function BecomeWriter() {
 
           <div className="mb-6">
             <label className="text-xs text-ink/30 mb-1 block">Bio (optional)</label>
-            <textarea
+            <textarea aria-label="Tell readers a little about yourself"
               placeholder="Tell readers a little about yourself…"
               value={bio}
               onChange={e => setBio(e.target.value)}
               rows={3}
-              className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/60 resize-none transition"
+              className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2.5 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 resize-none transition"
             />
           </div>
 

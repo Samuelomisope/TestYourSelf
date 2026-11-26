@@ -1,3 +1,4 @@
+import Button from "./ui/Button";
 import { getAccessToken } from "./token";
 // MarketplaceDetail.jsx - dark theme
 import { useState, useEffect } from "react";
@@ -70,13 +71,10 @@ function MarketplaceDetail() {
 
   return (
     <div className="min-h-screen bg-bg text-ink">
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -right-20 w-96 h-96 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
-      </div>
 
-      <header className="bg-bg/80 backdrop-blur-md border-b border-ink/5 px-4 py-3 sticky top-0 z-40">
+      <header className="bg-bg border-b border-ink/5 px-4 py-3 sticky top-0 z-40">
         <div className="max-w-3xl mx-auto flex items-center gap-3">
-          <button onClick={() => navigate("/marketplace")} className="text-ink/40 hover:text-violet-400 transition">
+          <button aria-label="Back" onClick={() => navigate("/marketplace")} className="text-ink/40 hover:text-violet-400 transition">
             <FontAwesomeIcon icon={faChevronLeft} />
           </button>
           <h1 className="text-base font-bold text-ink truncate">{item.title}</h1>
@@ -92,8 +90,8 @@ function MarketplaceDetail() {
                 <img src={item.images[imgIndex]} alt={item.title} className="w-full h-full object-cover" />
                 {item.images.length > 1 && (
                   <>
-                    <button onClick={() => setImgIndex(i => Math.max(0, i - 1))} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 rounded-full w-8 h-8 flex items-center justify-center text-ink/60 hover:text-ink transition"><FontAwesomeIcon icon={faChevronLeft} className="text-sm" /></button>
-                    <button onClick={() => setImgIndex(i => Math.min(item.images.length - 1, i + 1))} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 rounded-full w-8 h-8 flex items-center justify-center text-ink/60 hover:text-ink transition"><FontAwesomeIcon icon={faChevronRight} className="text-sm" /></button>
+                    <button aria-label="Previous image" onClick={() => setImgIndex(i => Math.max(0, i - 1))} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 rounded-full w-8 h-8 flex items-center justify-center text-ink/60 hover:text-ink transition"><FontAwesomeIcon icon={faChevronLeft} className="text-sm" /></button>
+                    <button aria-label="Next image" onClick={() => setImgIndex(i => Math.min(item.images.length - 1, i + 1))} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 rounded-full w-8 h-8 flex items-center justify-center text-ink/60 hover:text-ink transition"><FontAwesomeIcon icon={faChevronRight} className="text-sm" /></button>
                     <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
                       {item.images.map((_, i) => <div key={i} className={`w-1.5 h-1.5 rounded-full ${i === imgIndex ? "bg-violet-400" : "bg-white/30"}`} />)}
                     </div>
@@ -144,15 +142,15 @@ function MarketplaceDetail() {
             <div className="flex gap-2">
   {!contactRevealed ? (
     (chatSnapUsername || whatsapp) ? (
-      <button onClick={() => setShowDisclaimer(true)} className="flex items-center gap-1.5 px-3 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-xs font-medium transition">
+      <Button size="sm" onClick={() => setShowDisclaimer(true)}>
         <FontAwesomeIcon icon={faCommentDots} /> Contact Seller
-      </button>
+      </Button>
     ) : (
       <span className="text-xs text-ink/20">No contact info</span>
     )
   ) : (
     <>
-      {chatSnapUsername && <button onClick={() => navigate(`/chat?dm=${seller.id}`)} className="flex items-center gap-1.5 px-3 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-xs font-medium transition"><FontAwesomeIcon icon={faCommentDots} /> Chat</button>}
+      {chatSnapUsername && <Button size="sm" onClick={() => navigate(`/chat?dm=${seller.id}`)}><FontAwesomeIcon icon={faCommentDots} /> Chat</Button>}
       {whatsapp && <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-medium hover:bg-emerald-500/30 transition">WhatsApp</a>}
     </>
   )}
@@ -172,11 +170,11 @@ function MarketplaceDetail() {
           <div className="mb-5 pb-5 border-b border-ink/5">
             <p className="text-xs text-ink/30 mb-2">Leave a review</p>
             <StarRating value={rating} onChange={setRating} />
-            <textarea value={comment} onChange={e => setComment(e.target.value)} placeholder="Write a comment (optional)..." rows={2}
-              className="w-full mt-2 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder-white/20 outline-none focus:border-violet-500/40 resize-none transition" />
-            <button onClick={submitReview} disabled={!rating || submitting} className="mt-2 flex items-center gap-1.5 px-4 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-xs font-medium transition disabled:opacity-40">
+            <textarea aria-label="Write a comment" value={comment} onChange={e => setComment(e.target.value)} placeholder="Write a comment (optional)..." rows={2}
+              className="w-full mt-2 bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/40 resize-none transition" />
+            <Button size="sm" className="mt-2" onClick={submitReview} loading={submitting} disabled={!rating}>
               <FontAwesomeIcon icon={faPaperPlane} /> Submit Review
-            </button>
+            </Button>
           </div>
           {item.reviews?.length === 0 ? (
             <p className="text-ink/20 text-sm text-center py-4">No reviews yet. Be the first!</p>
