@@ -124,6 +124,7 @@ function Privacy() {
               "Firebase (Google) — for authentication and database storage.",
               "Render — for backend hosting.",
               "Vercel — for frontend hosting.",
+              "YouTube (Google) — only when you choose to play a lesson video in the AI Classroom. The video loads from YouTube, which may receive your IP address and device details. Nothing loads from YouTube until you tap play.",
               "When required by law.",
             ].map((item) => (
               <li key={item} className="flex gap-2">

@@ -5,6 +5,7 @@ import Navbar from "./Navbar";
 import { apiDelete, apiGet, apiPatch, apiPost, apiPostForm, apiPut } from "./api";
 import Dialog from "./classroom/Dialog";
 import LessonView from "./classroom/LessonView";
+import StepVideos from "./classroom/StepVideos";
 import Md from "./classroom/Markdown";
 import OutlinePanel from "./classroom/OutlinePanel";
 import BoardPanel from "./classroom/BoardPanel";
@@ -604,6 +605,9 @@ function ClassroomInner({ sessionId }) {
                     Check my understanding
                   </button>
                 </div>
+              )}
+              {isClassroom && hasPlan && started && (
+                <StepVideos key={current} sessionId={sessionId} stepIndex={current} stepTitle={outline[current]?.title} />
               )}
               {isClassroom && hasPlan && started && checkStep !== null && checkStep <= current && (
                 <CheckIn key={checkStep} sessionId={sessionId} stepIndex={checkStep} stepTitle={outline[checkStep]?.title} onScore={(celebrate) => { setCelebrating(celebrate); loadChecks(); }} onClose={() => setCheckStep(null)} />
