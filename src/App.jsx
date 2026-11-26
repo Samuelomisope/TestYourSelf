@@ -53,8 +53,8 @@ function App() {
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/feedback" element={<ProtectedRoute><Feedback /></ProtectedRoute>} />
         <Route path="/about" element={<About />} />
-        <Route path="/privacy" element={<ProtectedRoute><Privacy /></ProtectedRoute>} />
-        <Route path="/terms" element={<ProtectedRoute><Terms /></ProtectedRoute>} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
         <Route path="/flashcards" element={<ProtectedRoute><Flashcards /></ProtectedRoute>} />
         <Route path="/novels" element={<ProtectedRoute><Novels /></ProtectedRoute>} />
         <Route path="/novels/become-writer" element={<ProtectedRoute><BecomeWriter /></ProtectedRoute>} />
