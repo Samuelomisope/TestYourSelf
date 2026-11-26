@@ -28,6 +28,7 @@ import { tutorState } from "./classroom/tutorState";
 import ErrorNotice from "./classroom/QuotaNotice";
 import { usageLine, usageWarning } from "./classroom/usage";
 import { browserStorage, loadVoicePrefs, saveVoicePrefs } from "./classroom/voicePrefs";
+import Button from "./ui/Button";
 import { DOC_STATUS, MODE_LABEL, currentStep, describeError, readObjectives, readOutline, shouldKeepRequestKey, sleep, isScan, pickDocuments, truncationNote } from "./classroom/classroomUtils";
 
 const card = "rounded-2xl border border-ink/10 bg-bg-elevated p-5 shadow-sm";
@@ -47,7 +48,7 @@ function RenameForm({ initial, onSave, onCancel }) {
       <input id="rename-input" autoFocus value={title} onChange={(e) => setTitle(e.target.value)} maxLength={160} className="mt-3 w-full rounded-xl border border-ink/10 bg-bg px-4 py-3 outline-none focus:border-violet-500" />
       <div className="mt-4 flex justify-end gap-2">
         <button type="button" onClick={onCancel} className={secondary}>Cancel</button>
-        <button disabled={!title.trim()} className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Save</button>
+        <Button type="submit" disabled={!title.trim()}>Save</Button>
       </div>
     </form>
   );
@@ -584,13 +585,13 @@ function ClassroomInner({ sessionId }) {
                 )}
               </div>
               {isClassroom && hasPlan && started && (
-                <div className="mb-3">
-                  <button onClick={() => sendTurn(atLastStep ? "Recap and wrap up the lesson." : "Continue to the next step.", "CONTINUE")} disabled={sending} className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:opacity-50">
+                <div className="mb-3 flex flex-wrap gap-2">
+                  <Button onClick={() => sendTurn(atLastStep ? "Recap and wrap up the lesson." : "Continue to the next step.", "CONTINUE")} disabled={sending}>
                     {atLastStep ? "Recap and finish" : "Continue to next step"}
-                  </button>
-                  <button type="button" onClick={() => setCheckStep(current)} disabled={sending || checkStep === current} className="ml-2 rounded-xl border border-violet-500/40 px-4 py-2 text-sm font-semibold text-violet-800 transition hover:bg-violet-500/10 disabled:opacity-50 dark:text-violet-200">
+                  </Button>
+                  <Button variant="secondary" onClick={() => setCheckStep(current)} disabled={sending || checkStep === current}>
                     Check my understanding
-                  </button>
+                  </Button>
                 </div>
               )}
               {isClassroom && hasPlan && started && checkStep !== null && checkStep <= current && (
@@ -616,7 +617,7 @@ function ClassroomInner({ sessionId }) {
                     {speechInput.listening ? <Square aria-hidden="true" className="h-4 w-4" /> : <Mic aria-hidden="true" className="h-5 w-5" />}
                   </button>
                 )}
-                <button disabled={sending || !question.trim()} className="rounded-xl bg-violet-600 px-5 font-semibold text-white transition hover:bg-violet-500 disabled:opacity-50">{sending ? "…" : "Send"}</button>
+                <Button type="submit" disabled={sending || !question.trim()}>{sending ? "…" : "Send"}</Button>
               </form>
               {speechInput.listening && <p role="status" className="mt-2 text-xs text-ink/60">Listening{speechInput.interim ? `: ${speechInput.interim}` : "…"}</p>}
               {speechInput.error && <p role="alert" className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">{speechInput.error}</p>}

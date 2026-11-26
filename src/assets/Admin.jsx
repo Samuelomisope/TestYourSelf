@@ -2,7 +2,6 @@ import { useModal } from "../ui/useModal.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth } from "./firebase";
 import { useAuth } from "./useAuth";
 
 const ADMIN_EMAILS = ["omisope34@gmail.com"];

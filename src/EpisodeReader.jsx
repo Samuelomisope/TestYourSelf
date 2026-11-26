@@ -29,7 +29,7 @@ useEffect(() => {
       const novel = await apiGet(`/novels/${ep.novel.id}`);
       if (cancelled) return;
       setSiblingEpisodes(novel.episodes || []);
-    } catch (err) {
+    } catch {
       if (!cancelled) setError(true);
     } finally {
       if (!cancelled) setLoading(false);

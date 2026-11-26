@@ -135,7 +135,7 @@ const loadNovel = useCallback(async () => {
     const n = await apiGet(`/novels/${requestedId}`);
     if (idRef.current !== requestedId) return; // stale — a newer id is now active
     setNovel(n);
-  } catch (err) {
+  } catch {
     if (idRef.current !== requestedId) return;
     setError(true);
   }
@@ -147,7 +147,7 @@ const loadReviews = useCallback(async () => {
     const r = await apiGet(`/novels/${requestedId}/reviews`);
     if (idRef.current !== requestedId) return;
     setReviews(r);
-  } catch (err) {
+  } catch {
     if (idRef.current !== requestedId) return;
     setReviews([]);
   }
@@ -175,7 +175,7 @@ const myReview = user ? reviews.find(r => r.user?.id === user.id) : null;
             <FontAwesomeIcon icon={faChevronDown} className="rotate-90" />
           </Link>
           <h1 className="text-lg font-black tracking-tight">
-            TEST<span className="text-violet-400">YOURSELF</span>
+            UNI<span className="text-violet-400">LIB</span>
           </h1>
         </div>
       </header>

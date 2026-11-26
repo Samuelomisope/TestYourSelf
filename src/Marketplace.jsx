@@ -7,6 +7,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { API } from "./config";
 import Navbar from "./Navbar";
+import Button from "./ui/Button";
 
 async function apiFetch(path, options = {}) {
   const token = getAccessToken();
@@ -117,9 +118,9 @@ function Marketplace() {
             <button onClick={() => navigate("/marketplace/my-listings")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-ink/10 text-sm text-ink/50 hover:border-violet-500/30 hover:text-violet-400 transition">
               <FontAwesomeIcon icon={faList} /> My Listings
             </button>
-            <button onClick={() => navigate("/marketplace/create")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-500 hover:bg-violet-400 text-white text-sm transition">
+            <Button size="sm" className="rounded-full" onClick={() => navigate("/marketplace/create")}>
               <FontAwesomeIcon icon={faPlus} /> Sell
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -135,7 +136,7 @@ function Marketplace() {
             <FontAwesomeIcon icon={faFilter} />
             {activeFilterCount > 0 && <span>{activeFilterCount}</span>}
           </button>
-          <button type="submit" className="px-4 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm transition">Search</button>
+          <Button type="submit">Search</Button>
         </form>
 
         {/* Filters Panel */}
@@ -168,7 +169,7 @@ function Marketplace() {
               <button onClick={clearFilters} className="text-xs text-ink/30 hover:text-pink-400 flex items-center gap-1 transition">
                 <FontAwesomeIcon icon={faTimes} /> Clear filters
               </button>
-              <button onClick={applyFilters} className="px-4 py-1.5 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-xs transition">Apply</button>
+              <Button size="sm" className="rounded-full" onClick={applyFilters}>Apply</Button>
             </div>
           </div>
         )}
@@ -190,7 +191,7 @@ function Marketplace() {
             <p className="text-4xl mb-3 text-ink/10"><FontAwesomeIcon icon={faBoxOpen} /></p>
             <p className="text-ink/40 font-medium">No listings found</p>
             <p className="text-ink/20 text-sm mt-1">Be the first to sell something!</p>
-            <button onClick={() => navigate("/marketplace/create")} className="mt-4 px-5 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm transition">Create Listing</button>
+            <Button className="mt-4 rounded-full" onClick={() => navigate("/marketplace/create")}>Create Listing</Button>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

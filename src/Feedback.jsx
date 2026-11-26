@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import Button from "./ui/Button.jsx";
 import { getAccessToken } from "./token";
 import { API } from "./config";
 
@@ -56,7 +57,7 @@ function Feedback() {
   return (
     <main className="min-h-screen bg-bg text-ink px-4 py-10 sm:py-16">
       <div className="mx-auto w-full max-w-2xl">
-        <Link to="/home" className="inline-flex items-center gap-2 text-sm text-ink/50 hover:text-violet-400 transition">
+        <Link to="/home" className="inline-flex min-h-11 items-center gap-2 text-sm text-ink/70 hover:text-violet-400 transition">
           <span aria-hidden="true">←</span> Back to UniLib
         </Link>
 
@@ -67,12 +68,8 @@ function Feedback() {
               <h1 className="mt-4 text-2xl font-bold">Thanks for your feedback!</h1>
               <p className="mt-2 text-sm text-ink/50">Your response has been recorded.</p>
               <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-                <button onClick={resetForm} className="rounded-full border border-ink/10 px-5 py-3 text-sm font-medium text-ink/70 hover:bg-white/5 transition">
-                  Send more feedback
-                </button>
-                <Link to="/home" className="rounded-full bg-violet-500 px-5 py-3 text-center text-sm font-semibold text-white hover:bg-violet-400 transition">
-                  Back to UniLib
-                </Link>
+                <Button variant="secondary" onClick={resetForm}>Send more feedback</Button>
+                <Button to="/home">Back to UniLib</Button>
               </div>
             </div>
           ) : (
@@ -85,7 +82,7 @@ function Feedback() {
 
               <form onSubmit={handleSubmit} className="space-y-7">
                 <fieldset>
-                  <legend className="mb-2 text-sm font-medium text-ink/70">How would you rate your experience?</legend>
+                  <legend className="mb-2 text-sm font-medium text-ink/80">How would you rate your experience?</legend>
                   <div className="flex gap-2" role="group" aria-label="Experience rating">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
@@ -94,7 +91,7 @@ function Feedback() {
                         onClick={() => setRating(star)}
                         aria-label={`${star} ${star === 1 ? "star" : "stars"}`}
                         aria-pressed={rating === star}
-                        className={`text-3xl transition ${star <= rating ? "text-yellow-400" : "text-ink/20 hover:text-yellow-300"}`}
+                        className={`inline-flex min-h-11 min-w-11 items-center justify-center text-3xl transition ${star <= rating ? "text-yellow-400" : "text-ink/20 hover:text-yellow-300"}`}
                       >
                         ★
                       </button>
@@ -103,7 +100,7 @@ function Feedback() {
                 </fieldset>
 
                 <fieldset>
-                  <legend className="mb-2 text-sm font-medium text-ink/70">Category</legend>
+                  <legend className="mb-2 text-sm font-medium text-ink/80">Category</legend>
                   <div className="flex flex-wrap gap-2">
                     {CATEGORIES.map((item) => (
                       <button
@@ -111,7 +108,7 @@ function Feedback() {
                         type="button"
                         onClick={() => setCategory(item)}
                         aria-pressed={category === item}
-                        className={`rounded-full border px-4 py-2 text-sm font-medium transition ${category === item ? "border-violet-500 bg-violet-500/15 text-violet-300" : "border-ink/10 text-ink/50 hover:border-violet-500/40"}`}
+                        className={`inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-medium transition ${category === item ? "border-violet-500 bg-violet-500/15 text-violet-300" : "border-ink/10 text-ink/50 hover:border-violet-500/40"}`}
                       >
                         {item}
                       </button>
@@ -120,7 +117,7 @@ function Feedback() {
                 </fieldset>
 
                 <div>
-                  <label htmlFor="feedback-message" className="mb-2 block text-sm font-medium text-ink/70">Message</label>
+                  <label htmlFor="feedback-message" className="mb-2 block text-sm font-medium text-ink/80">Message</label>
                   <textarea
                     id="feedback-message"
                     value={message}
@@ -136,13 +133,7 @@ function Feedback() {
 
                 {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
 
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full rounded-full bg-violet-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {submitting ? "Submitting..." : "Submit feedback"}
-                </button>
+                <Button type="submit" block loading={submitting}>{submitting ? "Submitting..." : "Submit feedback"}</Button>
               </form>
             </>
           )}

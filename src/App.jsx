@@ -1,5 +1,6 @@
+import { MARKETPLACE_ENABLED } from "./features.js";
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./Login";
 import Home from "./Home";
 import StudyMaterial from "./StudyMaterial";
@@ -33,6 +34,7 @@ import OnboardingLayer from "./onboarding/OnboardingLayer";
 import PastQuestions from "./PastQuestions";
 import Unsubscribe from "./Unsubscribe";
 import Settings from "./Settings";
+import VisitTracker from "./analytics/VisitTracker.jsx";
 
 // The Classroom pages are large (lesson rendering, voice, tutor) and only some students open them, so they load on demand.
 const Classroom = lazy(() => import("./Classroom"));
@@ -46,6 +48,7 @@ function App() {
   return (
     <BrowserRouter>
       <OnboardingProvider>
+      <VisitTracker />
       <Suspense fallback={pageLoading}>
       <Routes>
         <Route path="/" element={<Login />} />
@@ -56,12 +59,18 @@ function App() {
         <Route path="/classroom/learning" element={<ProtectedRoute><MyLearning /></ProtectedRoute>} />
         <Route path="/classroom/:sessionId" element={<ProtectedRoute><Classroom /></ProtectedRoute>} />
         <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-        <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
-        <Route path="/marketplace/create" element={<ProtectedRoute><CreateListing /></ProtectedRoute>} />
-        <Route path="/marketplace/my-listings" element={<ProtectedRoute><MyListings /></ProtectedRoute>} />
-        <Route path="/marketplace/onboarding" element={<ProtectedRoute><MarketplaceOnboarding /></ProtectedRoute>} />
-        <Route path="/marketplace/seller/:userId" element={<ProtectedRoute><SellerProfile /></ProtectedRoute>} />
-        <Route path="/marketplace/:id" element={<ProtectedRoute><MarketplaceDetail /></ProtectedRoute>} />
+        {MARKETPLACE_ENABLED ? (
+          <>
+            <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+          <Route path="/marketplace/create" element={<ProtectedRoute><CreateListing /></ProtectedRoute>} />
+          <Route path="/marketplace/my-listings" element={<ProtectedRoute><MyListings /></ProtectedRoute>} />
+          <Route path="/marketplace/onboarding" element={<ProtectedRoute><MarketplaceOnboarding /></ProtectedRoute>} />
+          <Route path="/marketplace/seller/:userId" element={<ProtectedRoute><SellerProfile /></ProtectedRoute>} />
+          <Route path="/marketplace/:id" element={<ProtectedRoute><MarketplaceDetail /></ProtectedRoute>} />
+          </>
+        ) : (
+          <Route path="/marketplace/*" element={<Navigate to="/home" replace />} />
+        )}
         <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         <Route path="/schools/:universitySlug" element={<ProtectedRoute><UniversityWelcomePage /></ProtectedRoute>} />

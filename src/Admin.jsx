@@ -1,4 +1,6 @@
+import Button from "./ui/Button";
 import { useModal } from "./ui/useModal.js";
+import FeatureUsageTab from "./admin/FeatureUsageTab.jsx";
 import { notify } from "./ui/feedbackContext.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect, useCallback } from 'react';
@@ -70,7 +72,7 @@ function ConfirmModal({ message, onConfirm, onCancel, confirmLabel = "Delete", c
       <div className="bg-bg-elevated border border-ink/10 rounded-2xl p-6 max-w-sm w-full shadow-xl">
         <p className="text-ink/60 text-sm mb-5">{message}</p>
         <div className="flex gap-3">
-          <button onClick={onCancel} className="flex-1 py-2 rounded-xl border border-ink/10 text-sm text-ink/40 hover:border-ink/20 transition">Cancel</button>
+          <Button variant="secondary" className="flex-1" onClick={onCancel}>Cancel</Button>
           <button onClick={onConfirm} className={`flex-1 py-2 rounded-xl text-white text-sm transition ${colorCls[confirmColor] || colorCls.pink}`}>{confirmLabel}</button>
         </div>
       </div>
@@ -202,14 +204,10 @@ function AnnouncementsTab() {
           </div>
         )}
 
-        <button
-          onClick={send}
-          disabled={sending}
-          className="flex items-center gap-2 px-5 py-2.5 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-xl text-sm font-medium transition"
-        >
+        <Button onClick={send} disabled={sending}>
           <FontAwesomeIcon icon={faBullhorn} />
           {sending ? "Sending..." : mode === "all" ? "Send to all users" : "Send to this user"}
-        </button>
+        </Button>
       </div>
 
       {/* History */}
@@ -383,12 +381,9 @@ function NewsTab() {
             <option key={u.id} value={u.id}>{u.name}</option>
           ))}
         </select>
-        <button
-          onClick={openCreate}
-          className="px-4 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium transition whitespace-nowrap"
-        >
+        <Button className="whitespace-nowrap" onClick={openCreate}>
           + New post
-        </button>
+        </Button>
       </div>
 
       {editingId && (
@@ -460,16 +455,12 @@ function NewsTab() {
             </div>
           )}
           <div className="flex gap-3">
-            <button
-              onClick={save}
-              disabled={saving || uploadingImage}
-              className="px-5 py-2.5 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white rounded-xl text-sm font-medium transition"
-            >
+            <Button onClick={save} disabled={saving || uploadingImage}>
               {saving ? "Saving…" : "Save"}
-            </button>
-            <button onClick={closeForm} className="px-5 py-2.5 border border-ink/10 text-ink/40 rounded-xl text-sm hover:border-ink/20 transition">
+            </Button>
+            <Button variant="secondary" onClick={closeForm}>
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -840,7 +831,7 @@ function UniversitiesTab() {
       <div className="flex gap-2 mb-4">
         <input aria-label="University full name *" type="text" placeholder="University full name *" value={newName} onChange={e => setNewName(e.target.value)} className={`flex-1 ${inputCls}`} />
         <input aria-label="Short name" type="text" placeholder="Short name e.g. UNILAG" value={newShort} onChange={e => setNewShort(e.target.value)} className="w-36 bg-black/40 border border-ink/10 rounded-xl px-4 py-2.5 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/40 transition" />
-        <button onClick={addUniversity} disabled={adding} className="bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink px-4 py-2.5 rounded-xl text-sm transition">Add</button>
+        <Button onClick={addUniversity} disabled={adding}>Add</Button>
       </div>
       {loading ? <p className="text-ink/20 text-sm text-center py-10">Loading...</p> : (
         <div className="overflow-x-auto rounded-2xl border border-ink/10">
@@ -1036,11 +1027,7 @@ function NovelsTab() {
 }, []);
 
 useEffect(() => {
-  let cancelled = false;
-  (async () => {
-    await load();
-  })();
-  return () => { cancelled = true; };
+  load();
 }, [load]);
 
 const deleteNovel = async (id) => {
@@ -1318,6 +1305,7 @@ function Admin() {
   const tabs = [
     { id: "overview",       label: "Overview",       icon: <FontAwesomeIcon icon={faChartBar} /> },
     { id: "analytics",      label: "Analytics",      icon: <FontAwesomeIcon icon={faChartLine} /> },
+    { id: "usage",          label: "Feature usage",  icon: <FontAwesomeIcon icon={faChartBar} /> },
     { id: "users",          label: "Users",          icon: <FontAwesomeIcon icon={faUsers} /> },
     { id: "materials",      label: "Materials",      icon: <FontAwesomeIcon icon={faBook} /> },
     { id: "products",       label: "Products",       icon: <FontAwesomeIcon icon={faShoppingBag} /> },
@@ -1343,7 +1331,7 @@ function Admin() {
             <FontAwesomeIcon icon={faChevronLeft} />
           </button>
           <h1 className="text-lg font-black tracking-tight">
-            TEST<span className="text-violet-400">YOURSELF</span>
+            UNI<span className="text-violet-400">LIB</span>
             <span className="ml-2 text-xs font-semibold bg-pink-500/15 text-pink-400 border border-pink-500/20 px-2 py-0.5 rounded-full align-middle">Admin</span>
           </h1>
         </div>
@@ -1414,24 +1402,15 @@ function Admin() {
                 <p className="text-sm font-semibold text-ink/50">Inactive Users</p>
                 <p className="text-xs text-ink/30 mt-1">Send a re-engagement email to users inactive for 7+ days</p>
               </div>
-              <button
-                onClick={async () => {
-                  try {
-                    const res = await apiFetch('/admin/notify-inactive', { method: 'POST' });
-                    notify.success(`Sent emails to ${res.sent} inactive users.`);
-                  } catch {
-                    notify.error("Failed to send emails");
-                  }
-                }}
-                className="shrink-0 px-4 py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium transition"
-              >
+              <Button className="shrink-0" onClick={async () => { try { const res = await apiFetch('/admin/notify-inactive', { method: 'POST' }); notify.success(`Sent emails to ${res.sent} inactive users.`); } catch { notify.error("Failed to send emails"); } }}>
                 Notify Inactive Users
-              </button>
+              </Button>
             </div>
           </div>
         )}
 
         {activeTab === "analytics"      && <AnalyticsTab />}
+        {activeTab === "usage"          && <FeatureUsageTab />}
         {activeTab === "users"          && <UsersTab />}
         {activeTab === "materials"      && <MaterialsTab />}
         {activeTab === "products"       && <ProductsTab />}

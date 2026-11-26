@@ -1,7 +1,7 @@
+import { MARKETPLACE_ENABLED } from "./features.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth } from "./firebase";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch, faBook, faUser, faStore,
@@ -20,13 +20,14 @@ async function searchApi(q, type = "all", page = 1) {
   return res.json();
 }
 
-const TABS = [
+const ALL_TABS = [
   { id: "all", label: "All", icon: faSearch },
   { id: "materials", label: "Materials", icon: faBook },
   { id: "users", label: "Users", icon: faUser },
   { id: "marketplace", label: "Marketplace", icon: faStore },
   { id: "universities", label: "Universities", icon: faUniversity },
 ];
+const TABS = ALL_TABS.filter((t) => MARKETPLACE_ENABLED || t.id !== "marketplace");
 
 function Search() {
   const navigate = useNavigate();
@@ -211,7 +212,7 @@ function Search() {
             )}
 
             {/* Marketplace */}
-            {results.marketplace.length > 0 && (activeTab === "all" || activeTab === "marketplace") && (
+            {MARKETPLACE_ENABLED && results.marketplace.length > 0 && (activeTab === "all" || activeTab === "marketplace") && (
               <div>
                 <p className="text-sm font-semibold text-ink/50 mb-3 flex items-center gap-2"><FontAwesomeIcon icon={faStore} className="text-violet-400" /> Marketplace</p>
                 <div className="grid grid-cols-2 gap-3">

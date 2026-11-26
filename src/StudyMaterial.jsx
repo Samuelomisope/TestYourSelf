@@ -8,7 +8,7 @@ import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faFileLines, faLock, faVideo, faBox, faFile, faNoteSticky, faUser, faGlobe,
-  faHouse, faBook, faRobot, faComments, faStore, faChevronDown, faXmark,
+  faHouse, faBook, faRobot, faComments, faChevronDown, faXmark,
   faCalculator, faUpload, faGrip, faChevronRight, faLayerGroup, faPlus, faChalkboard,
  faBookOpen, faDownload, faCheck, faTrash, faTriangleExclamation, faShareNodes,
 } from '@fortawesome/free-solid-svg-icons';
@@ -24,8 +24,8 @@ import MostOpened from "./library/MostOpened";
 import { snippetLabel } from "./library/libraryLinks.js";
 import { canViewInApp, downloadName } from "./library/pdfPages.js";
 import { listDownloadedMaterials, getOfflineBlobUrl } from "./offlineStorage";
-import { useParams } from "react-router-dom";
 import { trackEvent } from "./api";
+import Button from "./ui/Button";
 
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
@@ -54,10 +54,6 @@ async function apiPost(path, body) {
   return res.json();
 }
 // TODO: fill in your real contact details — shown on empty faculty cards.
-const DEVELOPER_CONTACT = {
-  whatsapp: "https://wa.me/2349056296658",
-};
-
 const LEVEL_ORDER = ["100", "200", "300", "400", "500"];
 const SEMESTER_ORDER = ["first", "second"];
 const SEMESTER_LABELS = { first: "First Semester", second: "Second Semester" };
@@ -112,8 +108,6 @@ const TAB_LINKS = [
 const OfflineContext = createContext({ downloadedIds: new Set() });
 
 const CARD = "bg-bg-elevated shadow-[0_1px_2px_rgba(0,0,0,0.3),0_8px_24px_-12px_rgba(0,0,0,0.5)] rounded-2xl";
-const BADGE_NEUTRAL = "px-2.5 py-1 bg-ink/[0.06] text-ink/50 rounded-full text-xs font-medium";
-const BADGE_ACCENT = "px-2.5 py-1 bg-violet-500/10 text-violet-400 rounded-full text-xs font-medium";
 
 function evaluateMath(expression) {
   const tokens = expression.match(/(?:\d+(?:\.\d+)?|\.\d+|sin|cos|tan|sqrt|log|ln|π|[()+\-*/^])/g);
@@ -235,14 +229,10 @@ function AskAIButton({ fileUrl, fileName, onClose }) {
   return (
     <div className="mb-3">
       {error && <p className="text-pink-400 text-xs mb-1">{error}</p>}
-      <button
-        onClick={handleAskAI}
-        disabled={loading}
-        className="w-full py-2.5 border border-violet-500/30 text-violet-400 rounded-xl text-sm font-medium hover:bg-violet-500/10 disabled:opacity-40 transition flex items-center justify-center gap-2"
-      >
+      <Button variant="secondary" block onClick={handleAskAI} disabled={loading}>
         <FontAwesomeIcon icon={faRobot} />
         {loading ? "Loading PDF…" : "Ask AI about this"}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -464,20 +454,14 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
           </h2>
           <div className="flex items-center gap-2 shrink-0">
             {isOwner && !editMode && (
-              <button
-                onClick={() => setEditMode(true)}
-                className="px-3 py-1.5 text-xs font-medium bg-white/5 border border-ink/10 text-ink/50 hover:text-violet-400 hover:border-violet-500/40 rounded-xl transition"
-              >
+              <Button variant="secondary" size="sm" onClick={() => setEditMode(true)}>
                 Edit
-              </button>
+              </Button>
             )}
             {editMode && (
-              <button
-                onClick={() => { setEditMode(false); setSaveError(""); }}
-                className="px-3 py-1.5 text-xs font-medium bg-white/5 border border-ink/10 text-ink/50 hover:text-ink/80 rounded-xl transition"
-              >
+              <Button variant="secondary" size="sm" onClick={() => { setEditMode(false); setSaveError(""); }}>
                 Cancel
-              </button>
+              </Button>
             )}
             <button aria-label="Close" onClick={onClose} className="text-ink/30 hover:text-ink transition">
               <FontAwesomeIcon icon={faXmark} />
@@ -541,9 +525,9 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
               {!resolvingUrl && resolvedUrl && (
   <div className="flex gap-3 mb-3">
     {canViewInApp(file.fileType)
-      ? <button onClick={() => setShowViewer(true)} className="flex-1 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium text-center transition">Open</button>
-      : <a href={resolvedUrl} target="_blank" rel="noopener noreferrer" className="flex-1 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium text-center transition">Open</a>}
-    <button onClick={saveToDevice} disabled={savingToDevice} className="flex-1 py-2.5 border border-violet-500/30 text-violet-400 rounded-xl text-sm font-medium text-center hover:bg-violet-500/10 transition disabled:opacity-60">{savingToDevice ? "Preparing…" : "Download"}</button>
+      ? <Button className="flex-1" onClick={() => setShowViewer(true)}>Open</Button>
+      : <Button className="flex-1" href={resolvedUrl} target="_blank" rel="noopener noreferrer">Open</Button>}
+    <Button variant="secondary" className="flex-1" onClick={saveToDevice} loading={savingToDevice}>{savingToDevice ? "Preparing…" : "Download"}</Button>
   </div>
 )}
 
@@ -555,15 +539,15 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
 )}
 
 {!resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "pdf" && (
-  <button onClick={() => navigate("/ai", { state: { openTool: "quiz", material: file } })} className="mb-3 w-full min-h-11 rounded-xl border border-violet-500/30 text-sm font-medium text-violet-400 transition hover:bg-violet-500/10">
+  <Button variant="secondary" block className="mb-3" onClick={() => navigate("/ai", { state: { openTool: "quiz", material: file } })}>
     Test me on this
-  </button>
+  </Button>
 )}
 
 {file.isPastQuestion && !resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "pdf" && (
-  <button onClick={() => navigate("/practice", { state: { material: file } })} className="mb-3 w-full min-h-11 rounded-xl bg-violet-500/15 text-sm font-medium text-violet-300 transition hover:bg-violet-500/25">
+  <Button variant="secondary" block className="mb-3" onClick={() => navigate("/practice", { state: { material: file } })}>
     Practise this paper (timed)
-  </button>
+  </Button>
 )}
 
 {!resolvingUrl && resolvedUrl && getMimeFileType(file.fileType) === "pdf" && (
@@ -586,22 +570,16 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
                   </div>
                 </div>
               ) : downloaded ? (
-                <button
-                  onClick={handleRemoveClick}
-                  className="w-full py-2.5 border border-pink-500/30 text-pink-400 rounded-xl text-sm font-medium hover:bg-pink-500/10 transition flex items-center justify-center gap-2"
-                >
+                <Button variant="danger" block onClick={handleRemoveClick}>
                   <FontAwesomeIcon icon={faTrash} className="text-xs" />
                   Remove offline copy
-                </button>
+                </Button>
               ) : (
                 file.signedUrl && (
-                  <button
-                    onClick={handleDownloadClick}
-                    className="w-full py-2.5 border border-sky-500/30 text-sky-400 rounded-xl text-sm font-medium hover:bg-sky-500/10 transition flex items-center justify-center gap-2"
-                  >
+                  <Button variant="secondary" block onClick={handleDownloadClick}>
                     <FontAwesomeIcon icon={faDownload} className="text-xs" />
                     Save for offline
-                  </button>
+                  </Button>
                 )
               )}
             </>
@@ -684,13 +662,9 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
           onChange={(e) => setForm((f) => ({ ...f, courseTitle: e.target.value }))}
           className="w-full bg-black/40 border border-ink/10 rounded-xl px-3 py-2 text-sm text-ink placeholder:text-muted outline-none focus:border-violet-500/60 transition"
         />
-        <button
-          type="button"
-          onClick={createNewCourse}
-          className="w-full py-2 bg-violet-500 hover:bg-violet-400 text-white rounded-xl text-sm font-medium transition"
-        >
+        <Button block onClick={createNewCourse}>
           Create course
-        </button>
+        </Button>
       </div>
     )}
   </div>
@@ -738,13 +712,9 @@ function FileDetailModal({ file, user, onClose, onUpdated, onDownloadChange, ini
                 <span>This is a past question paper</span>
               </label>
 
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="w-full py-3 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-ink rounded-xl text-sm font-medium transition mt-2"
-              >
+              <Button block className="mt-2" onClick={handleSave} loading={saving}>
                 {saving ? "Saving…" : "Save Changes"}
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -1261,7 +1231,6 @@ function StudyMaterial() {
   const [universitiesList, setUniversitiesList] = useState([]);
   const [successMessage, setSuccessMessage] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
-  const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const universitySlugParam = searchParams.get("university");
   const courseIdParam = searchParams.get("courseId");
@@ -1452,11 +1421,6 @@ const grouped = useMemo(() => {
   return g;
 }, [filtered]);
 
-  const pendingReviewCount = useMemo(
-    () => filtered.filter(f => !f.courseRef?.program?.department?.school?.name).length,
-    [filtered]
-  );
-
   const sortedFaculties = Object.keys(grouped).sort();
   const isSearching = debouncedSearch.trim().length > 0;
   const loadPopular = useCallback(() => apiGet("/study-material/popular?limit=8"), []);
@@ -1482,10 +1446,11 @@ const rosterFaculties = useMemo(
 
   // Auto-expand the user's own faculty (matched against the roster) so
   // it's visible without any clicks; falls back to nothing pre-expanded.
+  const userFaculty = user?.faculty;
   const myFacultyIndex = useMemo(() => {
-    if (!user?.faculty) return -1;
-    return rosterFaculties.findIndex(f => f.name.toLowerCase() === String(user.faculty).toLowerCase());
-  }, [rosterFaculties, user?.faculty]);
+    if (!userFaculty) return -1;
+    return rosterFaculties.findIndex(f => f.name.toLowerCase() === String(userFaculty).toLowerCase());
+  }, [rosterFaculties, userFaculty]);
 
   return (
     <OfflineContext.Provider value={{ downloadedIds }}>
@@ -1503,7 +1468,7 @@ const rosterFaculties = useMemo(
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-3">
-              <Link to="/home" className="w-8 h-8 rounded-full flex items-center justify-center text-ink/40 hover:text-violet-400 hover:bg-ink/[0.05] transition">
+              <Link to="/home" aria-label="Back to Home" className="w-8 h-8 rounded-full flex items-center justify-center text-ink/40 hover:text-violet-400 hover:bg-ink/[0.05] transition">
                 <FontAwesomeIcon icon={faChevronDown} className="rotate-90 text-xs" />
               </Link>
               <h1 className="text-lg font-black tracking-tight">
@@ -1524,7 +1489,7 @@ const rosterFaculties = useMemo(
                 title="Show downloaded files only"
               >
                 <FontAwesomeIcon icon={faDownload} className="text-sm" />
-                <span>Offline</span>
+                <span className="hidden sm:inline">Offline</span>
                 {downloadedIds.size > 0 && (
                   <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 bg-emerald-500 text-white text-[10px] font-medium rounded-full flex items-center justify-center">
                     {downloadedIds.size}
@@ -1545,14 +1510,10 @@ const rosterFaculties = useMemo(
               >
                 <FontAwesomeIcon icon={viewMode === "hierarchy" ? faGrip : faLayerGroup} className="text-sm" />
               </button>
-              <button
-                onClick={() => setShowUpload(true)}
-                disabled={!isOnline}
-                className="flex items-center gap-2 bg-violet-500 hover:bg-violet-400 disabled:opacity-30 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-xl text-sm font-medium transition"
-              >
+              <Button size="sm" className="min-w-11" aria-label="Upload material" onClick={() => setShowUpload(true)} disabled={!isOnline}>
                 <FontAwesomeIcon icon={faUpload} className="text-xs" />
-                Upload
-              </button>
+                <span className="hidden sm:inline">Upload</span>
+              </Button>
             </div>
           </div>
 
@@ -1574,7 +1535,7 @@ const rosterFaculties = useMemo(
         </div>
       </header>
 
-      <main className="relative z-10 pt-32 px-6 pb-14 max-w-6xl mx-auto">
+      <main className="relative z-10 pt-36 px-6 pb-14 max-w-6xl mx-auto">
 
         {/* Offline / fallback banner */}
         {(!isOnline || usingOfflineFallback) && (
@@ -1721,12 +1682,9 @@ const rosterFaculties = useMemo(
                     : search ? "Try a different search term" : hasActiveFilters ? "Try clearing a filter above" : "Upload your first file to get started"}
                 </p>
                 {!showDownloadedOnly && isOnline && (
-                  <button
-                    onClick={() => setShowUpload(true)}
-                    className="mt-5 px-6 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm font-medium transition"
-                  >
+                  <Button className="mt-5 rounded-full" onClick={() => setShowUpload(true)}>
                     Upload file
-                  </button>
+                  </Button>
                 )}
               </div>
             )}

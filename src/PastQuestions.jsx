@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useConfirm } from "./ui/feedbackContext.js";
 import { Link, useLocation } from "react-router-dom";
+import Button from "./ui/Button.jsx";
 import Navbar from "./Navbar";
 import { apiGet, apiPost } from "./api";
 import { defaultMinutes, formatClock, gradeLabel, remainingSeconds, scoreExam } from "./library/examLogic.js";
@@ -121,7 +122,7 @@ export default function PastQuestions() {
               <div className="mt-6 rounded-2xl border border-ink/10 p-5 text-sm text-ink/60">
                 <p className="font-medium text-ink">No past question papers yet</p>
                 <p className="mt-1">When uploading a file, tick "This is a past question paper". Papers appear here for everyone at your university who can see them.</p>
-                <Link to="/study-material" className="mt-3 inline-flex min-h-10 items-center rounded-lg bg-violet-500 px-4 font-medium text-white">Go to the library</Link>
+                <Button to="/study-material" className="mt-3">Go to the library</Button>
               </div>
             )}
             <ul className="mt-4 space-y-2">
@@ -139,7 +140,7 @@ export default function PastQuestions() {
 
         {stage === "setup" && paper && (
           <section>
-            <button onClick={() => { setStage("pick"); setError(""); }} className="min-h-10 text-sm text-ink/50 hover:text-ink">← Choose another paper</button>
+            <button onClick={() => { setStage("pick"); setError(""); }} className="min-h-11 text-sm text-ink/70 hover:text-ink">← Choose another paper</button>
             <h1 className="mt-2 text-2xl font-bold">{paper.title}</h1>
             <div className="mt-5 grid gap-4 sm:grid-cols-3">
               <label className="text-sm"><span className="mb-1 block text-ink/50">Questions</span>
@@ -155,7 +156,7 @@ export default function PastQuestions() {
             </div>
             <p className="mt-4 text-xs text-ink/40">The clock starts when the questions appear and the paper is submitted automatically when time runs out.</p>
             {error && <p role="alert" className="mt-3 text-sm text-pink-400">{error}</p>}
-            <button onClick={start} disabled={busy} className="mt-5 min-h-12 w-full rounded-xl bg-violet-500 font-semibold text-white hover:bg-violet-400 disabled:opacity-60">{busy ? "Preparing your questions…" : "Start practice"}</button>
+            <Button size="lg" block className="mt-5" onClick={start} loading={busy}>{busy ? "Preparing your questions…" : "Start practice"}</Button>
           </section>
         )}
 

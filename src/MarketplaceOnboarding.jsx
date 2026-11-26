@@ -1,7 +1,6 @@
 import { getAccessToken } from "./token";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth } from "./firebase";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faStore, faUser, faComment, faPhone, faChevronRight, faCheckCircle

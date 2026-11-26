@@ -1,3 +1,4 @@
+import { MARKETPLACE_ENABLED } from "./features.js";
 import { useEffect, useState, useContext, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
@@ -12,7 +13,7 @@ const FEATURES = [
   { icon: <FontAwesomeIcon icon={faBookOpen} />, label: "Study Material", desc: "Upload and organise your course files" },
   { icon: <FontAwesomeIcon icon={faRobot} />, label: "AI Assistant", desc: "Ask questions, get summaries, generate quizzes" },
   { icon: <FontAwesomeIcon icon={faLayerGroup} />, label: "Flashcards", desc: "Create and review cards to retain more" },
-  { icon: <FontAwesomeIcon icon={faStore} />, label: "Marketplace", desc: "Buy and sell materials with your campus" },
+  ...(MARKETPLACE_ENABLED ? [{ icon: <FontAwesomeIcon icon={faStore} />, label: "Marketplace", desc: "Buy and sell materials with your campus" }] : []),
 ];
 
 function Login() {
@@ -127,9 +128,9 @@ function Login() {
             <div className="w-full border-t border-ink/5 pt-4 text-center">
               <p className="text-xs text-ink/20">
                 By signing in, you agree to our{" "}
-                <a href="/terms" className="text-violet-400 hover:underline">Terms of Service</a>
+                <a href="/terms" className="text-violet-400 underline underline-offset-2">Terms of Service</a>
                 {" "}and{" "}
-                <a href="/privacy" className="text-violet-400 hover:underline">Privacy Policy</a>.
+                <a href="/privacy" className="text-violet-400 underline underline-offset-2">Privacy Policy</a>.
               </p>
             </div>
           </div>

@@ -1,6 +1,5 @@
 import { useModal } from "./ui/useModal.js";
 import { useState, useEffect } from "react";
-import { useAuth } from "./useAuth";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -272,7 +271,7 @@ useEffect(() => {
     try {
       const data = await apiGet("/novels/mine");
       if (!cancelled) setNovels(data);
-    } catch (err) {
+    } catch {
       if (!cancelled) setNovels([]);
     } finally {
       if (!cancelled) setLoading(false);

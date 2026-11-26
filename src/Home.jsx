@@ -1,3 +1,4 @@
+import { MARKETPLACE_ENABLED } from "./features.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect } from "react";
 import { useAuth } from "./useAuth";
@@ -12,14 +13,16 @@ import { signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faRobot, faBookOpen, faCartShopping, faComments, faBookmark,
+  faRobot, faBookOpen, faCartShopping, faComments,
   faCamera, faBagShopping, faMessage, faFile, faBell, faSearch, faBars, faXmark,
-  faLayerGroup, } from '@fortawesome/free-solid-svg-icons';
+  faLayerGroup, faBook, faCalendarCheck, faStopwatch, faWandMagicSparkles, faChalkboard, } from '@fortawesome/free-solid-svg-icons';
 import ThemeToggle from "./components/ThemeToggle";
 import { TAB_LINKS, SIDEBAR_LINKS } from "./onboarding/navLinks";
 import { useOnboarding, useMenuEvent } from "./onboarding/context";
 import { NewBadge, NewDot } from "./onboarding/NewBadge";
 import HelpMenu from "./onboarding/HelpMenu";
+import Button from "./ui/Button";
+import Card from "./ui/Card";
 
 // ─── Shared Nav Links ──────────────────────────────────────────────
 
@@ -56,7 +59,7 @@ const EXPLORE = [
   { title: "Flashcards", hint: "Spaced repetition decks", href: "/flashcards", icon: faLayerGroup },
   { title: "Study Plans", hint: "A day-by-day plan to your exam", href: "/study-plan", icon: faCalendarCheck },
   { title: "Past questions", hint: "Timed exam practice", href: "/practice", icon: faStopwatch },
-  { title: "Marketplace", hint: "Buy and sell on campus", href: "/marketplace", icon: faCartShopping },
+  ...(MARKETPLACE_ENABLED ? [{ title: "Marketplace", hint: "Buy and sell on campus", href: "/marketplace", icon: faCartShopping }] : []),
   { title: "Chat", hint: "Talk to students at your school", href: "/chat", icon: faComments },
   { title: "Novels", hint: "Read and write stories", href: "/novels", icon: faBookOpen },
 ];
@@ -65,18 +68,18 @@ function LoadError({ what, onRetry }) {
   return (
     <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm">
       <span>Couldn't load {what}.</span>
-      <button onClick={onRetry} className="min-h-9 rounded-lg px-3 font-medium text-violet-400 hover:text-violet-300">Try again</button>
+      <Button variant="ghost" size="sm" onClick={onRetry}>Try again</Button>
     </div>
   );
 }
 
 function SkeletonCard() {
   return (
-    <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-5 animate-pulse">
+    <Card className="animate-pulse">
       <div className="h-4 bg-white/10 rounded w-1/3 mb-3" />
       <div className="h-3 bg-white/10 rounded w-2/3 mb-2" />
       <div className="h-3 bg-white/10 rounded w-1/2" />
-    </div>
+    </Card>
   );
 }
 
@@ -93,7 +96,7 @@ function StudyTimer() {
   const s = seconds % 60;
   const progress = Math.min((seconds / 7200) * 100, 100);
   return (
-    <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-4 flex items-center gap-4">
+    <Card padding="sm" className="flex items-center gap-4">
       <div className="relative w-14 h-14">
         <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
           <circle cx="28" cy="28" r="24" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="4" />
@@ -112,13 +115,10 @@ function StudyTimer() {
           {String(h).padStart(2, "0")}:{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}
         </p>
       </div>
-      <button
-        onClick={() => setRunning(r => !r)}
-        className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${running ? "bg-pink-500/20 text-pink-400 hover:bg-pink-500/30" : "bg-violet-500 text-white hover:bg-violet-400"}`}
-      >
+      <Button size="sm" variant={running ? "secondary" : "primary"} onClick={() => setRunning(r => !r)} aria-pressed={running}>
         {running ? "Pause" : "Start"}
-      </button>
-    </div>
+      </Button>
+    </Card>
   );
 }
 
@@ -147,19 +147,19 @@ function TodayStudyCard() {
 
   if (!data || !data.plan) {
     return (
-      <Link to="/ai" className="block bg-white/[0.03] border border-ink/10 rounded-2xl p-5 hover:border-violet-500/30 hover:bg-violet-500/5 transition">
+      <Card as={Link} to="/ai" className="block transition hover:border-violet-500/30 hover:bg-violet-500/5">
         <p className="text-xs font-semibold text-violet-400 tracking-widest uppercase mb-2">Study Plan</p>
         <p className="text-sm text-ink/50">No active study plan yet — create one to get a daily focus here.</p>
-      </Link>
+      </Card>
     );
   }
 
   if (!data.todayEntry) {
     return (
-      <div className="bg-white/[0.03] border border-ink/10 rounded-2xl p-5">
+      <Card>
         <p className="text-xs font-semibold text-violet-400 tracking-widest uppercase mb-2">Study Plan</p>
         <p className="text-sm text-ink/50">Your plan for "{data.plan.subject}" has ended. Time to make a new one.</p>
-      </div>
+      </Card>
     );
   }
 
@@ -211,7 +211,6 @@ function Home() {
   const { unreadCount } = useNotifications();
   const { isNew, unseen } = useOnboarding();
   useMenuEvent(setMenuOpen);
-  const [lastMarketplace, setLastMarketplace] = useState(null);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -308,15 +307,6 @@ useEffect(() => {
   if (type === "chat") return <FontAwesomeIcon icon={faMessage} />;
   return "";
 };
-
-
-  const cards = [
-    { title: "Study Material", icon: <FontAwesomeIcon icon={faBookOpen} className="text-violet-400 text-2xl" />, href: "/study-material", content: lastMaterial ? `Last uploaded: ${lastMaterial.title}` : "No file uploaded yet.\nNo file viewed yet." },
-    { title: "AI Assistant", icon: <FontAwesomeIcon icon={faRobot} className="text-violet-400 text-2xl" />, href: "/ai", content: `${greeting()}, ${user?.displayName?.split(" ")[0] || "there"}! Ready to help you study smarter today.` },
-    { title: "Marketplace", icon: <FontAwesomeIcon icon={faCartShopping} className="text-violet-400 text-2xl" />, href: "/marketplace", content: "Browse and list items for your campus community." },
-    { title: "Chat", icon: <FontAwesomeIcon icon={faComments} className="text-violet-400 text-2xl" />, href: "/chat", content: "Connect and study with students from your university." },
-    { title: "Flashcards", icon: <FontAwesomeIcon icon={faLayerGroup} className="text-violet-400 text-2xl" />, href: "/flashcards", content: "Create and study with flashcards." },
-  ];
 
 
   return (
@@ -442,9 +432,7 @@ useEffect(() => {
 </div>
         </div>
         <div className="shrink-0 border-t border-ink/5 px-6 py-4">
-          <button onClick={handleLogout} className="w-full py-2.5 rounded-2xl bg-white/5 border border-ink/10 text-ink/50 text-sm hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 transition">
-            Logout
-          </button>
+          <Button variant="secondary" block onClick={handleLogout}>Logout</Button>
         </div>
       </aside>
 
@@ -527,7 +515,7 @@ useEffect(() => {
                   ) : (
                     <>
                       <div><dt className="text-xs text-muted">Files uploaded</dt><dd className="text-2xl font-bold">{stats.files}</dd></div>
-                      <div><dt className="text-xs text-muted">Listings</dt><dd className="text-2xl font-bold">{stats.products}</dd></div>
+                      {MARKETPLACE_ENABLED && <div><dt className="text-xs text-muted">Listings</dt><dd className="text-2xl font-bold">{stats.products}</dd></div>}
                       <div><dt className="text-xs text-muted">Messages sent</dt><dd className="text-2xl font-bold">{stats.messages}</dd></div>
                     </>
                   )}
@@ -552,7 +540,7 @@ useEffect(() => {
               <ul className="space-y-2 text-sm text-ink/50">
                 <li><Link to="/study-material" className="hover:text-violet-400 transition">Library</Link></li>
                 <li><Link to="/ai" className="hover:text-violet-400 transition">AI</Link></li>
-                <li><Link to="/marketplace" className="hover:text-violet-400 transition">Marketplace</Link></li>
+                {MARKETPLACE_ENABLED && <li><Link to="/marketplace" className="hover:text-violet-400 transition">Marketplace</Link></li>}
                 <li><Link to="/chat" className="hover:text-violet-400 transition">Chat</Link></li>
               </ul>
             </div>

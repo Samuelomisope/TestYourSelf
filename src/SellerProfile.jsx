@@ -2,7 +2,6 @@ import { getAccessToken } from "./token";
 // ── SellerProfile.jsx ─────────────────────────────────────────────
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { auth } from "./firebase";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChevronLeft, faBoxOpen, faStar, faStore, faCommentDots, faUser, faCircleCheck } from "@fortawesome/free-solid-svg-icons";
 import { API } from "./config";

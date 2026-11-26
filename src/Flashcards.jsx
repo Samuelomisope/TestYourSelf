@@ -1,4 +1,6 @@
 import { useModal } from "./ui/useModal.js";
+import { MARKETPLACE_ENABLED } from "./features.js";
+import Button from "./ui/Button.jsx";
 import { useConfirm } from "./ui/feedbackContext.js";
 import { getAccessToken } from "./token";
 import { useState, useEffect } from "react";
@@ -22,7 +24,7 @@ const TAB_LINKS = [
   { href: "/ai",             label: "AI",     icon: faRobot },
    { href: "/novels",         label: "Novels", icon: faBookOpen },
   { href: "/chat",           label: "Chat",   icon: faComments },
-  { href: "/marketplace",    label: "Market", icon: faStore },
+  ...(MARKETPLACE_ENABLED ? [{ href: "/marketplace",    label: "Market", icon: faStore }] : []),
 ];
 
 const formatDate = (ts) => {
@@ -361,9 +363,7 @@ function ReviewSession({ deckId, onClose }) {
             <p className="text-4xl mb-3 text-emerald-400"><FontAwesomeIcon icon={faCheck} /></p>
             <p className="text-ink font-semibold mb-1">All caught up!</p>
             <p className="text-ink/40 text-sm">No cards are due for review right now.</p>
-            <button onClick={onClose} className="mt-5 px-6 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm transition">
-              Close
-            </button>
+            <Button className="mt-5" onClick={onClose}>Close</Button>
           </div>
         )}
 
@@ -372,9 +372,7 @@ function ReviewSession({ deckId, onClose }) {
             <p className="text-4xl mb-3 text-violet-400"><FontAwesomeIcon icon={faCheck} /></p>
             <p className="text-ink font-semibold mb-1">Session complete</p>
             <p className="text-ink/40 text-sm">You reviewed {reviewedCount} card{reviewedCount === 1 ? "" : "s"}.</p>
-            <button onClick={onClose} className="mt-5 px-6 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm transition">
-              Done
-            </button>
+            <Button className="mt-5" onClick={onClose}>Done</Button>
           </div>
         )}
 
@@ -511,7 +509,7 @@ useEffect(() => {
     try {
       const data = await authedFetch(path);
       if (!cancelled) setDecks(data);
-    } catch (err) {
+    } catch {
       if (!cancelled) setDecks([]);
     } finally {
       if (!cancelled) setLoading(false);
@@ -533,7 +531,7 @@ useEffect(() => {
                 <FontAwesomeIcon icon={faChevronDown} className="rotate-90" />
               </Link>
               <h1 className="text-lg font-black tracking-tight">
-                TEST<span className="text-violet-400">YOURSELF</span>
+                UNI<span className="text-violet-400">LIB</span>
                 <span className="ml-2 text-xs font-semibold bg-violet-500/20 text-violet-400 border border-violet-500/30 px-2 py-0.5 rounded-full align-middle">Flashcards</span>
               </h1>
             </div>

@@ -20,11 +20,11 @@ async function apiFetch(path, options = {}) {
 }
 
 function MyListings() {
-  const modalRef = useModal(() => setConfirm(null), !!confirm);
   const navigate = useNavigate();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [confirm, setConfirm] = useState(null);
+  const modalRef = useModal(() => setConfirm(null), !!confirm);
 
   useEffect(() => {
     apiFetch("/marketplace/my").then(setListings).catch(console.error).finally(() => setLoading(false));
