@@ -12,9 +12,9 @@ import { signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faRobot, faBookOpen, faCartShopping, faComments,
+  faRobot, faBookOpen, faCartShopping, faComments, faBookmark,
   faCamera, faBagShopping, faMessage, faFile, faBell, faSearch, faBars, faXmark,
-  faLayerGroup, faChalkboard, faBook, faCalendarCheck, faStopwatch, faWandMagicSparkles, } from '@fortawesome/free-solid-svg-icons';
+  faLayerGroup, } from '@fortawesome/free-solid-svg-icons';
 import ThemeToggle from "./components/ThemeToggle";
 import { TAB_LINKS, SIDEBAR_LINKS } from "./onboarding/navLinks";
 import { useOnboarding, useMenuEvent } from "./onboarding/context";
@@ -211,6 +211,7 @@ function Home() {
   const { unreadCount } = useNotifications();
   const { isNew, unseen } = useOnboarding();
   useMenuEvent(setMenuOpen);
+  const [lastMarketplace, setLastMarketplace] = useState(null);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -309,6 +310,13 @@ useEffect(() => {
 };
 
 
+  const cards = [
+    { title: "Study Material", icon: <FontAwesomeIcon icon={faBookOpen} className="text-violet-400 text-2xl" />, href: "/study-material", content: lastMaterial ? `Last uploaded: ${lastMaterial.title}` : "No file uploaded yet.\nNo file viewed yet." },
+    { title: "AI Assistant", icon: <FontAwesomeIcon icon={faRobot} className="text-violet-400 text-2xl" />, href: "/ai", content: `${greeting()}, ${user?.displayName?.split(" ")[0] || "there"}! Ready to help you study smarter today.` },
+    { title: "Marketplace", icon: <FontAwesomeIcon icon={faCartShopping} className="text-violet-400 text-2xl" />, href: "/marketplace", content: "Browse and list items for your campus community." },
+    { title: "Chat", icon: <FontAwesomeIcon icon={faComments} className="text-violet-400 text-2xl" />, href: "/chat", content: "Connect and study with students from your university." },
+    { title: "Flashcards", icon: <FontAwesomeIcon icon={faLayerGroup} className="text-violet-400 text-2xl" />, href: "/flashcards", content: "Create and study with flashcards." },
+  ];
 
 
   return (
@@ -321,7 +329,7 @@ useEffect(() => {
 
             {/* Logo + menu — tour target: sidebar */}
             <div data-tour="sidebar" className="flex items-center gap-3">
-              <button onClick={() => setMenuOpen(true)} aria-label="Open menu" className="relative grid h-10 w-10 place-items-center text-muted hover:text-violet-400 transition">
+              <button onClick={() => setMenuOpen(true)} aria-label="Open menu" className="relative text-ink/40 hover:text-violet-400 transition">
                 <FontAwesomeIcon icon={faBars} className="w-5 h-5" />
                 {unseen.length > 0 && <NewDot className="absolute -right-1 -top-1" />}
               </button>
@@ -370,7 +378,7 @@ useEffect(() => {
                   key={tab.href}
                   to={tab.href}
                   data-tour={`tab-${tab.id}`}
-                  className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 border-b-2 px-1 py-2 text-xs transition ${isActive ? "border-violet-500 text-violet-400" : "border-transparent text-muted hover:text-ink"}`}
+                  className={`flex flex-col items-center py-2 px-4 border-b-2 transition text-xs gap-0.5 ${isActive ? "border-violet-500 text-violet-400" : "border-transparent text-ink/30 hover:text-ink/60"}`}
                 >
                   <FontAwesomeIcon icon={tab.icon} className="w-4 h-4" />
                   <span className="relative">{tab.label}{isNew(tab.feature) && <NewDot className="absolute -right-1.5 -top-2" />}</span>
