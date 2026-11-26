@@ -17,6 +17,7 @@ import Search from "./Search";
 import Admin from "./Admin";
 import Profile from "./Profile";
 import Feedback from "./Feedback";
+import About from "./About";
 import Privacy from "./Privacy";
 import Terms from "./Terms";
 import Flashcards from "./Flashcards";
@@ -76,10 +77,9 @@ function App() {
         <Route path="/schools/:universitySlug" element={<ProtectedRoute><UniversityWelcomePage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/feedback" element={<ProtectedRoute><Feedback /></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-        <Route path="/unsubscribe" element={<Unsubscribe />} />
-        <Route path="/privacy" element={<ProtectedRoute><Privacy /></ProtectedRoute>} />
-        <Route path="/terms" element={<ProtectedRoute><Terms /></ProtectedRoute>} />
+        <Route path="/about" element={<About />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
         <Route path="/flashcards" element={<ProtectedRoute><Flashcards /></ProtectedRoute>} />
         <Route path="/novels" element={<ProtectedRoute><Novels /></ProtectedRoute>} />
         <Route path="/novels/become-writer" element={<ProtectedRoute><BecomeWriter /></ProtectedRoute>} />
