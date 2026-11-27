@@ -35,6 +35,7 @@ import OnboardingLayer from "./onboarding/OnboardingLayer";
 import PastQuestions from "./PastQuestions";
 import Unsubscribe from "./Unsubscribe";
 import Settings from "./Settings";
+import FeedbackProvider from "./ui/Feedback.jsx";
 import VisitTracker from "./analytics/VisitTracker.jsx";
 
 // The Classroom pages are large (lesson rendering, voice, tutor) and only some students open them, so they load on demand.
@@ -48,6 +49,7 @@ const pageLoading = (
 function App() {
   return (
     <BrowserRouter>
+      <FeedbackProvider>
       <OnboardingProvider>
       <VisitTracker />
       <Suspense fallback={pageLoading}>
@@ -77,6 +79,8 @@ function App() {
         <Route path="/schools/:universitySlug" element={<ProtectedRoute><UniversityWelcomePage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/feedback" element={<ProtectedRoute><Feedback /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/unsubscribe" element={<Unsubscribe />} />
         <Route path="/about" element={<About />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
@@ -99,6 +103,7 @@ function App() {
         <OnboardingLayer />
       </Suspense>
       </OnboardingProvider>
+      </FeedbackProvider>
     </BrowserRouter>
   );
 }
