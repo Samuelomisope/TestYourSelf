@@ -24,7 +24,6 @@ export function readV21Switch(search, storage) {
 
 export function isClassroomV21() {
   if (typeof window === "undefined") return CLASSROOM_V2_1_ENABLED;
-  let storage = null;
-  try { storage = window.localStorage; } catch { storage = null; }
+  const storage = (() => { try { return window.localStorage; } catch { return null; } })();
   return resolveV21({ buildFlag: CLASSROOM_V2_1_ENABLED, stored: readV21Switch(window.location.search, storage) });
 }
