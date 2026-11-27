@@ -6,6 +6,8 @@ import { apiDelete, apiGet, apiPatch, apiPost, apiPostForm, apiPut } from "./api
 import Dialog from "./classroom/Dialog";
 import LessonView from "./classroom/LessonView";
 import StepVideos from "./classroom/StepVideos";
+import ClassroomLayout from "./classroom/ClassroomLayout";
+import { isClassroomV21 } from "./classroomV21";
 import Md from "./classroom/Markdown";
 import OutlinePanel from "./classroom/OutlinePanel";
 import BoardPanel from "./classroom/BoardPanel";
@@ -477,7 +479,214 @@ function ClassroomInner({ sessionId }) {
     return hasPlan && Number.isInteger(index) && outline[index] ? `Step ${index + 1} of ${outline.length} · ${outline[index].title}` : "";
   };
 
+  const tutorEl = <>
+          {isClassroom && (
+            <TutorStage
+              state={tutorState({ sending, listening: speechInput.listening, celebrating, playerStatus: voice.player.status, speaking: voice.speaking })}
+              variant={session?.tutorVoice} visible={voicePrefs.showTutor} onToggle={() => changeVoicePrefs({ showTutor: !voicePrefs.showTutor })}
+              mode={renderer.mode} canChoose={renderer.canChoose} onView={(tutorView) => changeVoicePrefs({ tutorView })} onFail={renderer.fail}
+            />
+          )}
+  </>;
+  const resumeEl = <>
+          {resumeOffer && (
+            <div role="region" aria-label="Continue where you left off" className="flex flex-wrap items-center gap-2 rounded-2xl border border-violet-500/30 bg-violet-500/10 px-4 py-3 text-sm">
+              <p className="min-w-0 flex-1 font-medium text-ink">
+                Continue from step {resumeOffer.stepIndex + 1}{outline[resumeOffer.stepIndex] ? `: ${outline[resumeOffer.stepIndex].title}` : ""}, where you left off on another device?
+              </p>
+              <button type="button" onClick={() => answerResume(true)} className="rounded-lg bg-violet-600 px-3 py-1.5 font-semibold text-white focus-visible:outline-2 focus-visible:outline-violet-500">Continue</button>
+              <button type="button" onClick={() => answerResume(false)} className="rounded-lg px-3 py-1.5 font-semibold text-ink/70 focus-visible:outline-2 focus-visible:outline-violet-500">Not now</button>
+            </div>
+          )}
+  </>;
+  const voiceBarEl = <>
+              {voice.supported && isClassroom && started && replyEvents.length > 0 && (
+                <VoiceBar
+                  state={tutorState({ sending, listening: speechInput.listening, celebrating, playerStatus: voice.player.status, speaking: voice.speaking })}
+                  status={voice.player.status} caption={caption} error={voice.error || voice.voiceNote} canListen={!sending}
+                  rate={voicePrefs.rate} onRate={(rate) => changeVoicePrefs({ rate })}
+                  voices={voice.voices} voice={voice.voice} voiceName={voicePrefs.voiceName} onVoice={(voiceName) => changeVoicePrefs({ voiceName })}
+                  autoSpeak={voicePrefs.autoSpeak} onAutoSpeak={(autoSpeak) => changeVoicePrefs({ autoSpeak })}
+                  controls={voice.controls} onListen={listen}
+                />
+              )}
+  </>;
+  const listEl = <>
+              <div ref={listRef} className="mb-4 max-h-[60vh] min-h-[30vh] flex-1 space-y-5 overflow-y-auto pr-1">
+                {loading ? <p className="text-sm text-ink/50">Loading lesson…</p> : turns.length ? turns.map((turn) => (
+                  <article key={turn.id} id={`turn-${turn.id}`} className={`scroll-mt-2 rounded-2xl p-4 ${turn.role === "STUDENT" ? "ml-8 bg-violet-500/10" : "mr-4 bg-ink/[0.035]"}`}>
+                    <p className="text-xs font-bold uppercase tracking-wider text-ink/50">{turn.role === "STUDENT" ? "You" : "UniLib Tutor"}</p>
+                    {turn.role === "TUTOR"
+                      ? (turn.structuredLesson
+                        ? <LessonView lesson={turn.structuredLesson} label={labelFor(turn.structuredLesson)} showOrigins={turn.structuredLesson.schemaVersion === 2 && session?.sourceMode !== "GENERAL"} />
+                        : <Md className="mt-2">{turn.content}</Md>)
+                      : <p className="mt-2 whitespace-pre-wrap text-sm leading-6">{turn.content}</p>}
+                  </article>
+                )) : (
+                  <div className="py-12 text-center">
+                    <p className="text-lg font-semibold">{hasPlan ? "Your lesson is ready" : "Your lesson starts here"}</p>
+                    <p className="mt-2 text-sm text-ink/55">{hasPlan ? `It starts with “${outline[current].title}”.` : "Ask for a step-by-step explanation or attach lecture notes."}</p>
+                    {hasPlan && <button onClick={() => sendTurn("Start the lesson.")} disabled={sending} className={`${primary} mt-5`}>Start lesson</button>}
+                  </div>
+                )}
+                {sending && (
+                  <div role="status" className="mr-4 rounded-2xl bg-ink/[0.035] p-4">
+                    <p className="text-xs font-bold uppercase tracking-wider text-ink/50">UniLib Tutor</p>
+                    <p className="mt-2 text-sm text-ink/60 motion-safe:animate-pulse">Preparing a reply…</p>
+                  </div>
+                )}
+              </div>
+  </>;
+  const actionsEl = <>
+              {isClassroom && hasPlan && started && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  <Button onClick={() => sendTurn(atLastStep ? "Recap and wrap up the lesson." : "Continue to the next step.", "CONTINUE")} disabled={sending}>
+                    {atLastStep ? "Recap and finish" : "Continue to next step"}
+                  </Button>
+                  <Button variant="secondary" onClick={() => setCheckStep(current)} disabled={sending || checkStep === current}>
+                    Check my understanding
+                  </Button>
+                </div>
+              )}
+  </>;
+  const videosEl = <>
+              {isClassroom && hasPlan && started && (
+                <StepVideos key={current} sessionId={sessionId} stepIndex={current} stepTitle={outline[current]?.title} />
+              )}
+  </>;
+  const checkInEl = <>
+              {isClassroom && hasPlan && started && checkStep !== null && checkStep <= current && (
+                <CheckIn key={checkStep} sessionId={sessionId} stepIndex={checkStep} stepTitle={outline[checkStep]?.title} onScore={(celebrate) => { setCelebrating(celebrate); loadChecks(); }} onClose={() => setCheckStep(null)} />
+              )}
+  </>;
+  const processingEl = <>
+              {processingDocs > 0 && (
+                <p role="status" className="mb-2 text-xs text-amber-800 dark:text-amber-300">
+                  {plural(processingDocs, "document")} still processing. The tutor won’t use {processingDocs === 1 ? "it" : "them"} until {processingDocs === 1 ? "it’s" : "they’re"} ready.
+                </p>
+              )}
+  </>;
+  const askAboutEl = <>
+              {askAbout && (
+                <p className="mb-2 flex items-center gap-2 rounded-xl bg-violet-500/10 px-3 py-1.5 text-xs text-violet-900 dark:text-violet-100">
+                  <span className="min-w-0 flex-1 truncate">Asking about: {askAbout.label}</span>
+                  <button type="button" onClick={() => setAskAbout(null)} aria-label="Stop asking about this whiteboard item" className="rounded p-0.5 hover:bg-violet-500/20 focus-visible:outline-2 focus-visible:outline-violet-500"><X aria-hidden="true" className="h-3.5 w-3.5" /></button>
+                </p>
+              )}
+  </>;
+  const formEl = <>
+              <form onSubmit={submitQuestion} className="flex gap-2 border-t border-ink/10 pt-4">
+                <input ref={questionInput} aria-label="Ask your tutor a question" value={question} onChange={(e) => setQuestion(e.target.value)} maxLength={4000} placeholder="Ask your tutor a question…" className="min-w-0 flex-1 rounded-xl border border-ink/10 bg-bg px-4 py-3 outline-none focus:border-violet-500" />
+                {speechInput.supported && (
+                  <button type="button" onClick={speechInput.listening ? speechInput.stop : speechInput.start} disabled={sending} aria-pressed={speechInput.listening}
+                    aria-label={speechInput.listening ? "Stop voice input" : "Ask with your voice"} title={speechInput.listening ? "Stop voice input" : "Ask with your voice"}
+                    className={`inline-flex w-12 items-center justify-center rounded-xl border transition focus-visible:outline-2 focus-visible:outline-violet-500 disabled:opacity-50 ${speechInput.listening ? "border-violet-500 bg-violet-500/15 text-violet-700 dark:text-violet-200 motion-safe:animate-pulse" : "border-ink/10 hover:bg-ink/5"}`}>
+                    {speechInput.listening ? <Square aria-hidden="true" className="h-4 w-4" /> : <Mic aria-hidden="true" className="h-5 w-5" />}
+                  </button>
+                )}
+                <Button type="submit" disabled={sending || !question.trim()}>{sending ? "…" : "Send"}</Button>
+              </form>
+              {speechInput.listening && <p role="status" className="mt-2 text-xs text-ink/60">Listening{speechInput.interim ? `: ${speechInput.interim}` : "…"}</p>}
+              {speechInput.error && <p role="alert" className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">{speechInput.error}</p>}
+              {speechInput.supported && !speechInput.listening && !speechInput.error && <p className="mt-2 text-xs text-ink/45">Voice input uses your browser’s speech service, which may send your audio to the browser’s provider.</p>}
+  </>;
+  const outlineEl = <>
+            {hasPlan && <OutlinePanel objectives={objectives} outline={outline} current={current} started={started} checks={checks} onCheck={started ? setCheckStep : undefined} />}
+  </>;
+  const materialsEl = <>
+            <section className={card}>
+              <h2 className="font-bold">Class materials</h2>
+              <label className="mt-3 block cursor-pointer rounded-xl border border-dashed border-violet-500/30 p-4 text-center text-sm text-violet-700 transition hover:bg-violet-500/5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-violet-500 dark:text-violet-300">
+                Upload PDF, DOCX, TXT, or image
+                <input type="file" accept="application/pdf,.pdf,.docx,.txt,image/jpeg,image/png,image/webp" className="sr-only" disabled={busy} onChange={uploadDocument} />
+              </label>
+              <div className="mt-3 space-y-2">
+                {documents.map((doc) => (
+                  <div key={doc.id} className="flex items-start justify-between gap-2 rounded-xl bg-ink/[0.035] p-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{doc.originalName}</p>
+                      <p className="text-xs text-ink/55">
+                        {DOC_STATUS[doc.status] ?? doc.status}
+                        {doc.extractedChars && !(doc.truncated && doc.totalChars) ? ` · ${doc.extractedChars.toLocaleString()} chars` : ""}
+                        {doc.truncated ? ` · ${truncationNote(doc)}` : ""}
+                      </p>
+                      {doc.status === "READY" && isScan(doc) && (
+                        <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-300">Read from a scan. Equations and handwriting may be misread.</p>
+                      )}
+                      {choosingDocs && doc.status === "READY" && (
+                        <label className="mt-1.5 flex cursor-pointer items-center gap-2 text-xs text-ink/65 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-violet-500">
+                          <input
+                            type="checkbox" className="h-4 w-4 accent-violet-600"
+                            checked={selection.ids.includes(doc.id)}
+                            disabled={selection.ids.length === 1 && selection.ids.includes(doc.id)}
+                            onChange={() => toggleDocument(doc.id)}
+                          />
+                          Use in lesson
+                        </label>
+                      )}
+                      {["FAILED", "DELETE_FAILED", "DELETE_PENDING"].includes(doc.status) && (
+                        <button disabled={busy} onClick={() => retryDocument(doc.id)} className="mt-1 text-xs font-semibold text-amber-800 dark:text-amber-300">{doc.status === "FAILED" ? "Retry processing" : "Retry deletion"}</button>
+                      )}
+                    </div>
+                    <button disabled={busy} onClick={() => removeDocument(doc.id)} className="text-xs text-red-600 dark:text-red-400">Remove</button>
+                  </div>
+                ))}
+              </div>
+              {choosingDocs && <p className="mt-2 text-xs text-ink/50">The tutor answers from the ticked documents. The lesson plan is built from all of them.</p>}
+            </section>
+  </>;
+  const linkEl = <>
+            <section className={card}>
+              <h2 className="font-bold">Link UniLib material</h2>
+              <p className="mt-1 text-xs text-ink/55">Only materials you can access are accepted.</p>
+              <form onSubmit={searchMaterials} className="mt-3 flex gap-2">
+                <input aria-label="Search UniLib materials" value={materialSearch} onChange={(e) => setMaterialSearch(e.target.value)} maxLength={100} placeholder="Search materials" className="min-w-0 flex-1 rounded-lg border border-ink/10 bg-bg px-3 py-2 text-sm" />
+                <button disabled={busy} className="rounded-lg bg-violet-600 px-3 text-sm text-white disabled:opacity-50">Find</button>
+              </form>
+              <div className="mt-3 max-h-64 space-y-2 overflow-y-auto">
+                {materials.slice(0, 30).map((material) => {
+                  const linked = documents.some((doc) => doc.sourceMaterialId === material.id);
+                  return (
+                    <div key={material.id} className="rounded-xl border border-ink/5 p-3">
+                      <p className="line-clamp-2 text-sm font-medium">{material.title}</p>
+                      <button disabled={busy || linked} onClick={() => linkMaterial(material.id)} className="mt-2 text-xs font-semibold text-violet-700 dark:text-violet-300">{linked ? "Linked" : "Add to lesson"}</button>
+                    </div>
+                  );
+                })}
+                {!materials.length && <p className="text-xs text-ink/55">Search by a course, title, or topic.</p>}
+              </div>
+            </section>
+  </>;
+  const boardEl = hasBoard ? <BoardPanel page={boardPages[pageIndex]} onAsk={askAboutBlock} onDownload={downloadBoard} onPrint={() => setPrinting(true)} /> : null;
+  const v21 = isClassroomV21() && isClassroom && hasPlan && !showPlanCard && !loading && Boolean(session);
+  const QUICK_ASKS = [
+    ["Explain simpler", "Explain this step more simply, in plain everyday language."],
+    ["Another example", "Give me another example for this step."],
+    ["Recap", "Recap what we have covered so far."],
+    ["Slow down", "Please slow down and go through this step in smaller pieces."],
+    ["Repeat", "Repeat your last explanation."],
+  ];
+  const chipsEl = (
+    <div className="cr21-chips" role="group" aria-label="Quick requests">
+      {QUICK_ASKS.map(([label, text]) => (
+        <button key={label} type="button" disabled={sending || !started} onClick={() => sendTurn(text)} className="min-h-10 rounded-full border border-ink/25 px-3 text-xs font-semibold hover:bg-ink/10 focus-visible:outline-2 focus-visible:outline-violet-400 disabled:opacity-50">{label}</button>
+      ))}
+    </div>
+  );
+  const layoutEl = v21 ? (
+    <ClassroomLayout
+      title={session?.title || session?.topic || "AI Classroom"} subtitle={session?.topic}
+      stepLabel={started ? `Step ${current + 1} of ${outline.length}` : `${outline.length} steps`}
+      percent={Math.round((Math.min(current + (started ? 1 : 0), outline.length) / outline.length) * 100)}
+      statusLabel="Live" onExit={() => navigate("/classroom")} startOnBoard={hasBoard}
+      lecturer={<>{tutorEl}{voiceBarEl}</>} resume={resumeEl} boardNav={<PageNav pages={boardPages} index={pageIndex} onChange={(index) => setPageChoice({ count: boardPages.length, index })} />}
+      board={boardEl} transcript={<>{listEl}{videosEl}{checkInEl}{processingEl}</>}
+      chips={chipsEl} dock={<>{actionsEl}{askAboutEl}{formEl}</>} outline={outlineEl} materials={<>{materialsEl}{linkEl}</>}
+    />
+  ) : null;
   return <>
+    {layoutEl}
+    {!v21 && <>
     <Navbar />
     <main className="mx-auto min-h-screen max-w-6xl px-4 pb-16 pt-36 text-ink sm:px-6">
       {!sessionId ? <>
@@ -529,22 +738,8 @@ function ClassroomInner({ sessionId }) {
         <ErrorNotice error={error} premium={premium} usage={usage} />
         <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className="min-w-0 space-y-4">
-          {isClassroom && (
-            <TutorStage
-              state={tutorState({ sending, listening: speechInput.listening, celebrating, playerStatus: voice.player.status, speaking: voice.speaking })}
-              variant={session?.tutorVoice} visible={voicePrefs.showTutor} onToggle={() => changeVoicePrefs({ showTutor: !voicePrefs.showTutor })}
-              mode={renderer.mode} canChoose={renderer.canChoose} onView={(tutorView) => changeVoicePrefs({ tutorView })} onFail={renderer.fail}
-            />
-          )}
-          {resumeOffer && (
-            <div role="region" aria-label="Continue where you left off" className="flex flex-wrap items-center gap-2 rounded-2xl border border-violet-500/30 bg-violet-500/10 px-4 py-3 text-sm">
-              <p className="min-w-0 flex-1 font-medium text-ink">
-                Continue from step {resumeOffer.stepIndex + 1}{outline[resumeOffer.stepIndex] ? `: ${outline[resumeOffer.stepIndex].title}` : ""}, where you left off on another device?
-              </p>
-              <button type="button" onClick={() => answerResume(true)} className="rounded-lg bg-violet-600 px-3 py-1.5 font-semibold text-white focus-visible:outline-2 focus-visible:outline-violet-500">Continue</button>
-              <button type="button" onClick={() => answerResume(false)} className="rounded-lg px-3 py-1.5 font-semibold text-ink/70 focus-visible:outline-2 focus-visible:outline-violet-500">Not now</button>
-            </div>
-          )}
+          {tutorEl}
+          {resumeEl}
           <PageNav pages={boardPages} index={pageIndex} onChange={(index) => setPageChoice({ count: boardPages.length, index })} />
           {hasBoard && (
             <div role="group" aria-label="Show" className="grid grid-cols-2 gap-1 rounded-xl bg-ink/5 p-1 text-sm font-semibold lg:hidden">
@@ -563,151 +758,27 @@ function ClassroomInner({ sessionId }) {
             {showPlanCard ? (
               <PreparePlan session={session} readyDocs={readyDocs} processingDocs={processingDocs} planning={planning} onPrepare={preparePlan} />
             ) : <>
-              {voice.supported && isClassroom && started && replyEvents.length > 0 && (
-                <VoiceBar
-                  state={tutorState({ sending, listening: speechInput.listening, celebrating, playerStatus: voice.player.status, speaking: voice.speaking })}
-                  status={voice.player.status} caption={caption} error={voice.error || voice.voiceNote} canListen={!sending}
-                  rate={voicePrefs.rate} onRate={(rate) => changeVoicePrefs({ rate })}
-                  voices={voice.voices} voice={voice.voice} voiceName={voicePrefs.voiceName} onVoice={(voiceName) => changeVoicePrefs({ voiceName })}
-                  autoSpeak={voicePrefs.autoSpeak} onAutoSpeak={(autoSpeak) => changeVoicePrefs({ autoSpeak })}
-                  controls={voice.controls} onListen={listen}
-                />
-              )}
-              <div ref={listRef} className="mb-4 max-h-[60vh] min-h-[30vh] flex-1 space-y-5 overflow-y-auto pr-1">
-                {loading ? <p className="text-sm text-ink/50">Loading lesson…</p> : turns.length ? turns.map((turn) => (
-                  <article key={turn.id} id={`turn-${turn.id}`} className={`scroll-mt-2 rounded-2xl p-4 ${turn.role === "STUDENT" ? "ml-8 bg-violet-500/10" : "mr-4 bg-ink/[0.035]"}`}>
-                    <p className="text-xs font-bold uppercase tracking-wider text-ink/50">{turn.role === "STUDENT" ? "You" : "UniLib Tutor"}</p>
-                    {turn.role === "TUTOR"
-                      ? (turn.structuredLesson
-                        ? <LessonView lesson={turn.structuredLesson} label={labelFor(turn.structuredLesson)} showOrigins={turn.structuredLesson.schemaVersion === 2 && session?.sourceMode !== "GENERAL"} />
-                        : <Md className="mt-2">{turn.content}</Md>)
-                      : <p className="mt-2 whitespace-pre-wrap text-sm leading-6">{turn.content}</p>}
-                  </article>
-                )) : (
-                  <div className="py-12 text-center">
-                    <p className="text-lg font-semibold">{hasPlan ? "Your lesson is ready" : "Your lesson starts here"}</p>
-                    <p className="mt-2 text-sm text-ink/55">{hasPlan ? `It starts with “${outline[current].title}”.` : "Ask for a step-by-step explanation or attach lecture notes."}</p>
-                    {hasPlan && <button onClick={() => sendTurn("Start the lesson.")} disabled={sending} className={`${primary} mt-5`}>Start lesson</button>}
-                  </div>
-                )}
-                {sending && (
-                  <div role="status" className="mr-4 rounded-2xl bg-ink/[0.035] p-4">
-                    <p className="text-xs font-bold uppercase tracking-wider text-ink/50">UniLib Tutor</p>
-                    <p className="mt-2 text-sm text-ink/60 motion-safe:animate-pulse">Preparing a reply…</p>
-                  </div>
-                )}
-              </div>
-              {isClassroom && hasPlan && started && (
-                <div className="mb-3 flex flex-wrap gap-2">
-                  <Button onClick={() => sendTurn(atLastStep ? "Recap and wrap up the lesson." : "Continue to the next step.", "CONTINUE")} disabled={sending}>
-                    {atLastStep ? "Recap and finish" : "Continue to next step"}
-                  </Button>
-                  <Button variant="secondary" onClick={() => setCheckStep(current)} disabled={sending || checkStep === current}>
-                    Check my understanding
-                  </Button>
-                </div>
-              )}
-              {isClassroom && hasPlan && started && (
-                <StepVideos key={current} sessionId={sessionId} stepIndex={current} stepTitle={outline[current]?.title} />
-              )}
-              {isClassroom && hasPlan && started && checkStep !== null && checkStep <= current && (
-                <CheckIn key={checkStep} sessionId={sessionId} stepIndex={checkStep} stepTitle={outline[checkStep]?.title} onScore={(celebrate) => { setCelebrating(celebrate); loadChecks(); }} onClose={() => setCheckStep(null)} />
-              )}
-              {processingDocs > 0 && (
-                <p role="status" className="mb-2 text-xs text-amber-800 dark:text-amber-300">
-                  {plural(processingDocs, "document")} still processing. The tutor won’t use {processingDocs === 1 ? "it" : "them"} until {processingDocs === 1 ? "it’s" : "they’re"} ready.
-                </p>
-              )}
-              {askAbout && (
-                <p className="mb-2 flex items-center gap-2 rounded-xl bg-violet-500/10 px-3 py-1.5 text-xs text-violet-900 dark:text-violet-100">
-                  <span className="min-w-0 flex-1 truncate">Asking about: {askAbout.label}</span>
-                  <button type="button" onClick={() => setAskAbout(null)} aria-label="Stop asking about this whiteboard item" className="rounded p-0.5 hover:bg-violet-500/20 focus-visible:outline-2 focus-visible:outline-violet-500"><X aria-hidden="true" className="h-3.5 w-3.5" /></button>
-                </p>
-              )}
-              <form onSubmit={submitQuestion} className="flex gap-2 border-t border-ink/10 pt-4">
-                <input ref={questionInput} aria-label="Ask your tutor a question" value={question} onChange={(e) => setQuestion(e.target.value)} maxLength={4000} placeholder="Ask your tutor a question…" className="min-w-0 flex-1 rounded-xl border border-ink/10 bg-bg px-4 py-3 outline-none focus:border-violet-500" />
-                {speechInput.supported && (
-                  <button type="button" onClick={speechInput.listening ? speechInput.stop : speechInput.start} disabled={sending} aria-pressed={speechInput.listening}
-                    aria-label={speechInput.listening ? "Stop voice input" : "Ask with your voice"} title={speechInput.listening ? "Stop voice input" : "Ask with your voice"}
-                    className={`inline-flex w-12 items-center justify-center rounded-xl border transition focus-visible:outline-2 focus-visible:outline-violet-500 disabled:opacity-50 ${speechInput.listening ? "border-violet-500 bg-violet-500/15 text-violet-700 dark:text-violet-200 motion-safe:animate-pulse" : "border-ink/10 hover:bg-ink/5"}`}>
-                    {speechInput.listening ? <Square aria-hidden="true" className="h-4 w-4" /> : <Mic aria-hidden="true" className="h-5 w-5" />}
-                  </button>
-                )}
-                <Button type="submit" disabled={sending || !question.trim()}>{sending ? "…" : "Send"}</Button>
-              </form>
-              {speechInput.listening && <p role="status" className="mt-2 text-xs text-ink/60">Listening{speechInput.interim ? `: ${speechInput.interim}` : "…"}</p>}
-              {speechInput.error && <p role="alert" className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">{speechInput.error}</p>}
-              {speechInput.supported && !speechInput.listening && !speechInput.error && <p className="mt-2 text-xs text-ink/45">Voice input uses your browser’s speech service, which may send your audio to the browser’s provider.</p>}
+              {voiceBarEl}
+              {listEl}
+              {actionsEl}
+              {videosEl}
+              {checkInEl}
+              {processingEl}
+              {askAboutEl}
+              {formEl}
             </>}
           </section>
           </div>
 
           <aside className="space-y-4">
-            {hasPlan && <OutlinePanel objectives={objectives} outline={outline} current={current} started={started} checks={checks} onCheck={started ? setCheckStep : undefined} />}
-            <section className={card}>
-              <h2 className="font-bold">Class materials</h2>
-              <label className="mt-3 block cursor-pointer rounded-xl border border-dashed border-violet-500/30 p-4 text-center text-sm text-violet-700 transition hover:bg-violet-500/5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-violet-500 dark:text-violet-300">
-                Upload PDF, DOCX, TXT, or image
-                <input type="file" accept="application/pdf,.pdf,.docx,.txt,image/jpeg,image/png,image/webp" className="sr-only" disabled={busy} onChange={uploadDocument} />
-              </label>
-              <div className="mt-3 space-y-2">
-                {documents.map((doc) => (
-                  <div key={doc.id} className="flex items-start justify-between gap-2 rounded-xl bg-ink/[0.035] p-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{doc.originalName}</p>
-                      <p className="text-xs text-ink/55">
-                        {DOC_STATUS[doc.status] ?? doc.status}
-                        {doc.extractedChars && !(doc.truncated && doc.totalChars) ? ` · ${doc.extractedChars.toLocaleString()} chars` : ""}
-                        {doc.truncated ? ` · ${truncationNote(doc)}` : ""}
-                      </p>
-                      {doc.status === "READY" && isScan(doc) && (
-                        <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-300">Read from a scan. Equations and handwriting may be misread.</p>
-                      )}
-                      {choosingDocs && doc.status === "READY" && (
-                        <label className="mt-1.5 flex cursor-pointer items-center gap-2 text-xs text-ink/65 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-violet-500">
-                          <input
-                            type="checkbox" className="h-4 w-4 accent-violet-600"
-                            checked={selection.ids.includes(doc.id)}
-                            disabled={selection.ids.length === 1 && selection.ids.includes(doc.id)}
-                            onChange={() => toggleDocument(doc.id)}
-                          />
-                          Use in lesson
-                        </label>
-                      )}
-                      {["FAILED", "DELETE_FAILED", "DELETE_PENDING"].includes(doc.status) && (
-                        <button disabled={busy} onClick={() => retryDocument(doc.id)} className="mt-1 text-xs font-semibold text-amber-800 dark:text-amber-300">{doc.status === "FAILED" ? "Retry processing" : "Retry deletion"}</button>
-                      )}
-                    </div>
-                    <button disabled={busy} onClick={() => removeDocument(doc.id)} className="text-xs text-red-600 dark:text-red-400">Remove</button>
-                  </div>
-                ))}
-              </div>
-              {choosingDocs && <p className="mt-2 text-xs text-ink/50">The tutor answers from the ticked documents. The lesson plan is built from all of them.</p>}
-            </section>
-            <section className={card}>
-              <h2 className="font-bold">Link UniLib material</h2>
-              <p className="mt-1 text-xs text-ink/55">Only materials you can access are accepted.</p>
-              <form onSubmit={searchMaterials} className="mt-3 flex gap-2">
-                <input aria-label="Search UniLib materials" value={materialSearch} onChange={(e) => setMaterialSearch(e.target.value)} maxLength={100} placeholder="Search materials" className="min-w-0 flex-1 rounded-lg border border-ink/10 bg-bg px-3 py-2 text-sm" />
-                <button disabled={busy} className="rounded-lg bg-violet-600 px-3 text-sm text-white disabled:opacity-50">Find</button>
-              </form>
-              <div className="mt-3 max-h-64 space-y-2 overflow-y-auto">
-                {materials.slice(0, 30).map((material) => {
-                  const linked = documents.some((doc) => doc.sourceMaterialId === material.id);
-                  return (
-                    <div key={material.id} className="rounded-xl border border-ink/5 p-3">
-                      <p className="line-clamp-2 text-sm font-medium">{material.title}</p>
-                      <button disabled={busy || linked} onClick={() => linkMaterial(material.id)} className="mt-2 text-xs font-semibold text-violet-700 dark:text-violet-300">{linked ? "Linked" : "Add to lesson"}</button>
-                    </div>
-                  );
-                })}
-                {!materials.length && <p className="text-xs text-ink/55">Search by a course, title, or topic.</p>}
-              </div>
-            </section>
+            {outlineEl}
+            {materialsEl}
+            {linkEl}
           </aside>
         </div>
       </>}
     </main>
+    </>}
 
     {printing && <BoardPrint pages={boardPages} title={boardTitle} onDone={() => setPrinting(false)} />}
     <Dialog open={dialog === "rename"} onClose={() => setDialog(null)} labelledBy="rename-title">

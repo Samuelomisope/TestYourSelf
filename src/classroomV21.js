@@ -1,4 +1,4 @@
-import { CLASSROOM_V2_1_ENABLED } from "./features";
+import { CLASSROOM_V2_1_ENABLED } from "./features.js";
 
 export const V21_STORAGE_KEY = "unilib.classroom21";
 
