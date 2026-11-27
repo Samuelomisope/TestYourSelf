@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { createMouthCues, driveMouth, frameInterval, shouldDraw, visemeForWord, wordAt } from "./lipSync.js";
+import { createMouthCues, driveMouth, frameInterval, mouthFromLevel, shouldDraw, visemeForWord, wordAt } from "./lipSync.js";
 
 describe("wordAt", () => {
   const text = "Limits approach a value.";
@@ -94,4 +94,30 @@ describe("frame limiting", () => {
     assert.equal(shouldDraw({ onScreen: false }), false);
     assert.equal(shouldDraw(), true);
   });
+});
+
+describe("real audio loudness", () => {
+it("drives the mouth and takes over from word signals while it is fresh", () => {
+  const cues = createMouthCues();
+  cues.push("oh", 10);
+  cues.pushLevel(0.9, 10.05);
+  const loud = cues.read(10.1);
+  assert.equal(loud.viseme, "aa");
+  assert.ok(loud.amount > 0.8);
+  // Once the loudness is stale, the word signal (if recent) is used again, then the rhythm.
+  assert.equal(cues.read(10.3).viseme, "oh");
+  assert.equal(cues.read(11), null);
+  assert.deepEqual(driveMouth(cues, 11, true, 0.3), { viseme: "aa", amount: 0.3 });
+});
+
+it("closes on silence and rounds on soft sound", () => {
+  assert.equal(mouthFromLevel(0).amount, 0);
+  assert.equal(mouthFromLevel(0.2).viseme, "ou");
+  assert.equal(mouthFromLevel(0.4).viseme, "ih");
+  assert.equal(mouthFromLevel(NaN).amount, 0);
+  const cues = createMouthCues();
+  cues.pushLevel(0.8, 5);
+  cues.clear();
+  assert.equal(cues.read(5.05), null);
+});
 });

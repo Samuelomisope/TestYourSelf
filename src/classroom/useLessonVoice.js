@@ -1,11 +1,18 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore } from "react";
 import { currentEvent, initialPlayer, playerReducer } from "./lessonPlayer";
+import { apiPostBlob } from "../api";
 import { createBrowserSpeech, pickVoice } from "./speechOutput";
+import { createServerSpeech } from "./serverSpeech";
+import { createVoiceEngine } from "./voiceEngine";
 import { eventSpeech } from "./speakable";
 import { mouthCues, visemeForWord, wordAt } from "./lipSync";
 
-// One speech engine for the page; the browser has a single speech queue anyway.
-const speech = createBrowserSpeech();
+// One speech engine for the page; the browser has a single speech queue anyway. The server voice (Premium 3D tutor) is
+// tried only when a lesson asks for it, and the browser voice takes over whenever the server voice cannot help.
+const speech = createVoiceEngine({
+  browser: createBrowserSpeech(),
+  server: createServerSpeech({ fetchAudio: (text, ctx) => apiPostBlob(`/classroom/sessions/${ctx.sessionId}/speech`, { text, voice: ctx.voice }) }),
+});
 let voiceCache = [];
 const subscribeVoices = (notify) => {
   voiceCache = speech.voices();
@@ -17,12 +24,15 @@ const voiceSnapshot = () => voiceCache;
  * Plays the lesson events of a tutor reply out loud (Phase E). The reducer in lessonPlayer.js decides what plays next;
  * this hook only speaks the current event and reports when it has finished, so nothing here uses timers.
  *
- * Options: rate, voiceName, gender (the wanted voice), onEvent(event) runs as each event starts.
+ * Options: rate, voiceName, gender (the wanted voice), onEvent(event) runs as each event starts, and serverVoiceRef: a ref
+ * holding { enabled, sessionId, voice } when the server voice may be used for this lesson (read again for every event).
  */
-export default function useLessonVoice({ rate = 1, voiceName = "", gender = "", onEvent } = {}) {
+export default function useLessonVoice({ rate = 1, voiceName = "", gender = "", onEvent, serverVoiceRef } = {}) {
   const [player, dispatch] = useReducer(playerReducer, initialPlayer);
   const [speaking, setSpeaking] = useState(false);
   const [error, setError] = useState("");
+  const [voiceNote, setVoiceNote] = useState("");
+  const lastLesson = useRef("");
   const voices = useSyncExternalStore(subscribeVoices, voiceSnapshot, voiceSnapshot);
   const active = useRef(null); // { id, handle } of the event being spoken
   const latest = useRef({ onEvent });
@@ -47,8 +57,16 @@ export default function useLessonVoice({ rate = 1, voiceName = "", gender = "", 
       queueMicrotask(() => dispatch({ type: "finished", id: event.id }));
       return undefined;
     }
+    const server = serverVoiceRef?.current?.enabled ? serverVoiceRef.current : null;
+    if (server && lastLesson.current !== server.sessionId) { lastLesson.current = server.sessionId; speech.reset(); setVoiceNote(""); }
     const handle = speech.speak(text, {
       voice, rate,
+      server: server ? { sessionId: server.sessionId, voice: server.voice } : undefined,
+      // Real audio moves the mouth by its loudness; on the browser voice the word signals below do it instead.
+      onLevel: (level) => mouthCues.pushLevel(level, performance.now() / 1000),
+      onFallback: ({ reason, permanent }) => setVoiceNote(permanent
+        ? (reason === 429 ? "Today's tutor voice allowance is used up. The browser voice will keep reading." : "The tutor's own voice is not available right now. The browser voice will read instead.")
+        : "The tutor's voice had a hiccup, so the browser voice carried on."),
       onStart: () => setSpeaking(true),
       // Each word the voice reports opens the animated tutor's mouth in that word's shape.
       onBoundary: ({ charIndex }) => mouthCues.push(visemeForWord(wordAt(text, charIndex)), performance.now() / 1000),
@@ -66,7 +84,7 @@ export default function useLessonVoice({ rate = 1, voiceName = "", gender = "", 
       }
     });
     return undefined;
-  }, [player.status, player.index, player.events, voice, rate]);
+  }, [player.status, player.index, player.events, voice, rate, serverVoiceRef]);
 
   // The voice stops when the lesson screen goes away.
   useEffect(() => () => { speech.cancel(); }, []);
@@ -83,5 +101,5 @@ export default function useLessonVoice({ rate = 1, voiceName = "", gender = "", 
   }), [play, stop]);
 
   const playing = player.status === "playing" || player.status === "paused";
-  return { supported: speech.supported, voices, voice, player, event: playing ? currentEvent(player) : null, speaking: speaking && player.status === "playing", error, controls };
+  return { supported: speech.supported, voices, voice, player, event: playing ? currentEvent(player) : null, speaking: speaking && player.status === "playing", error, voiceNote, controls };
 }
