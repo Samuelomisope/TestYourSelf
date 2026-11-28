@@ -7,6 +7,8 @@ import Dialog from "./classroom/Dialog";
 import LessonView from "./classroom/LessonView";
 import StepVideos from "./classroom/StepVideos";
 import ClassroomLayout from "./classroom/ClassroomLayout";
+import LecturerStage from "./classroom/LecturerStage";
+import { pickLecturer } from "./classroom/lecturers";
 import { isClassroomV21 } from "./classroomV21";
 import Md from "./classroom/Markdown";
 import OutlinePanel from "./classroom/OutlinePanel";
@@ -122,10 +124,12 @@ function ClassroomInner({ sessionId }) {
   const seenReply = useRef(undefined); // undefined until the lesson has loaded, so opening a lesson never starts speaking
   // Whether the tutor may use the server voice; filled in below once the account and the tutor view are known.
   const serverVoiceRef = useRef(null);
+  // 2.1 lets the student pick either lecturer on this device; the lesson's own tutor voice is used otherwise (and always before 2.1).
+  const lecturerId = isClassroomV21() ? pickLecturer(voicePrefs.lecturer, session?.tutorVoice) : session?.tutorVoice;
   const voice = useLessonVoice({
     rate: voicePrefs.rate,
     voiceName: voicePrefs.voiceName,
-    gender: session?.tutorVoice,
+    gender: lecturerId,
     serverVoiceRef,
   });
   // Dictation fills the question box (the student reads it and presses Send); starting it silences the tutor.
@@ -154,9 +158,9 @@ function ClassroomInner({ sessionId }) {
     serverVoiceRef.current = {
       enabled: premium && renderer.mode === "3d" && voicePrefs.showTutor && speechLeft,
       sessionId: session?.id,
-      voice: session?.tutorVoice === "MALE" ? "male" : "female",
+      voice: lecturerId === "MALE" ? "male" : "female",
     };
-  }, [premium, renderer.mode, voicePrefs.showTutor, speechLeft, session?.id, session?.tutorVoice]);
+  }, [premium, renderer.mode, voicePrefs.showTutor, speechLeft, session?.id, lecturerId]);
   function changeVoicePrefs(patch) {
     setVoicePrefs((current) => { const next = { ...current, ...patch }; saveVoicePrefs(browserStorage(), next); return next; });
   }
@@ -483,7 +487,7 @@ function ClassroomInner({ sessionId }) {
           {isClassroom && (
             <TutorStage
               state={tutorState({ sending, listening: speechInput.listening, celebrating, playerStatus: voice.player.status, speaking: voice.speaking })}
-              variant={session?.tutorVoice} visible={voicePrefs.showTutor} onToggle={() => changeVoicePrefs({ showTutor: !voicePrefs.showTutor })}
+              variant={lecturerId} visible={voicePrefs.showTutor} onToggle={() => changeVoicePrefs({ showTutor: !voicePrefs.showTutor })}
               mode={renderer.mode} canChoose={renderer.canChoose} onView={(tutorView) => changeVoicePrefs({ tutorView })} onFail={renderer.fail}
             />
           )}
@@ -673,13 +677,22 @@ function ClassroomInner({ sessionId }) {
       ))}
     </div>
   );
+  const lecturerEl = (
+    <LecturerStage
+      lecturerId={pickLecturer(voicePrefs.lecturer, session?.tutorVoice)}
+      state={tutorState({ sending, listening: speechInput.listening, celebrating, playerStatus: voice.player.status, speaking: voice.speaking })}
+      visible={voicePrefs.showTutor} onToggle={() => changeVoicePrefs({ showTutor: !voicePrefs.showTutor })}
+      onSelect={(lecturer) => changeVoicePrefs({ lecturer })}
+      mode={renderer.mode} canChoose={renderer.canChoose} onView={(tutorView) => changeVoicePrefs({ tutorView })} onFail={renderer.fail}
+    />
+  );
   const layoutEl = v21 ? (
     <ClassroomLayout
       title={session?.title || session?.topic || "AI Classroom"} subtitle={session?.topic}
       stepLabel={started ? `Step ${current + 1} of ${outline.length}` : `${outline.length} steps`}
       percent={Math.round((Math.min(current + (started ? 1 : 0), outline.length) / outline.length) * 100)}
       statusLabel="Live" onExit={() => navigate("/classroom")} startOnBoard={hasBoard}
-      lecturer={<>{tutorEl}{voiceBarEl}</>} resume={resumeEl} boardNav={<PageNav pages={boardPages} index={pageIndex} onChange={(index) => setPageChoice({ count: boardPages.length, index })} />}
+      lecturer={<>{lecturerEl}{voiceBarEl}</>} resume={resumeEl} boardNav={<PageNav pages={boardPages} index={pageIndex} onChange={(index) => setPageChoice({ count: boardPages.length, index })} />}
       board={boardEl} transcript={<>{listEl}{videosEl}{checkInEl}{processingEl}</>}
       chips={chipsEl} actions={actionsEl} dock={<>{askAboutEl}{formEl}</>} outline={outlineEl} materials={<>{materialsEl}{linkEl}</>}
     />
