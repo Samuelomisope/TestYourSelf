@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { BookOpen, ChevronUp, ListChecks, LogOut, UserRound } from "lucide-react";
+import { useEffect, useState } from "react";
+import { BookOpen, ChevronUp, ListChecks, LogOut, Maximize2, Minimize2, UserRound } from "lucide-react";
 import "./ClassroomLayout.css";
 
 const SIDE_TABS = [["lesson", "Lesson"], ["materials", "Materials"]];
@@ -19,6 +19,13 @@ export default function ClassroomLayout({
   const [sideTab, setSideTab] = useState("lesson");
   const [side, setSide] = useState("open");
   const [moreOpen, setMoreOpen] = useState(false);
+  const [full, setFull] = useState(false);
+  useEffect(() => {
+    if (!full) return undefined;
+    const onKey = (event) => { if (event.key === "Escape") setFull(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [full]);
   const hasBoard = Boolean(board);
   const showBoard = hasBoard && center === "board";
   const pick = (next) => setPanel(next);
@@ -49,10 +56,16 @@ export default function ClassroomLayout({
       <div className="cr21-main">
         <section className="cr21-lecturer" aria-label="Lecturer">{lecturer}{resume}</section>
 
-        <section className="cr21-center" aria-label="Teaching area">
+        <section className="cr21-center" aria-label="Teaching area" data-full={full}>
           <div className="cr21-tabs" role="group" aria-label="Show">
             {hasBoard && <button type="button" className="cr21-tab" aria-pressed={center === "board"} onClick={() => setCenter("board")}>Board</button>}
             <button type="button" className="cr21-tab" aria-pressed={center === "transcript" || !hasBoard} onClick={() => setCenter("transcript")}>Lesson notes</button>
+            {hasBoard && (
+              <button type="button" className="cr21-tab inline-flex items-center justify-center gap-1" style={{ flex: "0 0 auto" }} onClick={() => { setCenter("board"); setFull((value) => !value); }} aria-pressed={full} aria-label={full ? "Exit full screen board" : "Full screen board"}>
+                {full ? <Minimize2 aria-hidden="true" className="h-4 w-4" /> : <Maximize2 aria-hidden="true" className="h-4 w-4" />}
+                <span className="hidden sm:inline">{full ? "Exit" : "Full screen"}</span>
+              </button>
+            )}
           </div>
           <div className="cr21-center-body">
             {showBoard ? <>{boardNav}{board}</> : transcript}

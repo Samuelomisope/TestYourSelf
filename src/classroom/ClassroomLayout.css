@@ -75,3 +75,6 @@
 @media (prefers-reduced-motion: reduce) { .cr21-bar > i { transition: none; } }
 
 @media (max-width: 1023px) { .cr21-lecturer section > div { flex-wrap: wrap; justify-content: center; text-align: center; } }
+
+.cr21-center[data-full="true"] { position: fixed; inset: 0; z-index: 60; display: flex; border-radius: 0; border: 0; padding-bottom: env(safe-area-inset-bottom); }
+.cr21-center[data-full="true"] .cr21-center-body { padding-bottom: 12px; }
