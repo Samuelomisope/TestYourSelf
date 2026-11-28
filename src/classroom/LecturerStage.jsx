@@ -11,7 +11,7 @@ export default function LecturerStage({ lecturerId, state, visible, onToggle, on
     <section aria-label="Your lecturer" className="rounded-2xl border border-ink/15 bg-gradient-to-b from-violet-500/15 to-transparent p-3">
       <div className="flex flex-col items-center gap-2 text-center">
         {visible && (mode === "3d"
-          ? <Tutor3D state={state} variant={lecturer.id} cue={cue} onFail={onFail} className="h-56 w-full max-w-[16rem]" />
+          ? <Tutor3D state={state} variant={lecturer.id} cue={cue} onFail={onFail} className="h-[clamp(7rem,34vh,14rem)] w-full max-w-[16rem]" />
           : <TutorAvatar2D state={state} variant={lecturer.id} className="h-40 w-36" />)}
         <div className="min-w-0">
           <p className="truncate text-sm font-bold">{lecturer.name}</p>
