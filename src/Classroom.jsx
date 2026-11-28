@@ -681,7 +681,7 @@ function ClassroomInner({ sessionId }) {
       statusLabel="Live" onExit={() => navigate("/classroom")} startOnBoard={hasBoard}
       lecturer={<>{tutorEl}{voiceBarEl}</>} resume={resumeEl} boardNav={<PageNav pages={boardPages} index={pageIndex} onChange={(index) => setPageChoice({ count: boardPages.length, index })} />}
       board={boardEl} transcript={<>{listEl}{videosEl}{checkInEl}{processingEl}</>}
-      chips={chipsEl} dock={<>{actionsEl}{askAboutEl}{formEl}</>} outline={outlineEl} materials={<>{materialsEl}{linkEl}</>}
+      chips={chipsEl} actions={actionsEl} dock={<>{askAboutEl}{formEl}</>} outline={outlineEl} materials={<>{materialsEl}{linkEl}</>}
     />
   ) : null;
   return <>

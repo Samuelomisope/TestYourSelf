@@ -11,7 +11,7 @@ const PANELS = [["lecturer", "Lecturer", UserRound], ["board", "Board", BookOpen
  */
 export default function ClassroomLayout({
   title, subtitle, stepLabel, percent, statusLabel, onExit,
-  lecturer, resume, boardNav, board, transcript, chips, dock, outline, materials,
+  lecturer, resume, boardNav, board, transcript, chips, actions, dock, outline, materials,
   startOnBoard = false,
 }) {
   const [panel, setPanel] = useState(startOnBoard ? "board" : "lecturer");
@@ -25,7 +25,7 @@ export default function ClassroomLayout({
 
   return (
     <div className="cr21 dark" data-panel={panel} data-side={side} role="region" aria-label="Classroom">
-      <header className="cr21-head">
+      <div className="cr21-head">
         <div className="min-w-0 flex-1">
           <p className="truncate text-[11px] font-bold uppercase tracking-wider text-ink/60">UniLib AI Classroom{subtitle ? ` · ${subtitle}` : ""}</p>
           <h1 className="truncate">{title}</h1>
@@ -39,7 +39,7 @@ export default function ClassroomLayout({
         <button type="button" onClick={onExit} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-ink/20 px-3 text-xs font-bold hover:bg-ink/10 focus-visible:outline-2 focus-visible:outline-violet-400">
           <LogOut aria-hidden="true" className="h-4 w-4" /> Exit
         </button>
-      </header>
+      </div>
 
       <div className="flex items-center gap-2 px-3 pt-2 sm:hidden" aria-hidden={false}>
         <div className="cr21-bar" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label="Lesson progress"><i style={{ width: `${percent}%` }} /></div>
@@ -69,19 +69,18 @@ export default function ClassroomLayout({
           <div className="space-y-4">{sideTab === "lesson" ? outline : materials}</div>
         </aside>
 
-        <div className="cr21-dock">
-          <div className="cr21-chips-wrap" data-open={moreOpen}>{chips}</div>
+        <div className="cr21-dock" data-open={moreOpen}>
+          <div className="cr21-chips-wrap">{chips}</div>
+          <div className="cr21-actions-wrap">{actions}</div>
+          <button type="button" onClick={() => setMoreOpen((open) => !open)} aria-expanded={moreOpen} className="cr21-toggle inline-flex min-h-10 items-center gap-1 rounded-lg px-2 text-xs font-bold text-ink/80 focus-visible:outline-2 focus-visible:outline-violet-400">
+            Actions <ChevronUp aria-hidden="true" className={`h-4 w-4 transition ${moreOpen ? "" : "rotate-180"}`} />
+          </button>
           {dock}
-          <div className="mt-1 flex items-center justify-between lg:hidden">
-            <button type="button" onClick={() => setMoreOpen((open) => !open)} aria-expanded={moreOpen} className="inline-flex min-h-10 items-center gap-1 rounded-lg px-2 text-xs font-bold text-ink/80 focus-visible:outline-2 focus-visible:outline-violet-400">
-              Actions <ChevronUp aria-hidden="true" className={`h-4 w-4 transition ${moreOpen ? "" : "rotate-180"}`} />
-            </button>
-          </div>
         </div>
 
         <nav className="cr21-nav" aria-label="Classroom views">
           {PANELS.map(([id, label, Icon]) => (
-            <button key={id} type="button" data-kind={id} className="cr21-tab inline-flex flex-col items-center justify-center gap-0.5" aria-selected={panel === id} onClick={() => { pick(id); if (id === "board") setCenter(hasBoard ? "board" : "transcript"); }}>
+            <button key={id} type="button" data-kind={id} className="cr21-tab inline-flex flex-col items-center justify-center gap-0.5" aria-pressed={panel === id} onClick={() => { pick(id); if (id === "board") setCenter(hasBoard ? "board" : "transcript"); }}>
               <Icon aria-hidden="true" className="h-4 w-4" /><span>{label}</span>
             </button>
           ))}

@@ -23,6 +23,7 @@
 .cr21-tab { min-height: 40px; flex: 1; border-radius: 10px; padding: 0 12px; font-size: 0.8rem; font-weight: 700; color: rgb(var(--ink) / 0.75); }
 .cr21-tab[aria-pressed="true"], .cr21-tab[aria-selected="true"] { background: rgb(var(--accent) / 0.25); color: rgb(var(--ink)); }
 .cr21-nav { display: none; }
+.cr21-toggle { display: none; }
 
 /* Desktop: lecturer left, board centre (largest), sidebar right, dock along the bottom. */
 @media (min-width: 1024px) {
@@ -41,10 +42,15 @@
   .cr21[data-panel="board"] .cr21-center { display: flex; }
   .cr21[data-panel="outline"] .cr21-side { display: block; }
   /* On the board tab the lecturer stays visible as a small floating thumbnail, so the student never loses sight of them. */
-  .cr21[data-panel="board"] .cr21-lecturer { display: flex; position: absolute; top: 12px; right: 12px; z-index: 5; width: 84px; height: 84px; padding: 0; overflow: hidden; border-radius: 14px; pointer-events: none; }
+  .cr21[data-panel="board"] .cr21-lecturer { display: flex; align-self: end; justify-self: end; margin: 10px; z-index: 5; width: 84px; height: 84px; padding: 0; overflow: hidden; border-radius: 14px; pointer-events: none; }
   .cr21[data-panel="board"] .cr21-lecturer > :not(:first-child) { display: none; }
   .cr21-nav { grid-area: nav; display: flex; gap: 4px; padding: 4px 8px calc(4px + env(safe-area-inset-bottom)); background: rgb(var(--bg-elevated)); border-top: 1px solid rgb(var(--ink) / 0.12); }
-  .cr21-chips-wrap[data-open="false"] { display: none; }
+  .cr21-dock[data-open="false"] .cr21-chips-wrap { display: none; }
+  .cr21-toggle { display: inline-flex; }
+  .cr21[data-panel="board"] .cr21-center-body { padding-bottom: 100px; }
+  .cr21-actions-wrap > div { margin-bottom: 6px; flex-wrap: nowrap; }
+  .cr21-actions-wrap > div > button { flex: 1; min-height: 40px; padding-inline: 8px; font-size: 0.8rem; }
+  .cr21-dock p.text-ink\/45 { display: none; }
 }
 
 /* Phone landscape (short screens): lecturer and board side by side, the board wider; outline and materials in a slide-over rail. */
@@ -55,7 +61,17 @@
   .cr21-nav .cr21-tab[data-kind="lecturer"] { display: none; }
   .cr21-side { display: none; position: absolute; z-index: 20; top: 6px; right: 66px; bottom: 6px; width: min(340px, 60%); box-shadow: 0 10px 40px rgb(0 0 0 / 0.5); }
   .cr21[data-panel="outline"] .cr21-side { display: block; }
-  .cr21-chips-wrap[data-open="false"] { display: none; }
-  .cr21-head { padding: 4px 10px; }
+  .cr21-head { padding: 2px 10px; }
+  .cr21-head p { display: none; }
+  .cr21-dock { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; padding: 6px; }
+  .cr21-toggle { display: inline-flex; order: -1; }
+  .cr21-dock > form { flex: 1; min-width: 0; border: 0; padding-top: 0; }
+  .cr21-dock > form input { min-height: 40px; }
+  .cr21-dock > p { display: none; }
+  .cr21-chips-wrap, .cr21-actions-wrap { flex-basis: 100%; order: 5; }
+  .cr21-dock[data-open="false"] .cr21-chips-wrap, .cr21-dock[data-open="false"] .cr21-actions-wrap { display: none; }
+  .cr21-actions-wrap > div { margin-bottom: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .cr21-bar > i { transition: none; } }
+
+@media (max-width: 1023px) { .cr21-lecturer section > div { flex-wrap: wrap; justify-content: center; text-align: center; } }
