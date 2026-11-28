@@ -5,13 +5,13 @@ import { TUTOR_LABELS } from "./tutorState";
 import { LECTURERS, LECTURER_IDS } from "./lecturers";
 
 /** The lecturer's place in the lecture hall: a large lecturer, a name plate, the visible state, and the lecturer choice. */
-export default function LecturerStage({ lecturerId, state, visible, onToggle, onSelect, mode = "2d", canChoose = false, onView, onFail }) {
+export default function LecturerStage({ lecturerId, state, visible, onToggle, onSelect, mode = "2d", canChoose = false, onView, onFail, cue = null }) {
   const lecturer = LECTURERS[lecturerId] ?? LECTURERS.FEMALE;
   return (
     <section aria-label="Your lecturer" className="rounded-2xl border border-ink/15 bg-gradient-to-b from-violet-500/15 to-transparent p-3">
       <div className="flex flex-col items-center gap-2 text-center">
         {visible && (mode === "3d"
-          ? <Tutor3D state={state} variant={lecturer.id} onFail={onFail} className="h-40 w-40" />
+          ? <Tutor3D state={state} variant={lecturer.id} cue={cue} onFail={onFail} className="h-56 w-full max-w-[16rem]" />
           : <TutorAvatar2D state={state} variant={lecturer.id} className="h-40 w-36" />)}
         <div className="min-w-0">
           <p className="truncate text-sm font-bold">{lecturer.name}</p>

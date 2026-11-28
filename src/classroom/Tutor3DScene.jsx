@@ -1,11 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { AnimationMixer, Box3, LoopOnce } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
 import { modelAvailable, modelUrl } from "./avatarModel";
 import { initialMotion, stepMotion, talkRhythm } from "./tutorMotion";
 import { driveMouth, frameInterval, mouthCues, shouldDraw } from "./lipSync";
 import { armAngles, EXPRESSION_NAMES, expressionTargets } from "./vrmMotion";
+import { clipFor, faceWeights, framingFor, glbUrl } from "./glbModel";
 
 // What the mouth should do now: it follows the words the voice reports, or a talking rhythm when it reports none.
 const mouthFor = (state, seconds) => driveMouth(mouthCues, performance.now() / 1000, state === "speaking" || state === "explaining", 0.1 + 0.6 * talkRhythm(seconds));
@@ -112,14 +114,111 @@ function VrmCharacter({ url, state, onReady, onError }) {
   return vrm ? <primitive object={vrm.scene} /> : null;
 }
 
+
+// Sets the face shapes on every mesh that has them. Kept outside the component because it writes to Three.js objects.
+function applyFace(meshes, weights) {
+  for (const mesh of meshes) {
+    for (const [name, weight] of Object.entries(weights)) {
+      const index = mesh.morphTargetDictionary[name];
+      if (index !== undefined) mesh.morphTargetInfluences[index] = weight;
+    }
+  }
+}
+
+// A Premium 3D lecturer from a GLB file (Classroom 2.1): body clips from the file, face shapes driven by the same speech
+// cues as the other renderers. It loads in the background and the placeholder stays if the file is missing or fails.
+function GlbCharacter({ url, state, cue, onReady, onError, onSize }) {
+  const [model, setModel] = useState(null);
+  const now = useRef(initialMotion());
+  const rig = useRef({ mixer: null, actions: {}, current: null, faces: [], shot: null, lastCue: null });
+  const callbacks = useRef({ onReady, onError, onSize });
+  useEffect(() => { callbacks.current = { onReady, onError, onSize }; });
+
+  useEffect(() => {
+    let cancelled = false;
+    new GLTFLoader().load(
+      url,
+      (gltf) => {
+        if (cancelled) return;
+        const scene = gltf.scene;
+        const faces = [];
+        scene.traverse((o) => {
+          if (o.isMesh) o.frustumCulled = false; // skinned meshes can be wrongly culled when posed by clips
+          if (o.isMesh && o.morphTargetDictionary && o.morphTargetInfluences) faces.push(o);
+        });
+        const mixer = new AnimationMixer(scene);
+        const actions = Object.fromEntries(gltf.animations.map((clip) => [clip.name, mixer.clipAction(clip)]));
+        if (!actions.Idle) { callbacks.current.onError?.(); return; }
+        rig.current = { mixer, actions, current: null, faces, shot: null, lastCue: null };
+        const size = new Box3().setFromObject(scene).getSize(scene.position.clone());
+        callbacks.current.onSize?.(size.y);
+        setModel(scene);
+        callbacks.current.onReady?.();
+      },
+      undefined,
+      () => { if (!cancelled) callbacks.current.onError?.(); },
+    );
+    return () => {
+      cancelled = true;
+      const { mixer } = rig.current;
+      mixer?.stopAllAction();
+      rig.current = { mixer: null, actions: {}, current: null, faces: [], shot: null, lastCue: null };
+    };
+  }, [url]);
+
+  // Body clips: the base clip follows the state; a board event or praise plays one clip on top, then it returns.
+  const cueType = cue?.type ?? null;
+  const cueId = cue?.id ?? null;
+  const wanted = useMemo(() => clipFor(state, cueType ? { type: cueType, id: cueId } : null), [state, cueType, cueId]);
+  useEffect(() => {
+    const r = rig.current;
+    if (!model || !r.mixer) return undefined;
+    const play = (name, { once = false } = {}) => {
+      const next = r.actions[name];
+      if (!next) return;
+      const from = r.current;
+      if (from === next && !once) return;
+      next.reset().setEffectiveWeight(1);
+      if (once) { next.setLoop(LoopOnce, 1); next.clampWhenFinished = true; }
+      from?.crossFadeTo(next, 0.35, false);
+      next.play();
+      r.current = next;
+    };
+    const cueKey = cueType ? `${cueType}:${cueId}` : null;
+    if (wanted.oneShot && r.actions[wanted.oneShot] && (state === "celebrating" || cueKey !== r.lastCue)) {
+      r.lastCue = cueKey;
+      play(wanted.oneShot, { once: true });
+      const done = (event) => { if (event.action !== r.actions[wanted.oneShot]) return; r.mixer.removeEventListener("finished", done); play(wanted.base); };
+      r.mixer.addEventListener("finished", done);
+      return () => r.mixer?.removeEventListener("finished", done);
+    }
+    if (!wanted.oneShot) r.lastCue = cueKey;
+    play(wanted.base);
+    return undefined;
+  }, [model, wanted, state, cueType, cueId]);
+
+  useFrame(({ clock }, delta) => {
+    const r = rig.current;
+    if (!model || !r.mixer) return;
+    r.mixer.update(delta);
+    const mouthNow = mouthFor(state, clock.elapsedTime);
+    const v = stepMotion(now.current, state, delta, clock.elapsedTime, mouthNow.amount);
+    const weights = faceWeights({ state, blink: v.blink, mouth: mouthNow });
+    applyFace(r.faces, weights);
+  });
+
+  return model ? <primitive object={model} /> : null;
+}
+
 // Where the camera looks: the whole placeholder, or the head and chest of a real model (which is about 1.6 units tall).
-function Framing({ modelled }) {
+function Framing({ modelled, height }) {
   const camera = useThree((state) => state.camera);
   useEffect(() => {
-    if (modelled) { camera.position.set(0, 1.3, 1.9); camera.lookAt(0, 1.18, 0); }
+    if (modelled && height) { const f = framingFor(height); camera.position.set(0, f.y + 0.02, f.distance); camera.lookAt(0, f.y - 0.1, 0); }
+    else if (modelled) { camera.position.set(0, 1.3, 1.9); camera.lookAt(0, 1.18, 0); }
     else { camera.position.set(0, 0.85, 6.4); camera.lookAt(0, 0.85, 0); }
     camera.updateProjectionMatrix();
-  }, [camera, modelled]);
+  }, [camera, modelled, height]);
   return null;
 }
 
@@ -140,17 +239,22 @@ function FrameLimiter({ fps = 30 }) {
 }
 
 /** The 3D scene. `onFail` is called if the graphics context is lost, so the page can fall back to the 2D tutor. */
-export default function Tutor3DScene({ state, variant, onFail }) {
-  const [url, setUrl] = useState(null); // the model file, once it is known to exist
+export default function Tutor3DScene({ state, variant, cue = null, onFail }) {
+  const [source, setSource] = useState(null); // { kind: "glb" | "vrm", url } once a file is known to exist
   const [ready, setReady] = useState(false);
   const [broken, setBroken] = useState(false);
+  const [height, setHeight] = useState(0);
   useEffect(() => {
     let cancelled = false;
-    const wanted = modelUrl(variant);
-    modelAvailable(wanted).then((ok) => { if (!cancelled && ok) setUrl(wanted); });
-    return () => { cancelled = true; setUrl(null); setReady(false); setBroken(false); };
+    (async () => {
+      const glb = glbUrl(variant);
+      const vrm = modelUrl(variant);
+      if (await modelAvailable(glb)) { if (!cancelled) setSource({ kind: "glb", url: glb }); return; }
+      if (await modelAvailable(vrm) && !cancelled) setSource({ kind: "vrm", url: vrm });
+    })();
+    return () => { cancelled = true; setSource(null); setReady(false); setBroken(false); setHeight(0); };
   }, [variant]);
-  const modelled = !!url && ready && !broken;
+  const modelled = !!source && ready && !broken;
   return (
     <Canvas
       frameloop="demand"
@@ -163,12 +267,14 @@ export default function Tutor3DScene({ state, variant, onFail }) {
       }}
       aria-label={`Animated 3D tutor: ${state}`}
     >
-      <ambientLight intensity={0.9} />
-      <directionalLight position={[2, 3, 4]} intensity={1.6} />
+      <ambientLight intensity={source?.kind === "glb" ? 1.15 : 0.9} />
+      <directionalLight position={[2, 3, 4]} intensity={source?.kind === "glb" ? 3 : 1.6} color={source?.kind === "glb" ? "#fff1e0" : "#ffffff"} />
+      {source?.kind === "glb" && <><directionalLight position={[-3, 1.5, 2.5]} intensity={1} color="#c7d6ff" /><directionalLight position={[-2, 2, -3]} intensity={1.4} color="#8f7bff" /></>}
       <FrameLimiter />
-      <Framing modelled={modelled} />
+      <Framing modelled={modelled} height={source?.kind === "glb" ? height : 0} />
       {!modelled && <Character state={state} variant={variant} />}
-      {url && !broken && <VrmCharacter key={url} url={url} state={state} onReady={() => setReady(true)} onError={() => setBroken(true)} />}
+      {source?.kind === "vrm" && !broken && <VrmCharacter key={source.url} url={source.url} state={state} onReady={() => setReady(true)} onError={() => setBroken(true)} />}
+      {source?.kind === "glb" && !broken && <GlbCharacter key={source.url} url={source.url} state={state} cue={cue} onReady={() => setReady(true)} onError={() => setBroken(true)} onSize={setHeight} />}
     </Canvas>
   );
 }

@@ -30,6 +30,7 @@ import VoiceBar from "./classroom/VoiceBar";
 import TutorStage from "./classroom/TutorStage";
 import useRendererChoice from "./classroom/useRendererChoice";
 import { tutorState } from "./classroom/tutorState";
+import { currentEvent } from "./classroom/lessonPlayer";
 import ErrorNotice from "./classroom/QuotaNotice";
 import { usageLine, usageWarning } from "./classroom/usage";
 import { browserStorage, loadVoicePrefs, saveVoicePrefs } from "./classroom/voicePrefs";
@@ -677,11 +678,14 @@ function ClassroomInner({ sessionId }) {
       ))}
     </div>
   );
+  const playing = currentEvent(voice.player);
+  const lecturerCue = playing ? { type: playing.type, id: playing.id } : null;
   const lecturerEl = (
     <LecturerStage
       lecturerId={pickLecturer(voicePrefs.lecturer, session?.tutorVoice)}
       state={tutorState({ sending, listening: speechInput.listening, celebrating, playerStatus: voice.player.status, speaking: voice.speaking })}
       visible={voicePrefs.showTutor} onToggle={() => changeVoicePrefs({ showTutor: !voicePrefs.showTutor })}
+      cue={lecturerCue}
       onSelect={(lecturer) => changeVoicePrefs({ lecturer })}
       mode={renderer.mode} canChoose={renderer.canChoose} onView={(tutorView) => changeVoicePrefs({ tutorView })} onFail={renderer.fail}
     />

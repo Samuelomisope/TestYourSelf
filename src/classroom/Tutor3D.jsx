@@ -12,12 +12,12 @@ class Guard extends Component {
 }
 
 /** The 3D tutor with the 2D tutor standing in while it loads, and for good if loading or drawing fails. */
-export default function Tutor3D({ state, variant, className = "", onFail }) {
+export default function Tutor3D({ state, variant, cue = null, className = "", onFail }) {
   const flat = <TutorAvatar2D state={state} variant={variant} className={className} />;
   return (
     <div className={className} role="img" aria-label={`Animated 3D tutor: ${state}`}>
       <Guard fallback={flat} onFail={onFail}>
-        <Suspense fallback={flat}><Scene state={state} variant={variant} onFail={onFail} /></Suspense>
+        <Suspense fallback={flat}><Scene state={state} variant={variant} cue={cue} onFail={onFail} /></Suspense>
       </Guard>
     </div>
   );

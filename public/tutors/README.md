@@ -16,3 +16,11 @@ If a file is missing, the lesson shows the built-in placeholder character instea
 5. Copy the files here, then deploy. Do not commit models you do not have the right to use.
 
 Only the head, chest and arms are animated, so a half-body character is fine.
+
+## Classroom 2.1 Premium lecturers (GLB)
+
+`ada.glb` (Dr. Ada Okafor) and `tunde.glb` (Dr. Tunde Bello) are the Premium 3D lecturers. They were made once with Ara 3D Gen
+(character data CC0 from MakeHuman; the animation clips come from CMU motion capture, free for commercial products but not
+for resale on their own; see the LICENSE.txt in the export) and optimised: 1024 px face textures, 512 px for the rest, WebP.
+If a GLB is present it is used before the VRM file of the same lecturer. Clips used: Idle, Talk with gestures, Point at the
+board, Thumbs up. Face shapes driven by code: blink, brows, smile, jaw and the five mouth shapes (viseme_aa, E, I, O, U).
